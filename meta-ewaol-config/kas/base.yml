@@ -1,0 +1,44 @@
+header:
+  version: 10
+
+defaults:
+  repos:
+    refspec: master
+
+repos:
+  meta-openembedded:
+    url: https://git.openembedded.org/meta-openembedded
+    layers:
+      meta-oe:
+      meta-filesystems:
+      meta-networking:
+      meta-python:
+      meta-perl:
+
+  meta-security:
+    url: https://git.yoctoproject.org/git/meta-security
+
+  meta-ewaol:
+    layers:
+      meta-ewaol-distro:
+
+  meta-virtualization:
+    url: https://git.yoctoproject.org/git/meta-virtualization
+
+  poky:
+    url: https://git.yoctoproject.org/git/poky
+    layers:
+      meta:
+      meta-poky:
+
+local_conf_header:
+  base: |
+    CONF_VERSION = "1"
+    PACKAGECONFIG_remove_pn-qemu-system-native = "gtk+ sdl"
+
+machine: unset
+distro: ewaol
+
+target:
+  - ewaol-image-podman
+  - ewaol-image-docker

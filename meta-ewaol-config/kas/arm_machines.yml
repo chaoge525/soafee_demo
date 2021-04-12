@@ -1,0 +1,11 @@
+header:
+  version: 10
+
+repos:
+  meta-arm:
+    url: https://git.yoctoproject.org/git/meta-arm
+    layers:
+      meta-arm:
+      meta-arm-bsp:
+      meta-arm-toolchain:
+

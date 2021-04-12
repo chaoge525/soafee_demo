@@ -1,0 +1,7 @@
+header:
+  version: 10
+  includes:
+    - base.yml
+    - arm_machines.yml
+
+machine: n1sdp
