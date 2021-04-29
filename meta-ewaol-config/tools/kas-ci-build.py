@@ -8,55 +8,49 @@ import tarfile
 ALL_TARGETS=['n1sdp.yml', 'fvp-base.yml']
 
 class DockerEngine:
+    """ Simple class used to configure and run kas under a container """
 
     CONTAINER_IMAGE_DEFAULT = "ghcr.io/siemens/kas/kas"
-    CONTAINER_IMAGE_VERSION_DEFAULT = "latest"
     # Not recommended to use versions 2.4 or less, due to lack of support for
     # KAS_BUILD_DIR
+    CONTAINER_IMAGE_VERSION_DEFAULT = "latest"
     CONTAINER_ENGINE = "docker"
 
     def __init__(self, base_args=""):
         self.args = [base_args]
 
-    def addarg(self, arg):
+    def add_arg(self, arg):
+        """ Add a Docker run argument """
+        print(f"Adding docker arg: {arg}")
         self.args.append(arg)
 
-    # Set a value in the Environment variables and print
-    def setenv(self, key, value):
-        val_str = str(value)
-        self.addarg(f'-e {key}="{val_str}"')
-        print("ENV:",key,"=",value)
+    def add_env(self, key, value):
+        """ Add a Docker run environment argument """
+        arg = f'--env {key}="{value}"'
+        self.add_arg(arg)
 
-    # Add the args to mount a volume in the engine arguments
-    def mnt_vol(self, path, name, perms="rw"):
-        print("MNT:",path,"at",name,f"({perms})")
-        self.addarg(f"-v {path}:{name}:{perms}")
+    def add_volume(self, path_host, path_container, perms="rw", env_var=None):
+        """ Add a Docker run volume argument.
+        When 'env_var' is used, also add an environment argument with 'env_var'
+        being the key and 'path_container' the value """
+        self.add_arg(f"--volume {path_host}:{path_container}:{perms}")
+        if env_var:
+            self.add_env(env_var, path_container)
 
-    # Combine mounting a path and setting an env to that path
-    def mnt_and_env_format(self, path, env_var, pre_str="", post_str="", perms="rw"):
-        mnt_point = "/" + env_var.lower()
-        self.mnt_vol(path, mnt_point, perms)
-        self.setenv(env_var, pre_str + mnt_point + post_str)
-
-    # Simplify when no formatting strings are required
-    def mnt_and_env(self, path, env_var, perms="rw"):
-        self.mnt_and_env_format(path, env_var, "", "", perms)
-
-    # Execute the command with generated arguments
     def run(self, kas_config):
-        command = \
-        f"{self.CONTAINER_ENGINE} run {' '.join(self.args)}\
-        {self.CONTAINER_IMAGE_DEFAULT}:{self.CONTAINER_IMAGE_VERSION_DEFAULT}\
-        -d build {kas_config}"
+        """ Invoke the container engine with all arguments previously added to the object """
+        command = f"{self.CONTAINER_ENGINE} run {' '.join(self.args)}\
+                    {self.CONTAINER_IMAGE_DEFAULT}:{self.CONTAINER_IMAGE_VERSION_DEFAULT}\
+                    build {kas_config}"
 
         print(command)
         result = subprocess.run(command, shell=True)
 
         if result.returncode != 0:
             print(f"Error: container command: \n{command}\
-                  Failed with returncode {result.returncode}")
-            return True
-        return False
+                  Failed with return code {result.returncode}")
+            return 1
+        return 0
 
 
 # Create a directory only if it doesn't already exist
@@ -192,47 +186,39 @@ def main():
         engine = DockerEngine("--rm")
 
         # Pass user and group ID to Docker env
-        engine.setenv("USER_ID", os.getuid())
-        engine.setenv("GROUP_ID", os.getgid())
+        engine.add_env("USER_ID", os.getuid())
+        engine.add_env("GROUP_ID", os.getgid())
 
         # Mount and set up workdir
         work_dir_name = "/work"
-
-        engine.mnt_vol(config["layer_dir"], work_dir_name)
-        engine.addarg(f"--workdir={work_dir_name}")
-        engine.setenv("KAS_WORK_DIR", work_dir_name)
+        engine.add_volume(config["layer_dir"], work_dir_name)
+        engine.add_arg(f"--workdir={work_dir_name}")
+        engine.add_env("KAS_WORK_DIR", work_dir_name)
 
         # Mount and set up Build directory
-        engine.mnt_and_env(config["build_dir"],
-                           "KAS_BUILD_DIR")
+        engine.add_volume(config["build_dir"], "/kas_build_dir", env_var="KAS_BUILD_DIR")
 
         # Configure local Caches
-        engine.mnt_and_env(config["sstate_dir"],
-                           "SSTATE_DIR")
-
+        engine.add_volume(config["sstate_dir"], "/sstate_dir", env_var="SSTATE_DIR")
         mk_newdir(config["sstate_dir"])
 
-        engine.mnt_and_env(config["dl_dir"], "DL_DIR")
+        engine.add_volume(config["dl_dir"], "/dl_dir", env_var="DL_DIR")
         mk_newdir(config["dl_dir"])
 
         # Configure Cache mirrors
         if config["sstate_mirror"]:
+            path_container="/sstate_mirrors"
             mk_newdir(config["sstate_mirror"])
-            engine.mnt_and_env_format(config["sstate_mirror"],
-                                      "SSTATE_MIRRORS",
-                                      "file://.* file://",
-                                      "/PATH;downloadfilename=PATH",
-                                      "ro")
+            engine.add_volume(config["sstate_mirror"], path_container, "ro")
+            engine.add_env("SSTATE_MIRRORS", f"file://.* file://{path_container}/PATH;downloadfilename=PATH")
 
         if config["downloads_mirror"]:
+            path_container="/source_mirror_url"
             mk_newdir(config["downloads_mirror"])
-            engine.mnt_and_env_format(config["downloads_mirror"],
-                                      "SOURCE_MIRROR_URL",
-                                      "file://",
-                                      "",
-                                      "ro")
-            engine.setenv('INHERIT',"own-mirrors")
-            engine.setenv('BB_GENERATE_MIRROR_TARBALLS',"1")
+            engine.add_volume(config["downloads_mirror"], path_container, "ro")
+            engine.add_env("SOURCE_MIRROR_URL", f"file://{path_container}")
+            engine.add_env('INHERIT', "own-mirrors")
+            engine.add_env('BB_GENERATE_MIRROR_TARBALLS', "1")
 
         # kasfiles must be relative to docker filesystem
         kas_config = kasconfig_format(task,
@@ -241,7 +227,7 @@ def main():
                                       work_dir_name)
 
         # Execute the command
-        exit_code = 1 if engine.run(kas_config) else exit_code
+        exit_code |= engine.run(kas_config)
 
         # Grab build artifacts and store in artifacts_dir/buildname
         if config["deploy_artifacts"]:
@@ -252,7 +238,6 @@ def main():
 
             deploy_artifacts(config["build_dir"], build_artifacts_dir)
 
-    # Result with docker exit code
     exit(exit_code)
 
 if __name__ == "__main__":
