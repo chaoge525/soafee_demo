@@ -3,7 +3,7 @@ header:
 
 defaults:
   repos:
-    refspec: master
+    refspec: hardknott
 
 repos:
   meta-openembedded:
