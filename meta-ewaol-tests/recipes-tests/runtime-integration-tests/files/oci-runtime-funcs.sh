@@ -4,7 +4,7 @@
 # Returns 0 if image exists
 # Returns 1 if image does not exist
 does_image_exist() {
-    if [ $(docker images 2>/dev/null | grep ${1} | wc -l) -eq 1 ]; then
+    if [ "$(docker images 2>"${OCI_TEST_STDERR_FILE}" | grep -c "${1}")" -eq 1 ]; then
         return 0
     else
         return 1
@@ -17,7 +17,7 @@ image_remove() {
 
     # use --force to avoid having to remove any dependent containers that we
     # have created
-    docker image rm "${1}" --force
+    docker image rm "${1}" --force 2>"${OCI_TEST_STDERR_FILE}"
 }
 
 # Arg1: Image name
@@ -27,9 +27,10 @@ image_remove() {
 container_run_persistent() {
 
     image_name="${1}"
-    container_cmd="${@:2}"
+    container_cmd="${*:2}"
 
-    docker run -it -d ${image_name} ${container_cmd} 2>/dev/null
+    # shellcheck disable=SC2086
+    docker run -it -d "${image_name}" ${container_cmd} 2>"${OCI_TEST_STDERR_FILE}"
 }
 
 # Arg1: Container ID
@@ -39,17 +40,17 @@ check_container_state() {
 
     container_id="${1}"
 
-    inspect_output=$(docker inspect -f '{{.State.Status}},{{.State.ExitCode}}' "${container_id}" 2>/dev/null )
+    inspect_output=$(docker inspect -f '{{.State.Status}},{{.State.ExitCode}}' "${container_id}" 2>"${OCI_TEST_STDERR_FILE}" )
     if [ -z "${inspect_output}" ]; then
         echo "Inspect failed"
         return 1
     fi
 
-    status=$(echo ${inspect_output} | cut -d, -f1)
-    exitcode=$(echo ${inspect_output} | cut -d, -f2)
+    status=$(echo "${inspect_output}" | cut -d, -f1)
+    exitcode=$(echo "${inspect_output}" | cut -d, -f2)
 
-    echo ${status}
-    return ${exitcode}
+    echo "${status}"
+    return "${exitcode}"
 }
 
 # Arg1: Container ID
@@ -58,7 +59,7 @@ container_stop() {
 
     container_id="${1}"
 
-    docker container stop ${container_id}
+    docker container stop "${container_id}" 2>"${OCI_TEST_STDERR_FILE}"
 }
 
 # Arg1: Container ID
@@ -67,7 +68,7 @@ container_remove() {
 
     container_id="$1"
 
-    docker container rm ${container_id} --force
+    docker container rm "${container_id}" --force 2>"${OCI_TEST_STDERR_FILE}"
 }
 
 # Arg1: Image name
@@ -76,5 +77,5 @@ get_running_containers() {
 
     image_name="${1}"
 
-    docker ps -q --filter ancestor=${image_name} 2>/dev/null
+    docker ps -q --filter ancestor="${image_name}" 2>"${OCI_TEST_STDERR_FILE}"
 }

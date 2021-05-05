@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
-bats ./oci-runtime-integration-tests.bats
-if [ "${?}" -eq 0 ]; then
+
+if [ "$(bats ./oci-runtime-integration-tests.bats)" ]; then
     echo "PASS:oci-runtime-integration-tests"
 else
     echo "FAIL:oci-runtime-integration-tests"

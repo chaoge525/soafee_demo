@@ -2,63 +2,62 @@
 
 # Run-time validation tests for OCI containers running on a EWAOL system.
 
-load oci-runtime-funcs.sh
-load integration-tests-common-funcs.sh
-
 # Set configuration defaults
 
 if [ -z "${OCI_TEST_IMAGE}" ]; then
-    export OCI_TEST_IMAGE="docker.io/library/alpine"
+    OCI_TEST_IMAGE="docker.io/library/alpine"
 fi
 
 if [ -z "${OCI_TEST_LOG_DIR}" ]; then
-    export OCI_TEST_LOG_DIR="$(pwd)/logs"
+    OCI_TEST_LOG_DIR="$(pwd)/logs"
 fi
 
 if [ -z "${OCI_TEST_CLEAN_ENV}" ]; then
-    export OCI_TEST_CLEAN_ENV=1
+    OCI_TEST_CLEAN_ENV=1
 fi
+
+OCI_TEST_LOG_FILE="${OCI_TEST_LOG_DIR}/oci-runtime-integration-tests.log"
+OCI_TEST_STDERR_FILE="${OCI_TEST_LOG_DIR}/stderr.log"
+
+load oci-runtime-funcs.sh
+load integration-tests-common-funcs.sh
 
 # Ensure that the state of the OCI container environment is ready for the test
 # suite
 clean_test_environment() {
 
     # Remove any dangling containers based on the image
-    run get_running_containers $(basename ${OCI_TEST_IMAGE})
+    run get_running_containers "$(basename ${OCI_TEST_IMAGE})"
     if [ "${status}" -ne 0 ]; then
-        log "FAIL" "Failed getting running containers of image \
-'$(basename ${OCI_TEST_IMAGE})'" "${status}:${output}"
-        log "INFO" "Unable to clean test environment"
+        log "FAIL" "Cleaning test environment - failed getting running \
+containers of image '$(basename ${OCI_TEST_IMAGE})'"
     fi
 
     if [ -n "${output}" ]; then
-        container_list=("${output}")
-        for container_id in ${container_list}; do
+        for container_id in ${output}; do
 
-            run container_stop ${container_id}
+            run container_stop "${container_id}"
             if [ "${status}" -eq 0 ]; then
-                log "INFO" "Cleaned test environment - stopped a running \
+                log "INFO" "Stopped a running \
 container '${container_id}' of image '$(basename ${OCI_TEST_IMAGE})'"
             else
                 log "FAIL" "Unable to stop a running container \
 '${container_id}' of image '$(basename ${OCI_TEST_IMAGE})'"
-                log "INFO" "Unable to clean test environment"
             fi
 
         done
     fi
 
     # Remove the image if it exists
-    run does_image_exist $(basename ${OCI_TEST_IMAGE})
+    run does_image_exist "$(basename ${OCI_TEST_IMAGE})"
     if [ "${status}" -eq 0 ]; then
 
-        run image_remove $(basename ${OCI_TEST_IMAGE})
+        run image_remove "$(basename ${OCI_TEST_IMAGE})"
         if [ "${status}" -eq 0 ]; then
             log "INFO" "Cleaned test environment - removed image \
 '$(basename ${OCI_TEST_IMAGE})'"
         else
-            log "FAIL" "Unable to remove image '$(basename ${OCI_TEST_IMAGE})'"
-            log "INFO" "Unable to clean test environment"
+            log "FAIL" "Unable to rm image '$(basename ${OCI_TEST_IMAGE})'"
         fi
 
     fi
@@ -67,9 +66,9 @@ container '${container_id}' of image '$(basename ${OCI_TEST_IMAGE})'"
 # Runs once before the first test
 setup_file() {
 
-    # Ensure log directory exists and clear any previous log if it exists
+    # Clear and rebuild the log directory
+    rm -rf "${OCI_TEST_LOG_DIR}"
     mkdir -p "${OCI_TEST_LOG_DIR}"
-    rm -f "${OCI_TEST_LOG_DIR}/oci-runtime-integration-tests.log"
 
     if [ "${OCI_TEST_CLEAN_ENV}" -eq 1 ]; then
         run clean_test_environment
@@ -95,7 +94,7 @@ teardown_file() {
     subtest="Run an OCI container with a persistent workload"
     run container_run_persistent ${OCI_TEST_IMAGE} ${workload}
     if [ "${status}" -ne 0 ]; then
-        log "FAIL" "${subtest}" "${status}:${output}"
+        log "FAIL" "${subtest}"
         return 1
     else
         log "PASS" "${subtest}"
@@ -104,27 +103,27 @@ teardown_file() {
     container_id="${output}"
 
     subtest="Check that the container is running"
-    run check_container_state ${container_id}
+    run check_container_state "${container_id}"
     if [ "${status}" -ne 0 ] || [ "${output}" != "running" ]; then
-        log "FAIL" "${subtest}" "${status}:${output}"
+        log "FAIL" "${subtest}"
         return 1
     else
         log "PASS" "${subtest}"
     fi
 
     subtest="Remove the running container"
-    run container_remove ${container_id}
+    run container_remove "${container_id}"
     if [ "${status}" -ne 0 ]; then
-        log "FAIL" "${subtest}" "${status}:${output}"
+        log "FAIL" "${subtest}"
         return 1
     else
         log "PASS" "${subtest}"
     fi
 
     subtest="Check the container status is no longer available"
-    run check_container_state ${container_id}
+    run check_container_state "${container_id}"
     if [ "${status}" -eq 0 ] ; then
-        log "FAIL" "${subtest}" "${status}:${output}"
+        log "FAIL" "${subtest}"
         return 1
     else
         log "PASS" "${subtest}"
