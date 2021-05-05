@@ -5,7 +5,7 @@ import os, sys
 import subprocess
 import tarfile
 
-ALL_TARGETS=['n1sdp.yml', 'fvp-base.yml']
+ALL_TARGETS=['n1sdp.yml:tests.yml', 'fvp-base.yml:tests.yml']
 
 class DockerEngine:
     """ Simple class used to configure and run kas under a container """
