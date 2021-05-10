@@ -2,3 +2,5 @@
 documentation/_build
 documentation/_static
 documentation/_templates
+layers/
+*build*/

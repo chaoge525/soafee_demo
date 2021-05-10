@@ -4,6 +4,7 @@ header:
 repos:
   meta-arm:
     url: https://git.yoctoproject.org/git/meta-arm
+    path: layers/meta-arm
     layers:
       meta-arm:
       meta-arm-bsp:
