@@ -25,7 +25,7 @@ log() {
 
         stderr="$(cat "${OCI_TEST_STDERR_FILE}")"
 
-        debug_msg="DEBUG:${BATS_TEST_NAME}:${status:?}:${output:?}:${stderr}"
+        debug_msg="DEBUG:${BATS_TEST_NAME}:${status:-}:${output:-}:${stderr}"
 
         echo "${debug_msg}" >> "${OCI_TEST_LOG_FILE}"
         echo "${debug_msg}"
