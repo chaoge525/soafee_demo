@@ -1,61 +1,86 @@
-meta-ewaol
-------------
-The Edge Workload Abstraction and Orchestration Layer (EWAOL)
+## Repository Structure
 
-Introduction
-------------
-This repository contains layers and config for building EWAOL projects with
-Yocto. To get started with EWAOL follow the quickstart guide, which can be
-found in:
-meta-ewaol/documentation/ewaol-quickstart.rst
+The high-level structure of the `meta-ewaol` repository is as follows:
 
-The reStructuredText format can be built into a more readable format using
-Sphinx as described below.
+**meta-ewaol-distro**:
+  Yocto layer that provides the top-level image recipes and general policies
+  available to be implemented as a EWAOL project distribution.
 
-The following layers and repos are provided by the meta-ewaol repo:
+**meta-ewaol-config**:
+  Directory that contains kas configuration files for specifying and building
+  a software image for the EWAOL project, as well as tooling to
+  support the build process.
 
-docs:
-    Documentation for the meta-ewaol repository. The documentation uses Sphinx:
-    ```pip install -U Sphinx```
-    You can then build the documentation as html files using ```make html```
-    inside the docs directory, and viewing the output in docs/_build/html
+**meta-ewaol-tests**:
+  Yocto layer that provides recipes and configuration to enable the validation
+  of images built for the EWAOL project.
 
-    Other available output formats can be viewed using ```make help```
+**documentation**:
+  Directory that provides documentation for the `meta-ewaol` repository.
 
-meta-ewaol-config:
-    A repository containing kas and build configurations files for building
-    EWAOL. See the quickstart guide for more information on how to use kas.
+## Building the documentation
 
-meta-ewaol-distro:
-    Distro layer providing the configuration for the "ewaol" DISTRO, and
-    general policies for the images and SDKs.
+The documentation uses `Sphinx`, which may be installed via:
 
-Dependencies
-------------
+    pip3 install sphinx==4.0.2 sphinx-rtd-theme==0.5.2 docutils==0.16 m2r2==0.2.7
 
-The meta-ewaol-distro layer depends on:
+A Makefile is provided with the documentation. Running `make help` will produce
+a list of available output formats, where each format may be given as a make
+target.
+
+For example, an HTML version of the documentation can be built via:
+
+    cd meta-ewaol/documentation
+    make html
+
+This will produce HTML-formatted documentation into the
+`*documentation/\_build/html` directory.
+
+Please refer to the documentation for more information on the repository and
+how to build EWAOL project images.
+
+## Layers Dependencies
+
+
+The repository contains Yocto layers that require dependencies as follows.
+
+The `meta-ewaol-distro` layer depends on:
+
+    URI: git://git.yoctoproject.org/poky/meta
+    branch: hardknott
+    revision: HEAD
+
+    URI: git://git.yoctoproject.org/poky/meta-poky
+    branch: hardknott
+    revision: HEAD
 
     URI: git://git.yoctoproject.org/meta-virtualization
-    branch: master
+    branch: hardknott
     revision: HEAD
 
     URI: git://git.yoctoproject.org/meta-security
-    branch: master
+    branch: hardknott
     revision: HEAD
 
-Contributing
-------------
-This project has not put in place a process for contributions currently. If you
-would like to contribute, please contact the maintainers.
+The `meta-ewaol-tests` layer depends on:
 
-License
--------
-The software is provided under an MIT license (more details in license.rst).
+    URI: git://git.yoctoproject.org/poky/meta
+    branch: hardknott
+    revision: HEAD
+
+## Repository License
+
+The software is provided under an MIT license (more details in :ref:`License`).
+
 Contributions to the project should follow the same license.
 
-Reporting bugs
-------------
+## Contributions and Bug Reports
 
-Maintainer(s)
-------------
+This project has not put in place a process for contributions or bug reporting
+currently. If you would like to contribute or have found a bug, please contact
+the maintainers.
+
+## Maintainer(s)
+
 * Diego Sueiro <diego.sueiro@arm.com>
+* <support@arm.com>

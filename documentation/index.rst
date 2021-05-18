@@ -1,17 +1,15 @@
-Welcome to meta-ewaol's documentation!
-=======================================
+Edge Workload Abstraction and Orchestration Layer (EWAOL) Documentation
+=======================================================================
 
-Contents:
+Contents
+--------
 
 .. toctree::
    :maxdepth: 2
 
-   ewaol-quickstart
+   overview
+   quickstart
+   builds
+   validations
    tools
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
+   license_link
