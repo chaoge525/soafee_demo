@@ -39,6 +39,12 @@ local_conf_header:
 machine: unset
 distro: ewaol
 
+env:
+    SSTATE_MIRRORS: ""
+    SOURCE_MIRROR_URL: ""
+    INHERIT: ""
+    BB_GENERATE_MIRROR_TARBALLS: ""
+
 target:
   - ewaol-image-podman
   - ewaol-image-docker
