@@ -8,8 +8,7 @@ import subprocess
 import sys
 import tarfile
 import time
-
-ALL_TARGETS = ['n1sdp.yml:tests.yml', 'fvp-base.yml:tests.yml']
+import yaml
 
 
 class ContainerEngine:
@@ -138,6 +137,9 @@ def get_config():
     # Path of kas directory of meta-ewaol-config
     config["kas_dir"] = os.path.normpath(os.path.join(config["script_dir"],
                                                       "../kas"))
+    # Path of the ci build definitions file
+    config["build_defs"] = os.path.normpath(
+        os.path.join(config["script_dir"], "../ci/build_defs.yml"))
     # Path were dependant layers will be downloaded
     config["layer_dir"] = os.path.normpath(os.path.join(config["script_dir"],
                                                         "../.."))
@@ -167,10 +169,12 @@ def get_config():
 
     parser.add_argument(
         "kasfile",
+        nargs='*',
         metavar='[config.yml, all]',
-        help="The name of a yaml or json file in meta-ewaol-config/kas \
-             containing the config for kas. Can be a colon (:) seperated list \
-             of files to merge, or 'all'.")
+        help="The names of yaml or json files in meta-ewaol-config/kas \
+             containing the config for the kas build. Can provide multiple \
+             space-separated build configs, where each config can be a colon \
+             (:) seperated list of .yml files to merge, or 'all'.")
 
     parser.add_argument(
         "--sstate-dir",
@@ -234,6 +238,21 @@ def get_config():
         default=None,
         help="Write output to the given log file as well as to stdout \
              (default: %(default)s).")
+
+    parser.add_argument(
+        "--list-build-machines",
+        action="store_true",
+        help="List the machines that images may be built for.")
+
+    parser.add_argument(
+        "--list-build-modifiers",
+        action="store_true",
+        help="List the modifiers that may be applied to an image build.")
+
+    parser.add_argument(
+        "--list-ci-build-targets",
+        action="store_true",
+        help="List the defined CI build targets.")
 
     args = vars(parser.parse_args())
 
@@ -313,6 +332,24 @@ def deploy_artifacts(build_dir, build_artifacts_dir):
             print("No tmp directory found, did not archive build artifacts")
 
 
+def get_build_machines(build_defs_filename):
+    with open(build_defs_filename, 'r') as yaml_file:
+        contents = yaml.safe_load(yaml_file)
+        return contents["machines"].split()
+
+
+def get_build_modifiers(build_defs_filename):
+    with open(build_defs_filename, 'r') as yaml_file:
+        contents = yaml.safe_load(yaml_file)
+        return contents["modifiers"].split()
+
+
+def get_ci_build_targets(build_defs_filename):
+    with open(build_defs_filename, 'r') as yaml_file:
+        contents = yaml.safe_load(yaml_file)
+        return contents["ci-builds"].split()
+
+
 # Entry Point
 def main():
 
@@ -333,7 +370,33 @@ def main():
         # If we have no log file, write both stdout and tee to only terminal
         sys.tee = TeeLogger(LogOpt.TO_TERM)
 
-    tasklist = ALL_TARGETS if config["kasfile"] == "all" else [config["kasfile"]]
+    # Query the build definitions file if requested
+    if config["list_build_machines"]:
+        machines = get_build_machines(config["build_defs"])
+        print(f"Build machines: {' '.join(machines)}")
+
+    if config["list_build_modifiers"]:
+        modifiers = get_build_modifiers(config["build_defs"])
+        print(f"Build modifiers: {' '.join(modifiers)}")
+
+    if config["list_ci_build_targets"]:
+        ci_builds = get_ci_build_targets(config["build_defs"])
+        print(f"CI build targets: {' '.join(ci_builds)}")
+
+    if any(config[query] for query in ["list_build_machines",
+                                       "list_build_modifiers",
+                                       "list_ci_build_targets"]):
+        return 0
+
+    # Determine the build tasks. If "all" is requested, the CI build targets as
+    # defined in the build_defs.yml file will be built
+    tasklist = config["kasfile"]
+    if "all" in config["kasfile"]:
+        tasklist = get_ci_build_targets(config["build_defs"])
+
+    if not tasklist:
+        print(f"Error: No kas config files were provided.")
+        exit(1)
 
     exit_code = 0
 

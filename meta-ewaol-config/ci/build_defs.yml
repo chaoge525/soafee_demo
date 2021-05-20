@@ -1,0 +1,11 @@
+machines:
+    fvp-base
+    n1sdp
+
+modifiers:
+    tests.yml
+    ci.yml
+
+ci-builds:
+    fvp-base.yml:tests.yml:ci.yml
+    n1sdp.yml:tests.yml:ci.yml
