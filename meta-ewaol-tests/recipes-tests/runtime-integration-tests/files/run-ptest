@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+
+cd %TESTDIR% && OCI_TEST_LOG_DIR="%TESTDIR%/logs" ./run-oci-runtime-integration-tests

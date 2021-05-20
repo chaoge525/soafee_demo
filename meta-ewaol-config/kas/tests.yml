@@ -1,0 +1,11 @@
+header:
+  version: 10
+
+repos:
+  meta-ewaol:
+    layers:
+      meta-ewaol-tests:
+
+local_conf_header:
+  tests: |
+    DISTRO_FEATURES_append = " ewaol-test"
