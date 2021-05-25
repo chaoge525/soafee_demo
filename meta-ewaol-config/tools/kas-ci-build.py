@@ -61,8 +61,8 @@ class ContainerEngine:
             signal.signal(signal.SIGTERM, signal.SIG_DFL)
 
             print((f"Recieved signal ({signum}) during the run process, "
-                   "sending a stop command to the build container"),
-                   file=sys.tee)
+                  "sending a stop command to the build container"),
+                  file=sys.tee)
 
             # Stop the container
             stop_cmd = [self.container_engine, "stop", self.CONTAINER_NAME]
@@ -265,7 +265,7 @@ def get_config():
 def deploy_artifacts(build_dir, build_artifacts_dir):
 
     # Collect config
-    build_conf_dir = os.path.join(build_dir, "conf/")
+    build_conf_dir = os.path.join(build_dir, "conf")
 
     if os.path.exists(build_conf_dir):
         tar_filename = os.path.join(build_artifacts_dir, "conf.tgz")
@@ -283,40 +283,42 @@ def deploy_artifacts(build_dir, build_artifacts_dir):
 
         cooker_log = os.path.join(build_dir, "bitbake-cookerdaemon.log")
         if os.path.exists(cooker_log):
-            log_tar.add(cooker_log, arcname=os.path.basename(cooker_log))
+            arcname = os.path.join("logs", os.path.basename(cooker_log))
+            log_tar.add(cooker_log, arcname=arcname)
 
-        tmp_dir = os.path.join(build_dir, "tmp/")
+        tmp_dir = os.path.join(build_dir, "tmp")
         if os.path.exists(tmp_dir):
 
             console_dir = os.path.join(tmp_dir, "log/cooker")
             for path, dirs, files in os.walk(console_dir):
                 if "console-latest.log" in files:
 
-                    console_log_link = os.path.join(path, "console-latest.log")
-                    console_log = os.path.join(path,
-                                               os.readlink(console_log_link))
+                    log_link = os.path.join(path, "console-latest.log")
+                    log = os.path.join(path, os.readlink(log_link))
 
-                    log_tar.add(console_log,
-                                arcname=os.path.relpath(console_log_link,
-                                                        console_dir))
+                    arcname = os.path.relpath(log_link, console_dir)
+                    arcname = os.path.join("logs", arcname)
+                    log_tar.add(log, arcname=arcname)
 
-            work_dir = os.path.join(tmp_dir, "work/")
+            work_dir = os.path.join(tmp_dir, "work")
             for path, dirs, files in os.walk(work_dir):
 
                 if "temp" in dirs:
                     log_dir = os.path.join(path, "temp")
-                    log_tar.add(log_dir, arcname=os.path.relpath(path,
-                                                                 work_dir))
+                    arcname = os.path.relpath(path, work_dir)
+                    arcname = os.path.join("logs", arcname)
+                    log_tar.add(log_dir, arcname=arcname)
 
                 if "pseudo.log" in files:
                     pseudo_log = os.path.join(path, "pseudo.log")
-                    log_tar.add(pseudo_log, arcname=os.path.relpath(pseudo_log,
-                                                                    work_dir))
+                    arcname = os.path.relpath(pseudo_log, work_dir)
+                    arcname = os.path.join("logs", arcname)
+                    log_tar.add(pseudo_log, arcname=arcname)
 
             print(f"Deployed build logs into {tar_filename}")
 
             # Collect images
-            base_image_dir = os.path.join(tmp_dir, "deploy/images/")
+            base_image_dir = os.path.join(tmp_dir, "deploy/images")
             if os.path.exists(base_image_dir):
 
                 tar_filename = os.path.join(build_artifacts_dir, "images.tgz")
@@ -428,8 +430,8 @@ def main():
         mk_newdir(config["build_dir"])
 
         engine = ContainerEngine(config["container_engine"],
-                              config["container_image"],
-                              config["container_image_version"])
+                                 config["container_image"],
+                                 config["container_image_version"])
 
         # Pass user and group ID to container engine env
         engine.add_env("USER_ID", os.getuid())
@@ -499,10 +501,12 @@ def main():
 
     exit(exit_code)
 
+
 class LogOpt(enum.Enum):
     TO_TERM = enum.auto()
     TO_FILE = enum.auto()
     TO_BOTH = enum.auto()
+
 
 class TeeLogger(object):
     """ Logging class that outputs to either stdout or a log file, or both """
