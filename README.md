@@ -45,7 +45,13 @@ The meta-ewaol-distro layer depends on:
 
 Contributing
 ------------
-This project has not put in place a process for contributions currently. If you would like to contribute, please contact the maintainers.
+This project has not put in place a process for contributions currently. If you
+would like to contribute, please contact the maintainers.
+
+License
+-------
+The software is provided under an MIT license (more details in license.rst).
+Contributions to the project should follow the same license.
 
 Reporting bugs
 ------------

@@ -1,3 +1,7 @@
+# Copyright (c) 2021, Arm Limited.
+#
+# SPDX-License-Identifier: MIT
+
 # Config specifc to the ewaol-test distro feature, enabled using
 # DISTRO_FEATURES
 

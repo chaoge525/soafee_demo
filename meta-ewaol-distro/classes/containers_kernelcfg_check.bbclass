@@ -1,3 +1,7 @@
+# Copyright (c) 2021, Arm Limited.
+#
+# SPDX-License-Identifier: MIT
+
 # Ensure that all the required kernel config for containers is present in the
 # .config file after do_configure
 

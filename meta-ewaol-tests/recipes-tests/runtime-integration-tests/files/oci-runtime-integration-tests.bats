@@ -1,4 +1,8 @@
 #!/usr/bin/env bats
+#
+# Copyright (c) 2021, Arm Limited.
+#
+# SPDX-License-Identifier: MIT
 
 # Run-time validation tests for OCI containers running on a EWAOL system.
 

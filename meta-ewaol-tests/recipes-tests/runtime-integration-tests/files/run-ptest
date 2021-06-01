@@ -1,3 +1,7 @@
 #!/usr/bin/env bash
+#
+# Copyright (c) 2021, Arm Limited.
+#
+# SPDX-License-Identifier: MIT
 
 cd %TESTDIR% && OCI_TEST_LOG_DIR="%TESTDIR%/logs" ./run-oci-runtime-integration-tests

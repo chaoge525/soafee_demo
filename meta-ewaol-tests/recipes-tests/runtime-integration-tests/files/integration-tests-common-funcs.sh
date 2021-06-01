@@ -1,4 +1,8 @@
 #!/usr/bin/env bash
+#
+# Copyright (c) 2021, Arm Limited.
+#
+# SPDX-License-Identifier: MIT
 
 # Arg1: Type of message (INFO, DEBUG, PASS, FAIL, SKIP)
 # Arg2: Message to log

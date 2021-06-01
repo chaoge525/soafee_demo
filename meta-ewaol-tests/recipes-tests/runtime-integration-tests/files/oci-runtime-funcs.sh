@@ -1,4 +1,8 @@
 #!/usr/bin/env bash
+#
+# Copyright (c) 2021, Arm Limited.
+#
+# SPDX-License-Identifier: MIT
 
 # Arg1: Image name
 # Returns 0 if image exists

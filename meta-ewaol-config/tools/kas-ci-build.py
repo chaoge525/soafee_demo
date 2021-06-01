@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+#
+# Copyright (c) 2021, Arm Limited.
+#
+# SPDX-License-Identifier: MIT
 
 import argparse
 import enum

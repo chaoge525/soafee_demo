@@ -1,3 +1,7 @@
+# Copyright (c) 2021, Arm Limited.
+#
+# SPDX-License-Identifier: MIT
+
 # Used to apply to config for different features of the EWAOL distro, based on
 # the contents of DISTRO_FEATURES
 

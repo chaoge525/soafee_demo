@@ -1,3 +1,7 @@
+# Copyright (c) 2021, Arm Limited.
+#
+# SPDX-License-Identifier: MIT
+
 SUMMARY = "OCI runtime integration tests."
 DESCRIPTION = "Integration tests for the OCI runtime subsystem \
                (Docker/Podman). Tests may be run standalone via \
