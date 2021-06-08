@@ -8,6 +8,7 @@ Contents
    :maxdepth: 2
 
    overview
+   codeline-management
    quickstart
    builds
    validations
