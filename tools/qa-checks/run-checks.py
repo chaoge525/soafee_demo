@@ -17,8 +17,9 @@ import yaml
 import abstract_check
 import commit_msg_check
 import modules_virtual_env
+import spell_check
 
-AVAILABLE_CHECKS = ["commit_msg"]
+AVAILABLE_CHECKS = ["commit_msg", "spell"]
 
 
 def parse_options(project_root, check_config_filename):
@@ -217,6 +218,12 @@ def main():
 
         checkers.append(commit_checker)
 
+    if "spell" in opts.checks:
+        spell_checker = spell_check.SpellCheck(logger,
+                                               opts.spell_paths,
+                                               opts.spell_excludes)
+        checkers.append(spell_checker)
+
     if not checkers:
         logger.info("Found no requested checks to run.")
         exit(0)
@@ -256,7 +263,7 @@ def main():
         check_count_str = "checks" if len(checkers) == 1 else "checks"
         logger.info((f"Ran {len(checkers)} {check_count_str} of which"
                      f" {len(failed_modules)} failed{fail_str}. Exit code:"
-                     f" {exit_code}"))
+                     f" {exit_code}."))
 
     else:
         # Create a virtual environment that installs the necessary
