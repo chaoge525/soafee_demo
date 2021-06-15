@@ -15,9 +15,10 @@ import venv
 import yaml
 
 import abstract_check
+import commit_msg_check
 import modules_virtual_env
 
-AVAILABLE_CHECKS = []
+AVAILABLE_CHECKS = ["commit_msg"]
 
 
 def parse_options(project_root, check_config_filename):
@@ -208,7 +209,13 @@ def main():
     # Build each requested checker
     checkers = []
 
-    # Currently no checkers are supported
+    if "commit_msg" in opts.checks:
+        commit_checker = commit_msg_check.CommitMsgCheck(
+                            logger,
+                            opts.commit_msg_paths,
+                            opts.commit_msg_excludes)
+
+        checkers.append(commit_checker)
 
     if not checkers:
         logger.info("Found no requested checks to run.")
