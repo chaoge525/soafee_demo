@@ -9,7 +9,6 @@
 This script allows user to run code check on shell and python files.
 Code style is analyzed with:
  - shellcheck for shell scripts
- - pycodestyle for python scripts
 It creates a Python venv under $TMP directory, installs all dependencies,
 runs all checks and deletes it on exit.
 
@@ -42,7 +41,7 @@ class CodeCheckEnvBuilder(venv.EnvBuilder):
         Directory or file to check (default is '.')
     pathtoexclude: list
         Coma separated list of directories and files to exclude
-        from shellcheck and pycodestyle (default is None)
+        from shellcheck (default is None)
     log: string
         Log level, it can be warning, info or debug (default is warning)
 
@@ -50,7 +49,7 @@ class CodeCheckEnvBuilder(venv.EnvBuilder):
     -------
     post_setup(context)
         Set up all packages which need to be pre-installed into the
-        environment, to run shellcheck and pycodestyle.
+        environment, to run shellcheck.
     install_script(context, name, url)
         Install package from given url.
     pip_run_command(context, command, package=None)
@@ -65,7 +64,7 @@ class CodeCheckEnvBuilder(venv.EnvBuilder):
             Directory or file to check (default is '.')
         pathtoexclude: list
             Coma separated list of directories and files to exclude
-            from shellcheck and pycodestyle (default is None)
+            from shellcheck (default is None)
         log: string, optional
             Log level, it can be warning, info or debug (default is warning)
         """
@@ -77,7 +76,7 @@ class CodeCheckEnvBuilder(venv.EnvBuilder):
     def post_setup(self, context):
         """
         Set up all packages which need to be pre-installed into the
-        environment, to run shellcheck and pycodestyle.
+        environment, to run shellcheck.
 
         Parameters
         ----------
@@ -97,12 +96,11 @@ class CodeCheckEnvBuilder(venv.EnvBuilder):
         url_pip = 'https://bootstrap.pypa.io/get-pip.py'
         self.install_script(context, 'pip', url_pip)
 
-        self.pip_run_command(context, 'install', 'pycodestyle')
         self.pip_run_command(context, 'install', 'shellcheck-py')
         self.pip_run_command(context, 'install', 'python-magic')
 
-        # install and run scripts: shell_check and pycodestyle:
-        for script in ['run_shellcheck.py', 'run_pycodestyle.py']:
+        # install and run scripts: shell_check:
+        for script in ['run_shellcheck.py']:
             src = f"{os.path.dirname(os.path.abspath(__file__))}/{script}"
             self.logger.info(script.replace('_', ' ').rstrip('.py'))
             shutil.copy(src, context.bin_path)
@@ -183,7 +181,7 @@ def main(args=None):
     }
 
     desc = ("Creates virtual Python environment and runs "
-            "shellcheck and pycodestyle in target path.")
+            "shellcheck in target path.")
     parser = argparse.ArgumentParser(prog=__name__, description=desc)
     parser.add_argument('pathtocheck', nargs='?', default='.',
                         help='A path to run code check.')

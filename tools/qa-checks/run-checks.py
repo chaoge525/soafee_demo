@@ -17,9 +17,12 @@ import yaml
 import abstract_check
 import commit_msg_check
 import modules_virtual_env
+import python_check
 import spell_check
 
-AVAILABLE_CHECKS = ["commit_msg", "spell"]
+AVAILABLE_CHECKS = ["commit_msg",
+                    "python",
+                    "spell"]
 
 
 def parse_options(project_root, check_config_filename):
@@ -218,6 +221,12 @@ def main():
 
         checkers.append(commit_checker)
 
+    if "python" in opts.checks:
+        python_checker = python_check.PythonCheck(logger,
+                                                  opts.python_paths,
+                                                  opts.python_excludes)
+        checkers.append(python_checker)
+
     if "spell" in opts.checks:
         spell_checker = spell_check.SpellCheck(logger,
                                                opts.spell_paths,
@@ -300,6 +309,7 @@ def main():
         exit_code = virt_env.returncode
 
     exit(exit_code)
+
 
 if __name__ == "__main__":
     log_format = "%(levelname)-8s:%(filename)-24s:%(message)s"
