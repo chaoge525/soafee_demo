@@ -30,3 +30,13 @@ spell:
         documentation/Makefile
         documentation/index.rst
         documentation/_build
+
+header:
+    excludes:
+        ci-build
+        artifacts
+        layers
+        build
+        .git
+        tools/qa-checks/ewaol-dictionary
+        documentation/_build

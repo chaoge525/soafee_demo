@@ -16,12 +16,14 @@ import yaml
 
 import abstract_check
 import commit_msg_check
+import header_check
 import modules_virtual_env
 import python_check
 import shell_check
 import spell_check
 
 AVAILABLE_CHECKS = ["commit_msg",
+                    "header",
                     "python",
                     "shell",
                     "spell"]
@@ -221,6 +223,12 @@ def main():
                             opts.commit_msg_excludes)
 
         checkers.append(commit_checker)
+
+    if "header" in opts.checks:
+        header_checker = header_check.HeaderCheck(logger,
+                                                  opts.header_paths,
+                                                  opts.header_excludes)
+        checkers.append(header_checker)
 
     if "python" in opts.checks:
         python_checker = python_check.PythonCheck(logger,
