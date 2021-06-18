@@ -9,6 +9,7 @@ Contents
 
    overview
    codeline-management
+   yocto-layers
    quickstart
    builds
    validations
