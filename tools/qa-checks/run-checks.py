@@ -18,10 +18,12 @@ import abstract_check
 import commit_msg_check
 import modules_virtual_env
 import python_check
+import shell_check
 import spell_check
 
 AVAILABLE_CHECKS = ["commit_msg",
                     "python",
+                    "shell",
                     "spell"]
 
 
@@ -226,6 +228,12 @@ def main():
                                                   opts.python_paths,
                                                   opts.python_excludes)
         checkers.append(python_checker)
+
+    if "shell" in opts.checks:
+        shell_checker = shell_check.ShellCheck(logger,
+                                               opts.shell_paths,
+                                               opts.shell_excludes)
+        checkers.append(shell_checker)
 
     if "spell" in opts.checks:
         spell_checker = spell_check.SpellCheck(logger,

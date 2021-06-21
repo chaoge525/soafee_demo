@@ -12,6 +12,14 @@ python:
         build
         .git
 
+shell:
+    excludes:
+        ci-build
+        artifacts
+        layers
+        build
+        .git
+
 spell:
     paths:
         README.md
@@ -21,3 +29,4 @@ spell:
         documentation/conf.py
         documentation/Makefile
         documentation/index.rst
+        documentation/_build
