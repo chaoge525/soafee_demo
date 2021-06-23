@@ -102,3 +102,7 @@ an option to the kas build command, as shown in the following example:
 .. code-block:: console
 
    kas build --target ewaol-image-docker meta-ewaol/meta-ewaol-config/kas/fvp-base.yml
+
+To build image with tests included please refer to :ref:`fvp-base: build image including tests`.
+
+To execute tests please refer to :ref:`fvp-base: running tests`.

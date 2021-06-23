@@ -31,6 +31,24 @@ executed using the Bash Automated Test Suite (BATS_).
 .. _ptest: https://wiki.yoctoproject.org/wiki/Ptest
 .. _BATS: https://github.com/bats-core/bats-core
 
+fvp-base: build image including tests
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+To build tests for fvp-base machine from this example
+:ref:`Minimal Image Build via kas`, you need to:
+
+* go to `Arm Architecture Models`_ website, and download the "Armv-A Base RevC AEM FVP" package
+* set absolute path to the downloaded package
+  (e.g. **FVP_Base_RevC-2xAEMvA_11.14_21.tgz**) in ``FVP_BASE_A_AEM_TARBALL_URI``
+* accept EULA in ``FVP_BASE_A_ARM_EULA_ACCEPT``
+
+.. _Arm Architecture Models: https://developer.arm.com/tools-and-software/simulation-models/fixed-virtual-platforms/arm-ecosystem-models
+.. code-block:: console
+
+    FVP_BASE_A_AEM_TARBALL_URI="file:///absolute/path/to/FVP_Base_RevC-2xAEMvA_11.14_21.tgz" \
+    FVP_BASE_A_ARM_EULA_ACCEPT="True" \
+    kas build meta-ewaol-config/kas/fvp-base.yml:meta-ewaol-config/kas/tests.yml
+
 Running the Tests
 -----------------
 
@@ -134,6 +152,37 @@ The tests can be customised via environment variables passed to the execution:
 |  ``OCI_TEST_CLEAN_ENV``: enable test environment cleanup
 |    Default: ``1`` (enabled)
 |    See `Environment Clean-Up`_
+
+
+fvp-base: running tests
+"""""""""""""""""""""""
+
+To start fvp emulation and run tests you need to:
+
+* build the tests using above instructions `fvp-base: build image including tests`_
+* start the fvp-base emulator with podman or docker flavour:
+
+.. code-block:: console
+
+    kas shell --keep-config-unchanged \
+        meta-ewaol-config/kas/fvp-base.yml:meta-ewaol-config/kas/tests.yml \
+        --command "../layers/meta-arm/scripts/runfvp \
+                   tmp/deploy/images/fvp-base/ewaol-image-[docker|podman]-fvp-base.fvpconf \
+                   --console \
+                   -- \
+                       --parameter 'bp.smsc_91c111.enabled=1' \
+                       --parameter 'bp.hostbridge.userNetworking=true'"
+
+* execute tests with:
+
+.. code-block:: console
+
+    $ ptest-runner oci-runtime-integration-tests
+    START: ptest-runner
+    [...]
+    PASS:oci-runtime-integration-tests
+    [...]
+    STOP: ptest-runner
 
 Environment Clean-Up
 """"""""""""""""""""
