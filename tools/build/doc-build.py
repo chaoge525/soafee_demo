@@ -20,7 +20,7 @@ import modules_virtual_env  # noqa: E402
 
 def generate_venv_script_args_from_opts(opts):
     """ In order to call this script from the virtual environment, convert the
-        processed options to a string array, and replace --venv with --novenv.
+        processed options to a string array, and replace --venv with --no_venv.
         """
 
     args = []
@@ -28,8 +28,8 @@ def generate_venv_script_args_from_opts(opts):
         if opt == "venv":
             # remove the venv argument
             continue
-        elif opt == "novenv":
-            # set the novenv argument
+        elif opt == "no_venv":
+            # set the no_venv argument
             arg = opt
         elif value is None:
             continue
@@ -68,9 +68,9 @@ def parse_options(logger):
                         help=("Provide a Python virtual environment directory"
                               " in which to run the checks (default: auto"
                               " generate a new virtual environment directory)."
-                              " Cannot be passed with --novenv."))
+                              " Cannot be passed with --no_venv."))
 
-    parser.add_argument("--novenv",
+    parser.add_argument("--no_venv",
                         action="store_true",
                         help=("Run the checks directly in the calling context"
                               " without using a Python virtual environment."
@@ -82,9 +82,9 @@ def parse_options(logger):
 
     opts = parser.parse_args()
 
-    if opts.venv is not None and opts.novenv is True:
+    if opts.venv is not None and opts.no_venv is True:
         logger.error((f"Cannot provide a path via --venv while also setting"
-                      " --novenv."))
+                      " --no_venv."))
         exit(1)
 
     logger.setLevel(loglevels.get(opts.log.lower()))
@@ -107,7 +107,7 @@ def main(logger, opts):
                                          "docutils==0.16", "m2r2==0.2.7"]
     sphinx_path = None
 
-    if opts.novenv:
+    if opts.no_venv:
         try:
             os.chdir(project_root)
         except OSError as e:

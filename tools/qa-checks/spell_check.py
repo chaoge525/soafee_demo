@@ -4,7 +4,25 @@
 #
 # SPDX-License-Identifier: MIT
 
+"""
+This QA-check module aims to highlight English spelling errors within the
+project.
+
+The check runs recursively and independently on the file and directory paths
+given by the 'paths' variable. Files within these paths will be validated only
+if they are not excluded by any match to the regex strings given within
+'exclude_patterns'. As many project files are technical in nature with
+non-standard English words, a file location containing a list of additional
+valid words may optionally be passed to the QA-check as the 'dict_path'
+variable.
+
+Any files with misspelt words found by the QA-check will be logged along with
+the word itself and all of the line numbers where the invalid word was found
+within the file.
+"""
+
 import os
+import re
 import shutil
 import subprocess
 import tempfile
@@ -13,31 +31,45 @@ import abstract_check
 
 
 class SpellCheck(abstract_check.AbstractCheck):
-    """ Class to check the spelling of words in the provided directories or
-        files within the 'paths_to_check' list, excluding paths (and subpaths)
-        of those found in 'exclude_paths'.
+    """ Class to check the spelling of words in the project.
 
         SpellCheck uses the 'pyspellchecker' Python package. The default
         package language "en" is extended with a custom dictionary found in the
         script path. """
 
-    def __init__(self, logger, paths_to_check, exclude_paths=None):
-        self.name = "spell"
+    name = "spell"
+
+    @staticmethod
+    def get_vars():
+        list_vars = {}
+        plain_vars = {}
+
+        list_vars["paths"] = ("File paths to check, or directories to recurse."
+                              " Relative paths will be considered relative to"
+                              " the root directory.")
+
+        list_vars["exclude_patterns"] = ("Patterns where if any is matched"
+                                         " with the file/directory name, the"
+                                         " check will not be applied to it or"
+                                         " continue into its subpaths.")
+
+        plain_vars["dict_path"] = ("Path to a custom dictionary file that"
+                                   " provides additional valid words when"
+                                   " validating the spelling of files within"
+                                   " the project.")
+
+        return list_vars, plain_vars
+
+    def __init__(self, logger, *args, **kwargs):
         self.logger = logger
+        self.__dict__.update(kwargs)
+
         self.script_path = None
-        self.paths_to_check = paths_to_check.split(",")
-        self.exclude_paths = exclude_paths.split(",") if exclude_paths is not \
-            None else []
 
-        self.checker_path = os.path.dirname(os.path.abspath(__file__))
-        self.project_root = f"{self.checker_path}/../../"
+        checker_path = os.path.dirname(os.path.abspath(__file__))
+        self.project_root = os.path.abspath(f"{checker_path}/../../")
 
-        dict_name = "ewaol-dictionary"
-        self.dict_path = os.path.join(self.checker_path, dict_name)
-        if not os.path.isfile(self.dict_path):
-            self.logger.error((f"Dictionary {dict_name} not found in"
-                               f" {self.checker_path}"))
-            self.dict_path = None
+        self.num_files_checked = 0
 
     def get_pip_dependencies(self):
         """ The pyspellchecker package is required to run the checker. """
@@ -58,8 +90,8 @@ class SpellCheck(abstract_check.AbstractCheck):
         try:
             file_word_freq.load_text_file(path)
         except UnicodeDecodeError:
-            self.logger.debug(("Could not decode file as UTF-8, skipping"
-                               f" (path: {path})"))
+            file_errors[rel_path] = [("Couldn't process file due to"
+                                     " UnicodeDecodeError")]
             return
 
         # Compare with the spellcheck object's dictionary
@@ -86,14 +118,16 @@ class SpellCheck(abstract_check.AbstractCheck):
         if errors_with_lines:
             file_errors[rel_path] = errors_with_lines
 
+        self.num_files_checked += 1
+
     def check_path(self, path, file_errors, spellcheck):
         """ Recursive function to descend into all non-excluded directories and
             find all non-excluded files, relative to the given path. Run the
             spellchecker script on each file that we encounter. """
 
-        # We don't descend into any excluded directories or check any
-        # explicitly excluded files
-        if path in self.exclude_paths:
+        # Don't descend into any excluded directories or check any excluded
+        # files
+        if any([re.fullmatch(pat, path) for pat in self.exclude_patterns]):
             return
 
         if os.path.isfile(path):
@@ -122,15 +156,30 @@ class SpellCheck(abstract_check.AbstractCheck):
 
             spellcheck = spellchecker.SpellChecker(case_sensitive=True)
 
-            if self.dict_path:
+            dict_path = self.dict_path
+            if not os.path.isabs(dict_path):
+                dict_path = os.path.join(self.project_root, dict_path)
+
+            if not os.path.isfile(dict_path):
+                self.logger.warning(("Could not find the dictionary file at"
+                                     f"{dict_path}."))
+            else:
                 try:
-                    spellcheck.word_frequency.load_text_file(self.dict_path)
+                    spellcheck.word_frequency.load_text_file(dict_path)
                 except UnicodeDecodeError:
                     self.logger.warning(("Could not UTF-8 decode the"
                                          " dictionary file at"
-                                         f" {self.dict_path}."))
+                                         f" {dict_path}."))
 
-            for path in self.paths_to_check:
+            for path in self.paths:
+
+                if not os.path.isabs(path):
+                    path = os.path.join(self.project_root, path)
+
+                if not os.path.exists(path):
+                    file_errors[path] = ["File or directory not found."]
+                    continue
+
                 self.logger.debug(f"Running {self.name} check on {path}")
                 self.check_path(path, file_errors, spellcheck)
 
@@ -146,5 +195,5 @@ class SpellCheck(abstract_check.AbstractCheck):
                     self.logger.error(f"{filename}:{error}")
             return 1
         else:
-            self.logger.info("PASS")
+            self.logger.info(f"PASS ({self.num_files_checked} files checked)")
             return 0

@@ -4,6 +4,29 @@
 #
 # SPDX-License-Identifier: MIT
 
+"""
+This QA-check module runs on one or more git repositories (given by the
+provided 'paths' list variable), in order to validate that commit messages
+adhere to the project's expected commit message format.
+
+The check currently validates the message of the currently checked out HEAD
+only.
+
+Validation of commit message:
+    * Title (first line) is not blank
+    * Number of characters in the title is fewer than than the "title_length"
+      variable
+    * The second line is blank to separate message title and body
+    * Number of characters in each line of the message body is fewer than the
+      "body_length" variable
+    * A sign-off is included in the message, with the following format:
+      "Signed-off-by: Name <valid@email.dom>"
+      The specified email must also pass validation as provided by the
+      "email_validator" Python package
+
+Any failure will be logged along with the particular validation that failed.
+"""
+
 import email
 import logging
 import os
@@ -14,22 +37,25 @@ import abstract_check
 
 
 class CommitMsgCheck(abstract_check.AbstractCheck):
-    """ Class to check the latest commit message of the git repositories given
-        in the provided 'paths_to_check' list. The 'exclude_paths' list is
-        unused, only present to conform to the standard check API. """
+    """ Class to check the latest commit message of the git repositories. """
 
-    def __init__(self, logger, paths_to_check, exclude_paths=None):
-        self.name = "commit_msg"
+    name = "commit_msg"
+
+    @staticmethod
+    def get_vars():
+        list_vars = {}
+        plain_vars = {}
+
+        list_vars["paths"] = "File paths to target Git repositories."
+        plain_vars["title_length"] = "Maximum number of characters in title."
+        plain_vars["body_length"] = ("Maximum number of characters in each"
+                                     " line of message body.")
+
+        return list_vars, plain_vars
+
+    def __init__(self, logger, *args, **kwargs):
         self.logger = logger
-        self.paths_to_check = paths_to_check.split(",")
-        self.exclude_paths = exclude_paths.split(",") if exclude_paths is not \
-            None else []
-
-        self.msg_title_length = 80
-        self.msg_body_length = 80
-
-        self.script = "git"
-        self.script_path = None
+        self.__dict__.update(kwargs)
 
     def get_pip_dependencies(self):
         """ For email validation, this checker requires the 'email_validator'
@@ -45,24 +71,30 @@ class CommitMsgCheck(abstract_check.AbstractCheck):
 
         import email_validator
 
-        # Check if we can run git
-        if self.script_path is None:
-            self.script_path = shutil.which(self.script)
+        script = "git"
+        script_path = shutil.which(script)
 
-        if self.script_path is None:
+        if script_path is None:
             self.logger.error("FAIL")
-            self.logger.error(f"Could not find {self.script}")
+            self.logger.error(f"Could not find {script}")
             return 1
 
         errors = []
 
-        for path in self.paths_to_check:
+        for path in self.paths:
+
+            if not os.path.isdir(path):
+                errors.append(f"Directory ${path} not found.")
+                continue
+
+            if not os.path.isabs(path):
+                path = os.path.abspath(path)
 
             tests = {}
-            tests["signed_off"] = ((f"{self.script} -C {path} log -1 | grep"
+            tests["signed_off"] = ((f"{script} -C {path} log -1 | grep"
                                     " 'Signed-off-by:'"))
 
-            tests["commit_msg"] = f"{self.script} -C {path} log -1 --pretty=%B"
+            tests["commit_msg"] = f"{script} -C {path} log -1 --pretty=%B"
 
             for test, cmd in tests.items():
 
@@ -114,19 +146,19 @@ class CommitMsgCheck(abstract_check.AbstractCheck):
                         if idx == 0:
                             if line == "":
                                 errors.append(f"{test}: Title is empty")
-                            elif len(line) > self.msg_title_length:
+                            elif len(line) > int(self.title_length):
                                 errors.append((f"{test}: Title is too long"
                                                f" ({len(line)} >"
-                                               f" {self.msg_title_length}):"
+                                               f" {self.title_length}):"
                                                f" '{line}'"))
 
                         elif idx == 1 and line != "":
                             errors.append(f"{test}: Line {idx} is not empty")
 
-                        elif idx > 1 and len(line) > self.msg_body_length:
+                        elif idx > 1 and len(line) > int(self.body_length):
                             errors.append((f"{test}: Line {idx} is too long"
                                            f" ({len(line)} >"
-                                           f" {self.msg_body_length}):"
+                                           f" {self.body_length}):"
                                            f" '{line}'"))
 
         if errors:

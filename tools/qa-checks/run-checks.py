@@ -4,6 +4,33 @@
 #
 # SPDX-License-Identifier: MIT
 
+"""
+This tool can be used to run the quality-assurance (QA) check modules. By
+default, the tool utilises the ModulesVirtualEnv class to build a Python
+virtual environment in which all necessary Python package dependencies will be
+installed, which then provides an execution context for the tool to run the
+checks, without mutating the host system's Python environment.
+
+To execute the checks, the tool first receives from the user a set of requested
+checks to run, selected from a list of available checks. Each check provides
+its required Python packages to be installed in the virtual environment, as
+well as its list of required configuration variables, which must be provided
+either via a command-line argument, or defined within a YAML configuration
+file. Assuming the required packages can be installed and the necessary
+configuration variables have been provided, the ModulesVirtualEnvironment calls
+this tool again from the virtual environment context, with all variables
+defined as command-line arguments, as well as an additional "--no_venv" option.
+The checks are then execution in succession.
+
+In order to be compatible with this tool, check modules must inherit the
+AbstractCheck class, and their run function should return a value of zero for
+success or non-zero for failure. This tool will return zero if all requested
+checks succeed, otherwise the tool will return 1.
+
+Usage instructions are available by passing --help (-h) as a command-line
+argument to this script.
+"""
+
 import argparse
 import logging
 import os
@@ -12,7 +39,6 @@ import subprocess
 import sys
 import tempfile
 import venv
-import yaml
 
 import abstract_check
 import commit_msg_check
@@ -26,14 +52,72 @@ sys.path.append(path)
 
 import modules_virtual_env  # noqa: E402
 
-AVAILABLE_CHECKS = ["commit_msg",
-                    "header",
-                    "python",
-                    "shell",
-                    "spell"]
+AVAILABLE_CHECKS = [commit_msg_check.CommitMsgCheck,
+                    header_check.HeaderCheck,
+                    python_check.PythonCheck,
+                    shell_check.ShellCheck,
+                    spell_check.SpellCheck
+                    ]
+
+PROJECT_ROOT = f"{os.path.dirname(os.path.abspath(__file__))}/../../"
+PROJECT_ROOT = os.path.abspath(PROJECT_ROOT)
 
 
-def parse_options(project_root, check_config_filename):
+def convert_gitstyle_pattern_to_regex(pattern):
+    """ Patterns provided as gitstyle patterns (e.g. "*.log" or /build") are
+        converted in this function to regex based on the rules listed here:
+        https://git-scm.com/docs/gitignore
+    """
+
+    pattern = pattern.strip()
+    pattern = pattern.replace(".", r"\.")
+
+    if pattern.startswith("#") or pattern == "":
+        return None
+
+    if pattern.startswith("!"):
+        logger.warn(("Pattern exclusions via '!' are not supported, this"
+                     f"character in '{pattern}' will be treated literally."))
+
+    if len(pattern) > 1:
+        pattern = pattern.rstrip("/")
+
+    pattern = pattern.replace("*", r"[^/]*")
+    pattern = pattern.replace("?", r"[^/]")
+
+    if pattern.startswith("/"):
+        pattern = f"{PROJECT_ROOT}{pattern}"
+        pass
+    else:
+        pattern = f"{PROJECT_ROOT}/+.*{pattern}"
+
+    return pattern
+
+
+def load_gitignore_file():
+    """ Checks may ignore the same patterns as .gitignore, so parse the file
+        and convert it as a list of regex strings to pass to the checks. """
+    ignored = []
+    try:
+        with open(f"{PROJECT_ROOT}/.gitignore", 'r') as f:
+
+            ignored = []
+            for line in f:
+                ignored.append(line)
+
+    except FileNotFoundError:
+        logger.warn(f"No .gitignore was not found in {project_root}.")
+
+    return ignored
+
+
+# The following keywords can be passed as values to the arguments.
+KEYWORD_MAP = dict()
+KEYWORD_MAP["ROOT"] = PROJECT_ROOT
+KEYWORD_MAP["GITIGNORE_CONTENTS"] = load_gitignore_file()
+
+
+def parse_options():
 
     loglevels = {
         "warning": logging.WARNING,
@@ -46,9 +130,9 @@ def parse_options(project_root, check_config_filename):
             " created to install the Python packages necessary to run the"
             " suite.")
     usage = ("Optional arguments can be found by passing --help to the script")
-    example = ("Example:\n$ ./run-checks.py --check=all --log=debug\n"
-               "to run all checks with the default include/exclude paths as"
-               " found in check-defaults.yml, and maximum log verbosity.")
+    example = ("Example:\n$ ./run-checks.py --check=all\n"
+               "to run all checks in a virtual environment, according to the"
+               " per-check configuration within the default config YAML file")
 
     # Parse Arguments and assign to args object
     parser = argparse.ArgumentParser(
@@ -56,8 +140,10 @@ def parse_options(project_root, check_config_filename):
         formatter_class=argparse.RawDescriptionHelpFormatter,
         description=f"{desc}\n{usage}\n{example}\n\n")
 
+    check_names = [check.name for check in AVAILABLE_CHECKS]
+
     parser.add_argument("--check", action="append", default=[],
-                        choices=AVAILABLE_CHECKS + ["all"],
+                        choices=check_names + ["all"],
                         dest="checks",
                         help=("Add a specific check to run, or 'all'"
                               " (default: 'all')."))
@@ -65,23 +151,46 @@ def parse_options(project_root, check_config_filename):
     # Each check has its own path options to include/exclude
     for check in AVAILABLE_CHECKS:
 
-        parser.add_argument(f"--{check}_paths",
-                            required=False,
-                            help=("Comma-separated list of additional paths to"
-                                  f" run the {check} check on."))
-        parser.add_argument(f"--{check}_excludes",
-                            required=False,
-                            help=("Comma-separated list of additional paths to"
-                                  f" exclude from {check} check."))
+        name = check.name
+        list_args, args = check.get_vars()
+
+        for arg, msg in {**list_args, **args}.items():
+            prefix = ""
+            if arg in list_args:
+                prefix = "Comma-separated list: "
+            parser.add_argument(f"--{name}_{arg}", required=False,
+                                help=(f"{prefix}{msg}"))
+
+    default_config_file = os.path.join(PROJECT_ROOT,
+                                       "tools/qa-checks/qa-checks_config.yml")
+    parser.add_argument("--config",
+                        default=default_config_file,
+                        help=("YAML file that holds configuration defaults for"
+                              f" the checkers (default: {default_config_file})"
+                              ))
+
+    parser.add_argument("--no_config",
+                        action="store_true",
+                        help=("If set, the configuration defaults within the"
+                              " YAML file will be ignored (default: False,"
+                              " meaning user-arguments will be appended to"
+                              " the defaults given in the YAML file)."))
+
+    parser.add_argument("--no_process_patterns",
+                        action="store_true",
+                        help=("Internal usage. If set, any supplied patterns"
+                              " will not be considered gitstyle patterns, and"
+                              " will therefore not be converted for regex"
+                              " matching."))
 
     parser.add_argument("--venv",
                         required=False,
                         help=("Provide a Python virtual environment directory"
                               " in which to run the checks (default: auto"
                               " generate a new virtual environment directory)."
-                              " Cannot be passed with --novenv."))
+                              " Cannot be passed with --no_venv."))
 
-    parser.add_argument("--novenv",
+    parser.add_argument("--no_venv",
                         action="store_true",
                         help=("Run the checks directly in the calling context"
                               " without using up a Python virtual environment."
@@ -93,110 +202,248 @@ def parse_options(project_root, check_config_filename):
 
     opts = parser.parse_args()
 
-    if opts.venv is not None and opts.novenv is True:
-        logger.error((f"Cannot provide a path via --venv while also setting"
-                      " --novenv."))
-        exit(1)
-
     logger.setLevel(loglevels.get(opts.log.lower()))
+
+    # Validate the opts (venv and no_venv are mutually exclusive)
+    if opts.venv is not None and opts.no_venv is True:
+        logger.error((f"Cannot provide a path via --venv while also setting"
+                      " --no_venv."))
+        exit(1)
 
     # Set default here because the append action extends the argparse default
     # rather than replaces the default
     if len(opts.checks) == 0 or "all" in opts.checks:
-        opts.checks = AVAILABLE_CHECKS
-
-    # Command line arguments are appended to those already defined in the
-    # config file
-    try:
-        with open(check_config_filename, 'r') as config_file:
-            config = yaml.safe_load(config_file)
-
-            for check in opts.checks:
-
-                for var in ["paths", "excludes"]:
-
-                    combined_list = []
-
-                    # Check if user has provided custom values on the command
-                    # line
-                    key = f"{check}_{var}"
-                    if getattr(opts, key):
-
-                        # Convert any relative paths to absolute
-                        paths = getattr(opts, key).split(",")
-                        abs_paths = []
-                        for path in paths:
-                            if os.path.isabs(path):
-                                abs_paths.append(path)
-                            else:
-                                abs_paths.append(os.path.join(project_root,
-                                                              path))
-                        combined_list.extend(abs_paths)
-
-                    # Add values from the config file
-                    if (config is not None and
-                            check in config and
-                            config[check] is not None):
-
-                        if var in config[check]:
-                            defaults = config[check][var].split()
-                            paths = []
-                            for path in defaults:
-                                paths.append(os.path.join(project_root,
-                                                          path))
-                            combined_list.extend(paths)
-
-                    if combined_list:
-                        # Remove duplicates before setting the option
-                        combined_list = list(set(combined_list))
-                        setattr(opts, key, ",".join(combined_list))
-
-                # If user nor config file defined a path for the check, then
-                # set project root as the default
-                if getattr(opts, f"{check}_paths") is None:
-                    setattr(opts, f"{check}_paths", project_root)
-
-    except (FileNotFoundError, IOError):
-        logger.error(("Could not load the configuration YAML from"
-                      f"{check_config_filename}. Aborting."))
-        exit(1)
-
-    # Only output the arguments when we intend to run the checks
-    if opts.novenv is True:
-        logger.debug("***")
-        logger.debug("Script arguments:")
-        for key, val in vars(opts).items():
-            # We change the venv arguments programmatically, so don't print to
-            # avoid confusing the user with a different value
-            if "venv" not in key:
-                logger.debug(f"{key}:{val}")
-        logger.debug("***")
+        opts.checks = check_names
 
     return opts
 
 
+def load_param_from_config(config_filename, check_name, param, list_param):
+    """ Check the config YAML file for the existance of the given parameter
+        for the given check module. The boolean list_param determines if the
+        value should read and validated as a list type.
+        If a value is not found, then a default will be taken from the defaults
+        YAML section..
+
+        Return None if no value could be found. """
+
+    import yaml
+
+    value = None
+
+    try:
+
+        with open(config_filename, 'r') as config_file:
+            config = yaml.safe_load(config_file)
+
+            found_value = False
+            found_default = False
+
+            # Check if there is a default
+            default = None
+            try:
+                default = config["defaults"][param]
+                found_default = True
+            except KeyError:
+                pass
+
+            # Check if there is a defined value in the config
+            try:
+                value = config["modules"][check_name][param]
+                found_value = True
+            except KeyError:
+                pass
+
+            if found_value:
+                pass
+            elif found_default:
+                # Replace with the default
+                value = default
+            else:
+                return None
+
+            if value is not None:
+                # Check the resulting type is as expected
+                if ((list_param and type(value) is not list) or
+                        (not list_param and type(value) is list)):
+                    logger.error((f"Type of {check_name} {param} in"
+                                  f" {config_filename} does not match type"
+                                  " expected by check module. Discarding"
+                                  " this value."))
+                    return None
+                if list_param and None in value:
+                    logger.error(("Found one or more empty elements for the"
+                                  f" {check_name} {param} list variable in"
+                                  f" {config_filename}. Discarding this"
+                                  " value."))
+                    return None
+
+    except FileNotFoundError:
+        logger.error(f"Config file '{config_filename}' was not found.")
+        exit(1)
+
+    return value
+
+
+def load_check_params(opts, check_name, req_list_vars, req_vars):
+    """ For each required variable, we check if we already have a value from
+        the command line arguments. If we do, we either append it to or replace
+        the default in the configuration YAML file, depending on whether or not
+        it is a list variable. If no value can be found for a required
+        variable, then the check will be skipped, by removing it from the opts.
+
+        If --no_config was supplied, the YAML file is not read at all, and
+        only the user-supplied arguments considered. """
+
+    params = dict()
+    missing_params = list()
+
+    combined_list = req_list_vars + req_vars
+
+    for param in combined_list:
+        key = f"{check_name}_{param}"
+
+        is_list = param in req_list_vars
+
+        # Get value from config file
+        config_value = None
+        if opts.no_config is False:
+            config_value = load_param_from_config(opts.config,
+                                                  check_name,
+                                                  param,
+                                                  is_list)
+
+        # Get value from command line args
+        value = None
+        try:
+            value = getattr(opts, key)
+            if value is not None and is_list:
+                value = value.split(",")
+        except AttributeError:
+            pass
+
+        # Merge with list from config file
+        if config_value is not None and is_list:
+            if value is not None:
+                value.extend(config_value)
+
+        if value is None:
+            value = config_value
+
+        # If value is still None, then we didn't find anything for this param
+        # from command line or config file
+        if value is not None:
+
+            # Replace any keywords with mapped values
+            # If it's a list, extend with the contents of the keyword
+            # If it's not a list, replace with the contents of the keyword
+            if is_list:
+                value = [KEYWORD_MAP[element] if element in KEYWORD_MAP
+                         else element for element in value]
+
+                # Make sure the list is flattened
+                flattened_list = []
+                for element in value:
+                    # Make sure we don't include strings in the flattening
+                    if isinstance(element, str):
+                        flattened_list.append(element)
+                    else:
+                        flattened_list.extend([val for val in element])
+                value = flattened_list
+
+            else:
+                value = KEYWORD_MAP[value] if value in KEYWORD_MAP else value
+                if type(value) is list:
+                    logger.warn(("Used a list keyword for a non-list"
+                                 f"parameter: {check_name}_{param}. Discarding"
+                                 " the value."))
+                    return None
+
+            # If the parameter is a pattern, convert it for regex matching
+            if (not opts.no_process_patterns and
+                    (param.endswith("_pattern") or
+                     param.endswith("_patterns"))):
+                if is_list:
+                    converted_patterns = []
+                    for pattern in value:
+                        converted = convert_gitstyle_pattern_to_regex(pattern)
+                        converted_patterns.append(converted)
+                    value = converted_patterns
+                else:
+                    value = convert_gitstyle_pattern_to_regex(value)
+
+            params[param] = value
+            setattr(opts, key, value)
+        else:
+            missing_params.append(param)
+
+    if missing_params:
+        logger.warning((f"Missing parameters for {check_name} check:"
+                        f" {missing_params}, skipping this check."))
+        opts.checks.remove(check_name)
+        return None
+
+    return params
+
+
+def build_check_modules(opts):
+    """ For each module, check that we have values for all required variables
+        either from the command-line arguments, and/or from the configuration
+        YAML file. """
+
+    checkers = []
+
+    for check_module in AVAILABLE_CHECKS:
+        if check_module.name in opts.checks:
+            list_vars, plain_vars = check_module.get_vars()
+
+            params = load_check_params(opts,
+                                       check_module.name,
+                                       list(list_vars.keys()),
+                                       list(plain_vars.keys()))
+
+            if params:
+                check = check_module(logger, **params)
+                checkers.append(check)
+
+    return checkers
+
+
 def generate_venv_script_args_from_opts(opts):
     """ In order to call this script from the virtual environment, convert the
-        processed options to a string array, and replace --venv with --novenv.
+        processed options to a string array, and adjust settings accordingly:
+        - Replace --venv to --no_venv (venv already built)
+        - Add --no_process_patterns (patterns already processed)
+
         """
 
     args = []
     for opt, value in vars(opts).items():
+        arg = ""
         if opt == "venv":
             # remove the venv argument
             continue
-        elif opt == "novenv":
-            # set the novenv argument
+        elif opt == "no_venv":
+            # set the no_venv argument
             arg = opt
+        elif opt == "no_config":
+            # in the venv, we don't need to load the YAML again
+            arg = "no_config"
         elif value is None:
             continue
+        elif opt == "no_process_patterns":
+            # Set the no_process_patterns argument
+            arg = "no_process_patterns"
         elif opt == "checks":
             for check in value:
                 arg = f"--check={check}"
                 args.append(arg)
             continue
         else:
-            arg = f"{opt}={value}"
+            if type(value) is list:
+                arg = f"{opt}=\"{','.join(value)}\""
+            else:
+                arg = f"{opt}=\"{value}\""
 
         args.append(f"--{arg}")
 
@@ -209,48 +456,12 @@ def main():
 
     exit_code = 0
 
-    project_root = f"{os.path.dirname(os.path.abspath(__file__))}/../../"
-    project_root = os.path.abspath(project_root)
+    # Get the options that the user supplied
+    opts = parse_options()
 
-    check_config_filename = (f"{os.path.dirname(os.path.abspath(__file__))}"
-                             "/check-defaults.yml")
-
-    opts = parse_options(project_root, check_config_filename)
-
-    # Build each requested checker
-    checkers = []
-
-    if "commit_msg" in opts.checks:
-        commit_checker = commit_msg_check.CommitMsgCheck(
-                            logger,
-                            opts.commit_msg_paths,
-                            opts.commit_msg_excludes)
-
-        checkers.append(commit_checker)
-
-    if "header" in opts.checks:
-        header_checker = header_check.HeaderCheck(logger,
-                                                  opts.header_paths,
-                                                  opts.header_excludes)
-        checkers.append(header_checker)
-
-    if "python" in opts.checks:
-        python_checker = python_check.PythonCheck(logger,
-                                                  opts.python_paths,
-                                                  opts.python_excludes)
-        checkers.append(python_checker)
-
-    if "shell" in opts.checks:
-        shell_checker = shell_check.ShellCheck(logger,
-                                               opts.shell_paths,
-                                               opts.shell_excludes)
-        checkers.append(shell_checker)
-
-    if "spell" in opts.checks:
-        spell_checker = spell_check.SpellCheck(logger,
-                                               opts.spell_paths,
-                                               opts.spell_excludes)
-        checkers.append(spell_checker)
+    # Build the checkers, loading configuration from the config file if
+    # necessary
+    checkers = build_check_modules(opts)
 
     if not checkers:
         logger.info("Found no requested checks to run.")
@@ -264,7 +475,18 @@ def main():
                           " suite. Aborting."))
             exit(1)
 
-    if opts.novenv:
+    # Print the options (only when we intend to run the checks)
+    if opts.no_venv is True:
+        logger.debug("***")
+        logger.debug("Script arguments:")
+        for key, val in vars(opts).items():
+            # We change the venv arguments programmatically, so don't print to
+            # avoid confusing the user with a different value
+            if "venv" not in key:
+                logger.debug(f"{key}:{val}")
+        logger.debug("***")
+
+    if opts.no_venv:
 
         failed_modules = set()
 
@@ -305,11 +527,7 @@ def main():
         # Collect each checker's dependencies to pass to the venv
         pip_dependencies = dict()
         for checker in checkers:
-            pip_deps = checker.get_pip_dependencies()
-            pip_dependencies[checker.name] = pip_deps
-
-        # Add dependencies for this script (key is None for no module)
-        pip_dependencies[None] = ["pyyaml"]
+            pip_dependencies[checker.name] = checker.get_pip_dependencies()
 
         virt_env = modules_virtual_env.ModulesVirtualEnv(script,
                                                          arg_str,
@@ -319,6 +537,10 @@ def main():
         venv_dirname = None
         if opts.venv is not None:
             venv_dirname = opts.venv
+            if not os.path.isdir(venv_dirname):
+                logger.error("Cannot find the given venv directory:"
+                             f"{venv_dirname}. Aborting.")
+                exit(1)
             logger.debug(f"Using existing venv directory: {venv_dirname}")
         else:
             venv_dirname = tempfile.mkdtemp()
