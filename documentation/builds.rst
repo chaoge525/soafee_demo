@@ -6,7 +6,7 @@ The currently supported image build targets are:
 * ``ewaol-image-docker``
 * ``ewaol-image-podman``
 
-Each build target implements the EWAOL sofware stack, differing only on the
+Each build target implements the EWAOL software stack, differing only on the
 backend containerisation technology: Docker or Podman.
 
 For each target image for a target machine, particular EWAOL recipes and
@@ -106,8 +106,8 @@ Each machine config includes common configuration from:
 
 * ``base.yml``
 
-    Defines the image targets, layer dependencies and their sofware sources and
-    build configuration variables.
+    Defines the image targets, layer dependencies and their software sources
+    and build configuration variables.
 
 * ``arm_machines.yml``
 

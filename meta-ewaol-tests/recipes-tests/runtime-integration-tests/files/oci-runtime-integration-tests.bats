@@ -20,8 +20,8 @@ if [ -z "${OCI_TEST_CLEAN_ENV}" ]; then
     OCI_TEST_CLEAN_ENV=1
 fi
 
-OCI_TEST_LOG_FILE="${OCI_TEST_LOG_DIR}/oci-runtime-integration-tests.log"
-OCI_TEST_STDERR_FILE="${OCI_TEST_LOG_DIR}/stderr.log"
+export OCI_TEST_LOG_FILE="${OCI_TEST_LOG_DIR}/oci-runtime-integration-tests.log"
+export OCI_TEST_STDERR_FILE="${OCI_TEST_LOG_DIR}/stderr.log"
 
 load oci-runtime-funcs.sh
 load integration-tests-common-funcs.sh

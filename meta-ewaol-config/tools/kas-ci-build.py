@@ -540,5 +540,6 @@ class TeeLogger(object):
         if not self.log_file.closed:
             self.log_file.close()
 
+
 if __name__ == "__main__":
     main()

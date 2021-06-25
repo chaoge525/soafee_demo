@@ -150,7 +150,6 @@ def parse_options(project_root, check_config_filename):
                 if getattr(opts, f"{check}_paths") is None:
                     setattr(opts, f"{check}_paths", project_root)
 
-
     except (FileNotFoundError, IOError):
         logger.error(("Could not load the configuration YAML from"
                       f"{check_config_filename}. Aborting."))

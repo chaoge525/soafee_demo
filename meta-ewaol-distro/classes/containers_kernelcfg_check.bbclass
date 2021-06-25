@@ -33,9 +33,9 @@ python do_containers_kernelcfg_check() {
     containers_cfg = d.getVar('REQ_KERNELCFG_FILENAME')
 
     # Find path of all config files with name $REQ_KERNELCFG_FILENAME
-    containers_cfg_paths = [ root + "/" + containers_cfg
-                             for root, _, files in os.walk(d.getVar('WORKDIR'))
-                             if containers_cfg in files ]
+    containers_cfg_paths = [root + "/" + containers_cfg
+                            for root, _, files in os.walk(d.getVar('WORKDIR'))
+                            if containers_cfg in files]
 
     bb.note("Kernel Config Files:" + list_format(containers_cfg_paths))
 
@@ -47,16 +47,15 @@ python do_containers_kernelcfg_check() {
             with open(cfg_file) as f:
                 # builtin or module is acceptable
                 required_config = re.findall('^(CONFIG_[A-Z_]+)=[ym]',
-                                              f.read(),
-                                              re.MULTILINE)
+                                             f.read(),
+                                             re.MULTILINE)
 
     # No containers config file matching checksum found
     if not required_config:
-        bb.warn("\
-Kernel Config File " + containers_cfg + " may have been overwritten or updated \
-upstream. Ensure no collisions on the following paths:" + \
-list_format(containers_cfg_paths) + "\n\
-Or set REQ_KERNELCFG_MD5SUM to update the checksum.")
+        bb.warn((f"Kernel Config File {containers_cfg} may have been "
+                 "overwritten or updated upstream. Ensure no collisions on "
+                 f"the following paths: {list_format(containers_cfg_paths)} "
+                 "\nOr set REQ_KERNELCFG_MD5SUM to update the checksum."))
         return
 
     bb.note("Required Config:" + list_format(required_config))

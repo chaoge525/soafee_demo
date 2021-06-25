@@ -86,7 +86,7 @@ the log. The format of a debugging message is:
     ``DEBUG:[top_level_test_name]:[return_code]:[stdout]:[stderr]```
 
 Additional informational messages may appear in the log file with an ``INFO``
-prefix, e.g. to log that an environment clean-up action occured.
+prefix, e.g. to log that an environment clean-up action occurred.
 
 The test suites are detailed below.
 
