@@ -17,10 +17,14 @@ import yaml
 import abstract_check
 import commit_msg_check
 import header_check
-import modules_virtual_env
 import python_check
 import shell_check
 import spell_check
+
+path = f'{os.path.dirname(os.path.abspath(__file__))}/../common'
+sys.path.append(path)
+
+import modules_virtual_env  # noqa: E402
 
 AVAILABLE_CHECKS = ["commit_msg",
                     "header",

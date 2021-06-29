@@ -60,7 +60,7 @@ class ModulesVirtualEnv(venv.EnvBuilder):
         # Check that at least one module's dependencies were satisfied
         # Ignore the non-module dependencies
         if not [mod for mod in self.module_pip_deps.keys() if mod is not None]:
-            self.logger.error(("All requested checkers failed dependency"
+            self.logger.error(("All requested modules failed dependency"
                                " installation. Aborting"))
             exit(1)
 
@@ -120,8 +120,9 @@ class ModulesVirtualEnv(venv.EnvBuilder):
             else:
                 # If a module's dependencies could not be installed, skip it
                 self.logger.warning(("Dependency installation failed for"
-                                     f" {failed_module}. Removing this module"
-                                     " from checkers."))
+                                     f" {failed_module}. Removing "
+                                     f"'{failed_module}' from script "
+                                     "execution."))
 
                 self.arg_str = " ".join(filter(lambda arg:
                                                failed_module not in arg,
