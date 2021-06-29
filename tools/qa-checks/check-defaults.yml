@@ -30,6 +30,7 @@ spell:
         documentation/Makefile
         documentation/index.rst
         documentation/_build
+        public/
 
 header:
     excludes:
@@ -40,3 +41,4 @@ header:
         .git
         tools/qa-checks/ewaol-dictionary
         documentation/_build
+        public/

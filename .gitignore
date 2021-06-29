@@ -1,5 +1,6 @@
 # Sphinx Exclusions
 documentation/_build
 layers/
-*build*/
+./*build*/
+public/
 __pycache__

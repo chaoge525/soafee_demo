@@ -1,6 +1,25 @@
 Tools
 =====
 
+Documentation build
+-------------------
+
+A script automating the documentation build process is available under
+`meta-ewaol/tools/build/doc-build.py`. It will generate an HTML version of the
+documentation under `public/`. To use this script, you should use Python 3.6 or
+higher:
+
+.. code-block:: console
+
+    ./tools/build/doc-build.py
+
+For more information about the parameters, call the help function of the
+script:
+
+.. code-block:: console
+
+    ./tools/build/doc-build.py --help
+
 CI Build Tool
 -------------
 

@@ -1,0 +1,162 @@
+#!/usr/bin/env python3
+#
+# Copyright (c) 2021, Arm Limited.
+#
+# SPDX-License-Identifier: MIT
+
+import argparse
+import os
+import logging
+import subprocess
+import sys
+import tempfile
+
+path = f'{os.path.dirname(os.path.abspath(__file__))}/../common'
+sys.path.append(path)
+
+import modules_virtual_env  # noqa: E402
+
+
+def generate_venv_script_args_from_opts(opts):
+    """ In order to call this script from the virtual environment, convert the
+        processed options to a string array, and replace --venv with --novenv.
+        """
+
+    args = []
+    for opt, value in vars(opts).items():
+        if opt == "venv":
+            # remove the venv argument
+            continue
+        elif opt == "novenv":
+            # set the novenv argument
+            arg = opt
+        elif value is None:
+            continue
+        else:
+            arg = f"{opt}={value}"
+
+        args.append(f"--{arg}")
+
+    return args
+
+
+def parse_options(logger):
+
+    loglevels = {
+        "warning": logging.WARNING,
+        "info": logging.INFO,
+        "debug": logging.DEBUG
+    }
+
+    desc = ("doc-build.py is used to build the ewaol documentation in the "
+            "meta-ewaol/public directory. By default, a virtual Python "
+            "environment is created to install the Python packages necessary "
+            "to build the documentation.")
+    usage = ("Optional arguments can be found by passing --help to the script")
+    example = ("Example:\n$ ./doc-build.py --log=debug\n"
+               "to build the documentation with maximum verbosity")
+
+    # Parse Arguments and assign to args object
+    parser = argparse.ArgumentParser(
+        prog=__name__,
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        description=f"{desc}\n{usage}\n{example}\n\n")
+
+    parser.add_argument("--venv",
+                        required=False,
+                        help=("Provide a Python virtual environment directory"
+                              " in which to run the checks (default: auto"
+                              " generate a new virtual environment directory)."
+                              " Cannot be passed with --novenv."))
+
+    parser.add_argument("--novenv",
+                        action="store_true",
+                        help=("Run the checks directly in the calling context"
+                              " without using a Python virtual environment."
+                              " Cannot be passed with --venv."))
+
+    parser.add_argument("--log", default="info",
+                        choices=["debug", "info", "warning"],
+                        help="Set log level.")
+
+    opts = parser.parse_args()
+
+    if opts.venv is not None and opts.novenv is True:
+        logger.error((f"Cannot provide a path via --venv while also setting"
+                      " --novenv."))
+        exit(1)
+
+    logger.setLevel(loglevels.get(opts.log.lower()))
+
+    return opts
+
+
+def main(logger, opts):
+    exit_code = 0
+
+    old_path = os.getcwd()
+    script_path = os.path.abspath(__file__)
+    project_root = os.path.normpath(
+                         f"{os.path.dirname(script_path)}"
+                         "/../../")
+
+    pip_dependencies = dict()
+    pip_dependencies["documentation"] = ["sphinx==4.0.2",
+                                         "sphinx-rtd-theme==0.5.2",
+                                         "docutils==0.16", "m2r2==0.2.7"]
+
+    if opts.novenv:
+        try:
+            os.chdir(project_root)
+        except OSError as e:
+            logger.error("Project root not found")
+            exit(1)
+
+        # cleaning and building the documentation
+        cmd = "sphinx-build -a -E -W --keep-going -b html documentation public"
+
+        process = subprocess.Popen(cmd,
+                                   stdout=subprocess.PIPE,
+                                   stderr=subprocess.STDOUT,
+                                   shell=True,
+                                   universal_newlines=True)
+
+        (cmdout, cmderr) = process.communicate()
+        exit_code = process.returncode
+
+        if exit_code != 0:
+            logger.error(f"Error while building the documentation : {cmdout}")
+        else:
+            logger.info(f"Files generated in {project_root}/public")
+
+    else:
+        args = generate_venv_script_args_from_opts(opts)
+        arg_str = " ".join(args)
+
+        virt_env = modules_virtual_env.ModulesVirtualEnv(script_path,
+                                                         arg_str,
+                                                         pip_dependencies,
+                                                         logger)
+
+        venv_dirname = None
+        if opts.venv is not None:
+            venv_dirname = opts.venv
+            logger.debug(f"Using existing venv directory: {venv_dirname}")
+        else:
+            venv_dirname = tempfile.mkdtemp()
+            logger.info(f"Created new venv directory: {venv_dirname}")
+
+        virt_env.create(venv_dirname)
+        exit_code = virt_env.returncode
+
+    exit(exit_code)
+
+
+if __name__ == "__main__":
+    log_format = "%(levelname)-8s:%(filename)-24s:%(message)s"
+    logging.basicConfig(format=log_format)
+    logger = logging.getLogger(__name__)
+
+    opts = parse_options(logger)
+
+    main(logger, opts)

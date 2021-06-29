@@ -20,24 +20,7 @@ The high-level structure of the `meta-ewaol` repository is as follows:
 
 ## Building the documentation
 
-The documentation uses `Sphinx`, which may be installed via:
-
-    pip3 install sphinx==4.0.2 sphinx-rtd-theme==0.5.2 docutils==0.16 m2r2==0.2.7
-
-A Makefile is provided with the documentation. Running `make help` will produce
-a list of available output formats, where each format may be given as a make
-target.
-
-For example, an HTML version of the documentation can be built via:
-
-    cd meta-ewaol/documentation
-    make html
-
-This will produce HTML-formatted documentation into the
-`*documentation/\_build/html` directory.
-
-Please refer to the documentation for more information on the repository and
-how to build EWAOL project images.
+See the :ref:`Documentation build` section of the tools documentation page.
 
 ## Layers Dependencies
 

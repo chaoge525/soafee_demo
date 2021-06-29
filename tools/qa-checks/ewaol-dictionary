@@ -140,6 +140,7 @@ tmp
 top_level_test_name
 userguide
 v
+verbosity
 virtualization
 workloads
 www
