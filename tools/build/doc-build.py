@@ -8,6 +8,7 @@ import argparse
 import os
 import logging
 import subprocess
+import shutil
 import sys
 import tempfile
 
@@ -104,6 +105,7 @@ def main(logger, opts):
     pip_dependencies["documentation"] = ["sphinx==4.0.2",
                                          "sphinx-rtd-theme==0.5.2",
                                          "docutils==0.16", "m2r2==0.2.7"]
+    sphinx_path = None
 
     if opts.novenv:
         try:
@@ -112,8 +114,19 @@ def main(logger, opts):
             logger.error("Project root not found")
             exit(1)
 
+        if "VENV_BIN" in os.environ:
+            sphinx_path = shutil.which("sphinx-build",
+                                       path=os.environ["VENV_BIN"])
+        else:
+            sphinx_path = shutil.which("sphinx-build")
+
+        if sphinx_path is None:
+            logger.error(f"Could not find sphinx-build executable")
+            exit(1)
+
         # cleaning and building the documentation
-        cmd = "sphinx-build -a -E -W --keep-going -b html documentation public"
+        cmd = f"{sphinx_path} -a -E -W --keep-going -b html " \
+              "documentation public"
 
         process = subprocess.Popen(cmd,
                                    stdout=subprocess.PIPE,
