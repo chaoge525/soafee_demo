@@ -184,6 +184,18 @@ To start fvp emulation and run tests you need to:
     [...]
     STOP: ptest-runner
 
+* to finish the fvp emulation you need to close telnet session
+  and stop the runfvp script:
+
+  1. to close telnet session:
+
+    * escape to telnet console with ``ctrl+]``
+    * run ``quit`` to close the session.
+
+  2. to stop the runfvp:
+
+    * type ``ctrl+c`` and wait for kas process to finish
+
 Environment Clean-Up
 """"""""""""""""""""
 
