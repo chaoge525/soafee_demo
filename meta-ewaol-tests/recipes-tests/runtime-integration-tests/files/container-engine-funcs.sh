@@ -8,7 +8,7 @@
 # Returns 0 if image exists
 # Returns 1 if image does not exist
 does_image_exist() {
-    if [ "$(docker images 2>"${OCI_TEST_STDERR_FILE}" | grep -c "${1}")" -eq 1 ]; then
+    if [ "$(docker images 2>"${CE_TEST_STDERR_FILE}" | grep -c "${1}")" -eq 1 ]; then
         return 0
     else
         return 1
@@ -21,7 +21,7 @@ image_remove() {
 
     # use --force to avoid having to remove any dependent containers that we
     # have created
-    docker image rm "${1}" --force 2>"${OCI_TEST_STDERR_FILE}"
+    docker image rm "${1}" --force 2>"${CE_TEST_STDERR_FILE}"
 }
 
 # Arg1: Arguments passed to the engine for running the container
@@ -41,7 +41,7 @@ container_run() {
     container_cmd="${*:3}"
 
     # shellcheck disable=SC2086
-    docker run "${engine_args}" "${image_name}" ${container_cmd} 2>"${OCI_TEST_STDERR_FILE}"
+    docker run "${engine_args}" "${image_name}" ${container_cmd} 2>"${CE_TEST_STDERR_FILE}"
 }
 
 # Arg1: Container ID
@@ -51,7 +51,7 @@ check_container_state() {
 
     container_id="${1}"
 
-    inspect_output=$(docker inspect -f '{{.State.Status}},{{.State.ExitCode}}' "${container_id}" 2>"${OCI_TEST_STDERR_FILE}" )
+    inspect_output=$(docker inspect -f '{{.State.Status}},{{.State.ExitCode}}' "${container_id}" 2>"${CE_TEST_STDERR_FILE}" )
     if [ -z "${inspect_output}" ]; then
         echo "Inspect failed"
         return 1
@@ -70,7 +70,7 @@ container_stop() {
 
     container_id="${1}"
 
-    docker container stop "${container_id}" 2>"${OCI_TEST_STDERR_FILE}"
+    docker container stop "${container_id}" 2>"${CE_TEST_STDERR_FILE}"
 }
 
 # Arg1: Container ID
@@ -79,7 +79,7 @@ container_remove() {
 
     container_id="$1"
 
-    docker container rm "${container_id}" --force 2>"${OCI_TEST_STDERR_FILE}"
+    docker container rm "${container_id}" --force 2>"${CE_TEST_STDERR_FILE}"
 }
 
 # Arg1: Image name
@@ -88,5 +88,5 @@ get_running_containers() {
 
     image_name="${1}"
 
-    docker ps -q --filter ancestor="${image_name}" 2>"${OCI_TEST_STDERR_FILE}"
+    docker ps -q --filter ancestor="${image_name}" 2>"${CE_TEST_STDERR_FILE}"
 }

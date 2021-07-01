@@ -95,10 +95,11 @@ meta-ewaol-distro
 mkdir
 n1sdp
 n1sdp_tests
-oci
-oci_test_clean_env
-oci_test_image
-oci_test_log_dir
+ce
+ce_
+ce_test_clean_env
+ce_test_image
+ce_test_log_dir
 p
 pip3
 png

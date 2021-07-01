@@ -57,7 +57,7 @@ images:
 
   * development image
   * Docker and Podman images
-  * Hello-world OCI image generation
+  * Hello-world container image generation
   * test image
 
 meta-ewaol-tests
@@ -65,7 +65,7 @@ meta-ewaol-tests
 
 Yocto layer to validate EWAOL functionalities implementation:
 
-* OCI containers engine and run-time integration tests
+* Container engine and run-time integration tests
 * Tools for validation of external BSP layers as EWAOL compatible
 
   * External layers can use ``meta-ewaol-bsp`` as a reference implementation

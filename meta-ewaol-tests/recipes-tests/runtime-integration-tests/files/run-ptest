@@ -4,4 +4,4 @@
 #
 # SPDX-License-Identifier: MIT
 
-cd %TESTDIR% && OCI_TEST_LOG_DIR="%TESTDIR%/logs" ./run-oci-runtime-integration-tests
+cd %TESTDIR% && CE_TEST_LOG_DIR="%TESTDIR%/logs" ./run-container-engine-integration-tests

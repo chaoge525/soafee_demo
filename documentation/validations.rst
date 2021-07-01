@@ -13,7 +13,7 @@ desired Yocto image build process.
 Currently, run-time integration tests are provided for validating the
 functionality of:
 
-* OCI Container Engine (Docker, Podman)
+* Container Engine (Docker, Podman)
 
 These integration tests are described later in this document.
 
@@ -126,20 +126,19 @@ The test suites are detailed below.
 Test Suites
 -----------
 
-OCI Container Engine Tests
-^^^^^^^^^^^^^^^^^^^^^^^^^^
+Container Engine Tests
+^^^^^^^^^^^^^^^^^^^^^^
 
-The OCI (Open Container Initiative) Container Engine test suite is identified
-as:
+The container engine test suite is identified as:
 
-    ``oci-runtime-integration-tests``
+    ``container-engine-integration-tests``
 
 for execution via ``ptest-runner`` or as a standalone BATS suite, as described
 in `Running the Tests`_.
 
 The test suite is built and installed in the image according to the following
 bitbake recipe within ``meta-ewaol-tests/recipes-tests/runtime-integration-tests
-/oci-runtime-integration-tests.bb``.
+/container-engine-integration-tests.bb``.
 
 The tests execution is identical on both Docker and Podman images, as it makes
 use of Podman provided aliases for Docker commands.
@@ -147,7 +146,7 @@ use of Podman provided aliases for Docker commands.
 Currently the test suite contains two top-level integration tests, which run
 consecutively in the following order.
 
-| 1. ``Run OCI Container`` is composed of four sub-tests:
+| 1. ``run container`` is composed of four sub-tests:
 |    1.1. Run a containerised detached workload via the ``docker run`` command
 |        - Pull an image from the network
 |        - Create and start a container
@@ -156,21 +155,23 @@ consecutively in the following order.
 |        - Stop the container
 |        - Remove the container from the container list
 |    1.4. Check the container is not found via the ``docker inspect`` command
-| 2. ``OCI Container Network Connectivity`` is composed of a single sub-test:
+| 2. ``container network connectivity`` is composed of a single sub-test:
 |    2.1 Run a containerised, immediate (non-detached) network-based workload
          via the ``docker run`` command
 |        - Create and start a container, re-using the existing image
 |        - Update package lists within container from external network
 
-The tests can be customised via environment variables passed to the execution:
+The tests can be customised via environment variables passed to the execution,
+each prefixed by ``CE_`` to identify the variable as associated to the
+container engine tests:
 
-|  ``OCI_TEST_IMAGE``: defines the container image
+|  ``CE_TEST_IMAGE``: defines the container image
 |    Default: ``docker.io/library/alpine``
-|  ``OCI_TEST_LOG_DIR``: defines the location of the log file
-|    Default: ``/usr/share/oci-runtime-integration-tests/logs``
+|  ``CE_TEST_LOG_DIR``: defines the location of the log file
+|    Default: ``/usr/share/container-engine-integration-tests/logs``
 |    Directory will be created if it does not exist
 |    See `Test Logging`_
-|  ``OCI_TEST_CLEAN_ENV``: enable test environment cleanup
+|  ``CE_TEST_CLEAN_ENV``: enable test environment cleanup
 |    Default: ``1`` (enabled)
 |    See `Environment Clean-Up`_
 
@@ -216,10 +217,10 @@ To start fvp emulation and run tests you need to:
 
 .. code-block:: console
 
-    $ ptest-runner oci-runtime-integration-tests
+    $ ptest-runner container-engine-integration-tests
     START: ptest-runner
     [...]
-    PASS:oci-runtime-integration-tests
+    PASS:container-engine-integration-tests
     [...]
     STOP: ptest-runner
 
@@ -238,21 +239,21 @@ To start fvp emulation and run tests you need to:
 Environment Clean-Up
 """"""""""""""""""""
 
-A clean environment is expected when running the OCI container engine tests.
-For example, if the target OCI image already exists within the container engine
+A clean environment is expected when running the container engine tests. For
+example, if the target image already exists within the container engine
 environment, then the functionality to pull the image over the network will not
 be validated. Or, if there are running containers from previous (failed) tests
 then they may interfere with subsequent test executions.
 
-Therefore, if ``OCI_TEST_CLEAN_ENV`` is set to ``1`` (as is default), running
+Therefore, if ``CE_TEST_CLEAN_ENV`` is set to ``1`` (as is default), running
 the test suite will perform an environment clean before and after the suite
 execution.
 
 The environment clean operation involves:
 
     * Determination and removal of all running containers of the image given by
-      ``OCI_TEST_IMAGE``
-    * Removal of the image given by ``OCI_TEST_IMAGE``, if it exists
+      ``CE_TEST_IMAGE``
+    * Removal of the image given by ``CE_TEST_IMAGE``, if it exists
 
 If enabled then the environment clean operations will always be run, regardless
 of test-suite success or failure.

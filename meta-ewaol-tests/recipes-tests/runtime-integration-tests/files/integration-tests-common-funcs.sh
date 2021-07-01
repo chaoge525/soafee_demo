@@ -21,17 +21,17 @@ log() {
         log_msg="${log_msg}:${2}"
     fi
 
-    echo "${log_msg}" >> "${OCI_TEST_LOG_FILE}"
+    echo "${log_msg}" >> "${CE_TEST_LOG_FILE}"
     echo "${log_msg}"
 
     if [ "${1}" == "FAIL" ]; then
         # If the test failed, add additional debugging information
 
-        stderr="$(cat "${OCI_TEST_STDERR_FILE}")"
+        stderr="$(cat "${CE_TEST_STDERR_FILE}")"
 
         debug_msg="DEBUG:${BATS_TEST_NAME}:${status:-}:${output:-}:${stderr}"
 
-        echo "${debug_msg}" >> "${OCI_TEST_LOG_FILE}"
+        echo "${debug_msg}" >> "${CE_TEST_LOG_FILE}"
         echo "${debug_msg}"
     fi
 }
