@@ -43,11 +43,26 @@ To build tests for fvp-base machine from this example
 * accept EULA in ``FVP_BASE_A_ARM_EULA_ACCEPT``
 
 .. _Arm Architecture Models: https://developer.arm.com/tools-and-software/simulation-models/fixed-virtual-platforms/arm-ecosystem-models
-.. code-block:: console
 
-    FVP_BASE_A_AEM_TARBALL_URI="file:///absolute/path/to/FVP_Base_RevC-2xAEMvA_11.14_21.tgz" \
-    FVP_BASE_A_ARM_EULA_ACCEPT="True" \
-    kas build meta-ewaol-config/kas/fvp-base.yml:meta-ewaol-config/kas/tests.yml
+  * using kas directly:
+
+    .. code-block:: console
+
+        FVP_BASE_A_AEM_TARBALL_URI="file:///absolute/path/to/FVP_Base_RevC-2xAEMvA_11.14_21.tgz" \
+        FVP_BASE_A_ARM_EULA_ACCEPT="True" \
+        kas build meta-ewaol-config/kas/fvp-base.yml:meta-ewaol-config/kas/tests.yml
+
+  * using tools/build/kas-ci-build.py:
+
+    .. code-block:: console
+
+        tools/build/kas-ci-build.py fvp-base.yml:tests.yml --engine-arguments \
+            '--volume /absolute/path/to/fvp_volume/:/work/fvp_volume \
+             --env FVP_BASE_A_AEM_TARBALL_URI="file:///work/fvp_volume/FVP_Base_RevC-2xAEMvA_11.14_21.tgz" \
+             --env FVP_BASE_A_ARM_EULA_ACCEPT="True"'
+
+    .. note::
+       The ``fvp_volume`` is a directory that contains "Armv-A Base RevC AEM FVP" package.
 
 Running the Tests
 -----------------
@@ -162,16 +177,34 @@ To start fvp emulation and run tests you need to:
 * build the tests using above instructions `fvp-base: build image including tests`_
 * start the fvp-base emulator with podman or docker flavour:
 
-.. code-block:: console
+  * using kas directly:
 
-    kas shell --keep-config-unchanged \
-        meta-ewaol-config/kas/fvp-base.yml:meta-ewaol-config/kas/tests.yml \
-        --command "../layers/meta-arm/scripts/runfvp \
+    .. code-block:: console
+
+      kas shell --keep-config-unchanged \
+          meta-ewaol-config/kas/fvp-base.yml:meta-ewaol-config/kas/tests.yml \
+              --command "../layers/meta-arm/scripts/runfvp \
                    tmp/deploy/images/fvp-base/ewaol-image-[docker|podman]-fvp-base.fvpconf \
                    --console \
                    -- \
                        --parameter 'bp.smsc_91c111.enabled=1' \
                        --parameter 'bp.hostbridge.userNetworking=true'"
+
+  * using tools/build/kas-ci-build.py:
+
+    .. code-block:: console
+
+        tools/build/kas-ci-build.py fvp-base.yml:tests.yml \
+            --engine-arguments ' -it -p 5000:5000' \
+            --kas-arguments 'shell --keep-config-unchanged \
+                --command "/work/layers/meta-arm/scripts/runfvp \
+                    tmp/deploy/images/fvp-base/ewaol-image-[docker|podman]-fvp-base.fvpconf \
+                       -- \
+                           --parameter \"bp.smsc_91c111.enabled=1\" \
+                           --parameter \"bp.hostbridge.userNetworking=true\""'
+
+    * grab FVP emulation console in other terminal window with
+      ``telnet localhost 5000``
 
 * execute tests with:
 

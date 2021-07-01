@@ -21,6 +21,7 @@ bsp
 bsps
 _build
 build_dir
+build-env
 build_id
 build's
 cd
@@ -68,6 +69,7 @@ fvp_base_a_aem_tarball_uri
 fvp_base_a_arm_eula_accept
 FVP_Base_RevC-2xAEMvA_11.14_21
 fvp-base.fvpconf
+fvp_volume
 g
 gbytes
 ghcr
@@ -81,6 +83,7 @@ kas
 kas.
 kas-ci-build
 KAS_MACHINE
+localhost
 m2r2
 makefile
 md

@@ -26,7 +26,7 @@ CI Build Tool
 In addition to the kas config files, ``meta-ewaol-config`` contains a Python
 script for enabling Continuous Integration (CI) builds:
 
-    ``meta-ewaol-config/tools/kas-ci-build.py``
+    `tools/build/kas-ci-build.py``
 
 Given a space-separated list of build targets (each consisting of one or more
 colon-separated YAML files), this script will run a containerised kas command
@@ -66,7 +66,7 @@ build configuration, run:
 
 .. code-block:: console
 
-    ./meta-ewaol-config/tools/kas-ci-build.py n1sdp.yml:tests.yml
+    ./tools/build/kas-ci-build.py n1sdp.yml:tests.yml
 
 The available build config YAML files can be queried by passing to the script:
 
@@ -97,10 +97,23 @@ would result in a default build folder: ``ci-build/n1sdp_tests/``
 
 The script can also be passed a set of optional named arguments, where these
 arguments and their defaults can be found by passing  ``--help`` to
-``./meta-ewaol-config/tools/kas-ci-build.py``.
+``./tools/build/kas-ci-build.py``.
 
 Note that by default no cache mirrors will be configured, and no artifacts will
 be deployed.
+
+Interactive Build Container
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The script allows user to run custom kas commands e.g., ``shell``
+to run FVP emulation or to enter bitbake environment.
+
+* ``--kas-command COMMAND`` changes default kas command (``build``)
+  to ``COMMAND`` and allows to run e.g. tests on FVP emulator
+
+* ``--engine-argument '--foo bar="baz"' ['--bar' [...]]`` engine specific
+  options, that are required for custom kas command e.g.:
+  ``-it`` for docker engine
 
 Cache Mirrors
 ^^^^^^^^^^^^^

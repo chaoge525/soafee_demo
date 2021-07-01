@@ -48,13 +48,13 @@ class ContainerEngine:
         if env_var:
             self.add_env(env_var, path_container)
 
-    def run(self, kas_config):
+    def run(self, kas_config, kas_command):
         """ Invoke the container engine with all arguments previously added to
             the object. """
 
         command = f"{self.container_engine} run {' '.join(self.args)}\
                     {self.container_image}:{self.container_image_version}\
-                    build {kas_config}"
+                    {kas_command} {kas_config}"
 
         def handle_interrupt(signum, frame):
             """ If this script is aborted while we have started a detached
@@ -137,15 +137,15 @@ def get_config():
 
     # Get path of script and from their path to kas file directory
     config["script_dir"] = os.path.dirname(os.path.realpath(sys.argv[0]))
-    # Path of kas directory of meta-ewaol-config
-    config["kas_dir"] = os.path.normpath(os.path.join(config["script_dir"],
-                                                      "../kas"))
-    # Path of the ci build definitions file
-    config["build_defs"] = os.path.normpath(
-        os.path.join(config["script_dir"], "../ci/build_defs.yml"))
     # Path were dependant layers will be downloaded
     config["layer_dir"] = os.path.normpath(os.path.join(config["script_dir"],
                                                         "../.."))
+    # Path of kas directory of meta-ewaol-config
+    config["kas_dir"] = os.path.normpath(
+        os.path.join(config["layer_dir"], "meta-ewaol-config/kas"))
+    # Path of the ci build definitions file
+    config["build_defs"] = os.path.normpath(os.path.join(
+        config["layer_dir"], "meta-ewaol-config/ci/build_defs.yml"))
     # Default output directory
     config["out_dir"] = os.path.join(config["layer_dir"], "ci-build")
     # Default artifact directory
@@ -230,11 +230,23 @@ def get_config():
         help="Set the container image (default: %(default)s).")
 
     parser.add_argument(
+        "--engine-arguments",
+        help="Optional string of arguments for running the container, e.g.\
+              --engine-arguments '--volume /host/dir:/container/dir \
+                                  --env VAR=value'.")
+
+    parser.add_argument(
         "--container-image-version",
         default="2.5",
         help="Set the container image version (default: %(default)s). Note: \
              it is not recommended to use versions 2.4 or lower for kas \
              containers due to lack of support for KAS_BUILD_DIR.")
+
+    parser.add_argument(
+        "--kas-arguments",
+        default="build",
+        help="Arguments to be passed to kas executable within the container \
+              (default: %(default)s).")
 
     parser.add_argument(
         "--log-file",
@@ -417,7 +429,7 @@ def main():
 
         if missing_confs:
             print((f"Error: The kas config files: \n{missing_confs}\nwere not"
-                  "found."), file=sys.tee)
+                  " found."), file=sys.tee)
             exit_code = 1
             continue
 
@@ -487,8 +499,11 @@ def main():
                                       config["kas_dir"],
                                       work_dir_name)
 
+        if config['engine_arguments']:
+            engine.add_arg(config['engine_arguments'])
+
         # Execute the command
-        exit_code |= engine.run(kas_config)
+        exit_code |= engine.run(kas_config, config['kas_arguments'])
 
         # Grab build artifacts and store in artifacts_dir/buildname
         if config["deploy_artifacts"]:
