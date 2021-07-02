@@ -94,11 +94,10 @@ class ContainerEngine:
         proc = subprocess.Popen(command,
                                 stdout=subprocess.PIPE,
                                 stderr=subprocess.STDOUT,
-                                shell=True,
-                                universal_newlines=True)
+                                shell=True)
 
         for next_line in proc.stdout:
-            print(next_line, end='')
+            print(next_line.decode(), end='')
 
         proc.wait()
 
