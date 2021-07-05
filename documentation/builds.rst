@@ -141,3 +141,29 @@ There are currently two build modifier YAML files:
   take the default value. For example, if ``tests.yml`` is not included then
   the value of ``DISTRO_FEATURE`` will take its default value as specified
   earlier in this document.
+
+Build Validation
+----------------
+
+Container Runtime Kernel Configuration Check
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+After the kernel configuration has been produced, it is checked to validate the
+presence of the kernel config necessary for the resulting image to run
+container instances. This is done using the kernel check bbclass available at
+``meta-ewaol-distro/classes/containers_kernelcfg_check.bbclass``:
+
+1. The kernel check function ensures that the ``docker.cfg`` config file is the
+   same as the reference `Yocto docker config file`_.
+
+2. If the hash comparison was a success, the list of kernel configs required
+   for docker to run is retrieved. If the ``docker.cfg`` file is not identical
+   to the reference file, a bitbake warning is displayed.
+
+3. The list of required kernel configs is compared against the list of
+   available configs in the kernel. They all need to be present either as module
+   (=m) or built-in (=y). A bitbake warning is produced if the kernel is not
+   configured correctly.
+
+.. _Yocto docker config file: http://git.yoctoproject.org/cgit/cgit.cgi/yocto-kernel-cache/tree/features/docker/docker.cfg
+.. _Kas documentation: https://kas.readthedocs.io/en/latest/userguide.html#including-configuration-files-from-other-repos
