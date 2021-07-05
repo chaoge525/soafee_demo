@@ -65,7 +65,11 @@ This project has not put in place a process for contributions or bug reporting
 currently. If you would like to contribute or have found a bug, please contact
 the maintainers.
 
+## Feedback and support
+
+To request support please contact Arm at support@arm.com. Arm licensees may
+also contact Arm via their partner managers.
+
 ## Maintainer(s)
 
 * Diego Sueiro <diego.sueiro@arm.com>
-* <support@arm.com>

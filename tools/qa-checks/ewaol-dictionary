@@ -117,6 +117,7 @@ kas
 kas.
 kas-ci-build
 KAS_MACHINE
+licensees
 localhost
 ls
 lsblk
