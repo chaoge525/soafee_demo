@@ -24,17 +24,24 @@ image_remove() {
     docker image rm "${1}" --force 2>"${OCI_TEST_STDERR_FILE}"
 }
 
-# Arg1: Image name
-# Arg2: Command to execute in container
-# Returns exit code of the run command
-# STDOUT is the container ID
-container_run_persistent() {
+# Arg1: Arguments passed to the engine for running the container
+# Arg2: Image name
+# Arg3: Command to execute in container
+#
+# If detached (with '-d'), returns exit code of the container creation (exit
+# code of command is available by subsequently inspecting the container
+# status), and STDOUT is the container ID.
+#
+# If not detached, returns exit code for the command, and STDOUT is the output
+# of the command
+container_run() {
 
-    image_name="${1}"
-    container_cmd="${*:2}"
+    engine_args="${1}"
+    image_name="${2}"
+    container_cmd="${*:3}"
 
     # shellcheck disable=SC2086
-    docker run -it -d "${image_name}" ${container_cmd} 2>"${OCI_TEST_STDERR_FILE}"
+    docker run "${engine_args}" "${image_name}" ${container_cmd} 2>"${OCI_TEST_STDERR_FILE}"
 }
 
 # Arg1: Container ID

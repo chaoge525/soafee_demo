@@ -144,17 +144,23 @@ bitbake recipe within ``meta-ewaol-tests/recipes-tests/runtime-integration-tests
 The tests execution is identical on both Docker and Podman images, as it makes
 use of Podman provided aliases for Docker commands.
 
-Currently, the test suite contains one top-level integration test that is
-composed of four sub-tests:
+Currently the test suite contains two top-level integration tests, which run
+consecutively in the following order.
 
-| 1. Run a containerised workload via the ``docker run`` command
-|  - Pull an image from the network
-|  - Create and start the container
-| 2. Check the container is running via the ``docker inspect`` command
-| 3. Remove the running container via the ``docker remove`` command
-|  - Stop the container
-|  - Remove the container from the container list
-| 4. Check the container is not found via the ``docker inspect`` command
+| 1. ``Run OCI Container`` is composed of four sub-tests:
+|    1.1. Run a containerised detached workload via the ``docker run`` command
+|        - Pull an image from the network
+|        - Create and start a container
+|    1.2. Check the container is running via the ``docker inspect`` command
+|    1.3. Remove the running container via the ``docker remove`` command
+|        - Stop the container
+|        - Remove the container from the container list
+|    1.4. Check the container is not found via the ``docker inspect`` command
+| 2. ``OCI Container Network Connectivity`` is composed of a single sub-test:
+|    2.1 Run a containerised, immediate (non-detached) network-based workload
+         via the ``docker run`` command
+|        - Create and start a container, re-using the existing image
+|        - Update package lists within container from external network
 
 The tests can be customised via environment variables passed to the execution:
 
@@ -239,7 +245,7 @@ be validated. Or, if there are running containers from previous (failed) tests
 then they may interfere with subsequent test executions.
 
 Therefore, if ``OCI_TEST_CLEAN_ENV`` is set to ``1`` (as is default), running
-the test suite will perform an environment clean before and after the test
+the test suite will perform an environment clean before and after the suite
 execution.
 
 The environment clean operation involves:

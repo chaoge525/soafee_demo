@@ -93,10 +93,11 @@ teardown_file() {
     # hub, to execute an example workload simply consisting of an interactive
     # shell, then remove it afterwards.
 
+    engine_args="-itd"
     workload="/bin/sh"
 
     subtest="Run an OCI container with a persistent workload"
-    run container_run_persistent ${OCI_TEST_IMAGE} ${workload}
+    run container_run "${engine_args}" "${OCI_TEST_IMAGE}" "${workload}"
     if [ "${status}" -ne 0 ]; then
         log "FAIL" "${subtest}"
         return 1
@@ -126,7 +127,28 @@ teardown_file() {
 
     subtest="Check the container status is no longer available"
     run check_container_state "${container_id}"
-    if [ "${status}" -eq 0 ] ; then
+    if [ "${status}" -eq 0 ]; then
+        log "FAIL" "${subtest}"
+        return 1
+    else
+        log "PASS" "${subtest}"
+    fi
+
+    log "PASS"
+}
+
+@test 'OCI container network connectivity' {
+
+    # Run a non-detached container that executes a workload that requires
+    # network access. If the command does not return an error, then the
+    # container has network connectivity.
+
+    engine_args="-it"
+    workload="apk update"
+
+    subtest="Update apk package lists within container"
+    run container_run "${engine_args}" "${OCI_TEST_IMAGE}" "${workload}"
+    if [ "${status}" -ne 0 ]; then
         log "FAIL" "${subtest}"
         return 1
     else
