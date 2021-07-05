@@ -1,12 +1,12 @@
 Project Quickstart
-==================
+##################
 
 This documentation explains how to quickly get started with the EWAOL project.
 For more information on building an image for the EWAOL project, see
 :ref:`Image Builds`.
 
 Build Host Setup
-----------------
+****************
 
 A number of dependencies are required to build projects with Yocto.
 `The Yocto Project documentation`_ provides the list of essential packages to
@@ -57,20 +57,18 @@ project builds within ``meta-ewaol`` repository are described in:
 :ref:`Image Builds`.
 
 Minimal Image Build via kas
----------------------------
+***************************
 
-This section describes how to build images for the EWAOL project for an
-example target machine.
+This section describes how to build images for the EWAOL project for the
+following machines:
 
-The machine used in this example is the Armv8-A Base RevC AEM FVP machine,
-corresponding to the ``fvp-base`` ``MACHINE`` implemented in `meta-arm-bsp`_.
-The FVP binary package is available for download from
-`Arm Architecture Models`_ as "Armv-A Base RevC AEM FVP".
+- The Armv8-A Base RevC AEM FVP machine, corresponding to the ``fvp-base``
+  ``MACHINE`` implemented in `meta-arm-bsp`_.
+- The Neoverse N1 System Development Platform, corresponding to the ``n1sdp``
+  ``MACHINE`` implemented in `meta-arm-bsp`_.
 
 .. _meta-arm-bsp:
    https://git.yoctoproject.org/cgit/cgit.cgi/meta-arm/tree/meta-arm-bsp/documentation/fvp-base.md
-.. _Arm Architecture Models:
-   https://developer.arm.com/tools-and-software/simulation-models/fixed-virtual-platforms/arm-ecosystem-models
 
 Checkout the ``meta-ewaol`` repository:
 
@@ -84,8 +82,16 @@ Running kas with the build configurations within ``meta-ewaol-config`` will
 build two images by default: one that includes the Docker container engine and
 another one that includes the Podman container engine.
 
+FVP-Base
+========
 
-To build these images via kas for the FVP-Base machine:
+The FVP binary package is available for download from
+`Arm Architecture Models`_ as "Armv-A Base RevC AEM FVP".
+
+.. _Arm Architecture Models:
+   https://developer.arm.com/tools-and-software/simulation-models/fixed-virtual-platforms/arm-ecosystem-models
+
+To build the images via kas for the FVP-Base machine:
 
 .. code-block:: console
 
@@ -103,6 +109,247 @@ an option to the kas build command, as shown in the following example:
 
    kas build --target ewaol-image-docker meta-ewaol/meta-ewaol-config/kas/fvp-base.yml
 
-To build image with tests included please refer to :ref:`fvp-base: build image including tests`.
+To build an image with tests included please refer to
+:ref:`fvp-base: build image including tests`.
 
 To execute tests please refer to :ref:`fvp-base: running tests`.
+
+N1SDP
+=====
+
+To read documentation about the N1SDP board, check the
+`N1SDP Technical Reference Manual`_.
+
+Build
+-----
+
+To build the images via kas for the N1SDP board:
+
+.. code-block:: console
+
+   kas build meta-ewaol/meta-ewaol-config/kas/n1sdp.yml
+
+The resulting images will be produced:
+ - ``build/tmp/deploy/images/n1sdp/ewaol-image-docker-n1sdp.*``
+ - ``build/tmp/deploy/images/n1sdp/ewaol-image-podman-n1sdp.*``
+
+To build only one image corresponding to a particular container engine, specify
+the ``--target`` (either ``ewaol-image-docker`` or ``ewaol-image-podman``) as
+an option to the kas build command, as shown in the following example:
+
+.. code-block:: console
+
+   kas build --target ewaol-image-docker meta-ewaol/meta-ewaol-config/kas/n1sdp.yml
+
+Deploy
+------
+
+To deploy the image on N1SDP you will need a tool to copy an image using its
+block map. In this tutorial, we will use ``bmap-tools`` which can be installed
+on your host via the following command (example on Ubuntu based host):
+
+.. code-block:: console
+
+   sudo apt install bmap-tools
+
+USB Storage Device
+^^^^^^^^^^^^^^^^^^
+
+The image is produced as files with the `.wic.bmap` and `.wic.gz` extensions.
+They are produced by building the default build target.
+
+Prepare a USB disk (min size of 64 GB).
+(In this example the USB storage device is the **/dev/sdc** device):
+
+.. code-block:: console
+
+   lsblk
+   NAME   MAJ:MIN RM   SIZE RO TYPE MOUNTPOINT
+   sdc      8:0    0    64G  0 disk
+   ...
+
+Use `bmap-tools` to copy the image to USB disk (docker image in this example):
+
+.. note::
+   All partitions and data on the USB disk will be erased. Please backup before
+   continuing.
+
+.. code-block:: console
+
+   sudo umount /dev/sdc*
+   cd build/tmp/deploy/images/n1sdp/
+   sudo bmaptool copy --bmap ewaol-image-docker-n1sdp.wic.bmap ewaol-image-docker-n1sdp.wic.gz /dev/sdc
+
+Safely eject the USB storage device from the host PC and plug it onto one of
+the USB 3.0 ports in the N1SDP.
+
+Board's MCC configuration microSD card
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. note::
+   This process doesn't need to be performed every time the
+   `USB Storage Device` gets updated. You just need to update the MCC
+   configuration microSD card when the EWAOL version changes.
+
+1. Connect the USB-B cable to the DBG USB port of the N1SDP back panel.
+
+2. Find four TTY USB devices in your **/dev** directory. Example:
+
+.. code-block:: console
+
+   ls /dev/ttyUSB*
+   /dev/ttyUSB0
+   /dev/ttyUSB1
+   /dev/ttyUSB2
+   /dev/ttyUSB3
+
+By default the four ports are connected to the following devices:
+
+ - ttyUSB<n> Motherboard Configuration Controller (MCC)
+ - ttyUSB<n+1> Application processor (AP)
+ - ttyUSB<n+2> System Control Processor (SCP)
+ - ttyUSB<n+3> Manageability Control Processor (MCP)
+
+In this guide the ports are: ``ttyUSB0 - MCC, ttyUSB1 - AP, ttyUSB2 - SCP,
+ttyUSB3 - MCP``. The port settings are:
+
+ - 115200 Baud
+ - 8N1
+ - No hardware or software flow support
+
+3. Connect to the MCC console. Any terminal applications such as  **PuTTy**,
+   **screen** or **minicom**  will work. In this guide, we use the  **screen**
+   command:
+
+.. code-block:: console
+
+   sudo screen /dev/ttyUSB0 115200
+
+4. Turn the main power switch on the power supply of the N1SDP tower. The MCC
+window will be shown. Type `?` to see MCC firmware version and a list of
+commands:
+
+.. code-block:: console
+
+   Cmd> ?
+    Arm N1SDP MCC Firmware v1.0.1
+    Build Date: Sep  5 2019
+    Build Time: 14:18:16
+    + command ------------------+ function ---------------------------------+
+    | CAP "fname" [/A]          | captures serial data to a file            |
+    |                           |  [/A option appends data to a file]       |
+    | FILL "fname" [nnnn]       | create a file filled with text            |
+    |                           |  [nnnn - number of lines, default=1000]   |
+    | TYPE "fname"              | displays the content of a text file       |
+    | REN "fname1" "fname2"     | renames a file 'fname1' to 'fname2'       |
+    | COPY "fin" ["fin2"] "fout"| copies a file 'fin' to 'fout' file        |
+    |                           |  ['fin2' option merges 'fin' and 'fin2']  |
+    | DEL "fname"               | deletes a file                            |
+    | DIR "[mask]"              | displays a list of files in the directory |
+    | FORMAT [label]            | formats Flash Memory Card                 |
+    | USB_ON                    | Enable usb                                |
+    | USB_OFF                   | Disable usb                               |
+    | SHUTDOWN                  | Shutdown PSU (leave micro running)        |
+    | REBOOT                    | Power cycle system and reboot             |
+    | RESET                     | Reset Board using CB_nRST                 |
+    | DEBUG                     | Enters debug menu                         |
+    | EEPROM                    | Enters eeprom menu                        |
+    | HELP  or  ?               | displays this help                        |
+    |                                                                       |
+    | THE FOLLOWING COMMANDS ARE ONLY AVAILABLE IN RUN MODE                 |
+    |                                                                       |
+    | CASE_FAN_SPEED "SPEED"    | Choose from SLOW, MEDIUM, FAST            |
+    | READ_AXI "fname"          | Read system memory to file 'fname'        |
+    |          "address"        | from address to end address               |
+    |          "end_address"    |                                           |
+    | WRITE_AXI "fname"         | Write file 'fname' to system memory       |
+    |           "address"       | at address                                |
+    +---------------------------+-------------------------------------------+
+   Cmd>
+
+Enable USB:
+
+.. code-block:: console
+
+   Cmd> USB_ON
+
+5. Mount the N1SDP's internal microSD card over the DBG USB connection to your
+host PC and copy the required files.
+
+The microSD card is visible on your host PC as a disk device after issuing the
+`USB_ON` command in the MCC console, as performed in the previous step.
+To check using **lsblk**:
+
+.. code-block:: console
+
+   lsblk
+   NAME   MAJ:MIN RM   SIZE RO TYPE MOUNTPOINT
+   sdb      8:0    0     2G  0 disk
+   └─sdb1   8:1    0     2G  0 part
+
+In this example we need to mount **/dev/sdb1**:
+
+.. code-block:: console
+
+   sudo umount /dev/sdb1
+   sudo mkdir -p /tmp/sdcard
+   sudo mount /dev/sdb1 /tmp/sdcard
+   ls /tmp/sdcard
+   config.txt   ee0316a.txt   LICENSES   LOG.TXT   MB   SOFTWARE
+
+6. Wipe and extract the contents of
+``build/tmp/deploy/images/n1sdp/n1sdp-board-firmware_primary.tar.gz``
+onto the mounted microSD card:
+
+.. code-block:: console
+
+   sudo rm -rf /tmp/sdcard/*
+   sudo tar --no-same-owner -xf \
+      build/tmp/deploy/images/n1sdp/n1sdp-board-firmware_primary.tar.gz -C \
+      /tmp/sdcard/ && sync
+   sudo umount /tmp/sdcard
+   sudo rmdir /tmp/sdcard
+
+.. note::
+   If the N1SDP board was manufactured after November 2019 (Serial Number
+   greater than 36253xxx), a different PMIC firmware image must be used to
+   prevent potential damage to the board. More details can be found in
+   `Potential firmware damage notice`_. The ``MB/HBI0316A/io_v123f.txt`` file
+   located in the microSD needs to be updated. To update it, set the PMIC image
+   (300k_8c2.bin) to be used in the newer models by running the following
+   commands on your host PC:
+
+   .. code-block:: console
+
+      sudo umount /dev/sdb1
+      sudo mkdir -p /tmp/sdcard
+      sudo mount /dev/sdb1 /tmp/sdcard
+      sudo sed -i '/^MBPMIC: pms_0V85.bin/s/^/;/g' /tmp/sdcard/MB/HBI0316A/io_v123f.txt
+      sudo sed -i '/^;MBPMIC: 300k_8c2.bin/s/^;//g' /tmp/sdcard/MB/HBI0316A/io_v123f.txt
+      sudo umount /tmp/sdcard
+      sudo rmdir /tmp/sdcard
+
+7. Power on the main SoC using the MCC console:
+
+.. code-block:: console
+
+    Cmd> REBOOT
+
+Run
+---
+
+To run the image, connect to the AP console by running the following command
+from a terminal in your host PC:
+
+.. code-block:: console
+
+   sudo screen /dev/ttyUSB1 115200
+
+Then, login as ``root`` without password.
+
+To build image with tests included please refer to :ref:`n1sdp: build image including tests`.
+
+To execute tests please refer to :ref:`n1sdp: running tests`.
+
+.. _Potential firmware damage notice: https://community.arm.com/developer/tools-software/oss-platforms/w/docs/604/notice-potential-damage-to-n1sdp-boards-if-using-latest-firmware-release
+.. _N1SDP Technical Reference Manual: https://developer.arm.com/documentation/101489/0000
