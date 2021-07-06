@@ -142,6 +142,43 @@ There are currently two build modifier YAML files:
   the value of ``DISTRO_FEATURE`` will take its default value as specified
   earlier in this document.
 
+Adding External Machines and BSP Layers
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+In order to add an external machine to be built with EWAOL, you need to add a
+``my-machine.yml`` kas configuration file (where ``my-machine`` is the
+``MACHINE`` name of the external machine) to your Yocto BSP layer:
+``meta-my-bsp-layer``. This file should have the following structure:
+
+.. code-block:: console
+
+    header:
+      version: 10
+      includes:
+        - repo: meta-ewaol
+          file: meta-ewaol-config/kas/base.yml
+        - repo: meta-ewaol
+          file: meta-ewaol-config/kas/tests.yml
+        - repo: meta-ewaol
+          file: meta-ewaol-config/kas/ewaol-v0.1.yml
+
+    repos:
+      meta-my-bsp-layer:
+
+      meta-ewaol:
+        url: https://<meta-ewaol-public-repo>
+        refspec: v0.1
+
+    machine: my-machine
+
+To read more about how to customise this configuration file, check the
+`Kas documentation`_. Images for ``my-machine`` can be built by running the
+following kas command:
+
+.. code-block:: console
+
+    kas build meta-my-bsp-layer/my-machine.yml
+
 Build Validation
 ----------------
 

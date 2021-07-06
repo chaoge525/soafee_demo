@@ -167,6 +167,7 @@ Quickstart
 read_axi
 readme
 readthedocs
+refspec
 repo
 repos
 reStructuredText
@@ -219,6 +220,7 @@ usb_off
 usb_on
 userguide
 v
+v0
 v1
 verbosity
 virtualization
