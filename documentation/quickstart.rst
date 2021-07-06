@@ -85,17 +85,25 @@ another one that includes the Podman container engine.
 FVP-Base
 ========
 
-The FVP binary package is available for download from
-`Arm Architecture Models`_ as "Armv-A Base RevC AEM FVP".
+Build on FVP-Base
+-----------------
 
-.. _Arm Architecture Models:
-   https://developer.arm.com/tools-and-software/simulation-models/fixed-virtual-platforms/arm-ecosystem-models
+To build the images for fvp-base machine, you need to:
 
-To build the images via kas for the FVP-Base machine:
+* go to `Arm Architecture Models`_ website, and download the "Armv-A Base RevC
+  AEM FVP" package
+* set absolute path to the downloaded package
+  (e.g. **FVP_Base_RevC-2xAEMvA_11.14_21.tgz**) in
+  ``FVP_BASE_A_AEM_TARBALL_URI``
+* accept EULA in ``FVP_BASE_A_ARM_EULA_ACCEPT``
+
+Then, use kas to build the images:
 
 .. code-block:: console
 
-   kas build meta-ewaol/meta-ewaol-config/kas/fvp-base.yml
+   FVP_BASE_A_AEM_TARBALL_URI="file:///absolute/path/to/FVP_Base_RevC-2xAEMvA_11.14_21.tgz" \
+   FVP_BASE_A_ARM_EULA_ACCEPT="True" \
+   kas build meta-ewaol-config/kas/fvp-base.yml
 
 The resulting images will be produced:
  - ``build/tmp/deploy/images/fvp-base/ewaol-image-docker-fvp-base.*``
@@ -109,6 +117,35 @@ an option to the kas build command, as shown in the following example:
 
    kas build --target ewaol-image-docker meta-ewaol/meta-ewaol-config/kas/fvp-base.yml
 
+Run on FVP-Base
+---------------
+
+To start fvp emulation and connect to its terminal, you need to start the
+fvp-base emulator with podman or docker flavour:
+
+.. code-block:: console
+
+   kas shell --keep-config-unchanged \
+       meta-ewaol-config/kas/fvp-base.yml \
+           --command "../layers/meta-arm/scripts/runfvp \
+                tmp/deploy/images/fvp-base/ewaol-image-[docker|podman]-fvp-base.fvpconf \
+                --console \
+                -- \
+                    --parameter 'bp.smsc_91c111.enabled=1' \
+                    --parameter 'bp.hostbridge.userNetworking=true'"
+
+To finish the fvp emulation, you need to close the telnet session and stop the
+runfvp script:
+
+1. To close the telnet session:
+
+ - Escape to telnet console with ``ctrl+]``.
+ - Run ``quit`` to close the session.
+
+2. To stop the runfvp:
+
+ - Type ``ctrl+c`` and wait for kas process to finish.
+
 To build an image with tests included please refer to
 :ref:`fvp-base: build image including tests`.
 
@@ -120,8 +157,8 @@ N1SDP
 To read documentation about the N1SDP board, check the
 `N1SDP Technical Reference Manual`_.
 
-Build
------
+Build on N1SDP
+--------------
 
 To build the images via kas for the N1SDP board:
 
@@ -141,8 +178,8 @@ an option to the kas build command, as shown in the following example:
 
    kas build --target ewaol-image-docker meta-ewaol/meta-ewaol-config/kas/n1sdp.yml
 
-Deploy
-------
+Deploy on N1SDP
+---------------
 
 To deploy the image on N1SDP you will need a tool to copy an image using its
 block map. In this tutorial, we will use ``bmap-tools`` which can be installed
@@ -335,8 +372,8 @@ onto the mounted microSD card:
 
     Cmd> REBOOT
 
-Run
----
+Run on N1SDP
+------------
 
 To run the image, connect to the AP console by running the following command
 from a terminal in your host PC:
@@ -353,3 +390,4 @@ To execute tests please refer to :ref:`n1sdp: running tests`.
 
 .. _Potential firmware damage notice: https://community.arm.com/developer/tools-software/oss-platforms/w/docs/604/notice-potential-damage-to-n1sdp-boards-if-using-latest-firmware-release
 .. _N1SDP Technical Reference Manual: https://developer.arm.com/documentation/101489/0000
+.. _Arm Architecture Models: https://developer.arm.com/tools-and-software/simulation-models/fixed-virtual-platforms/arm-ecosystem-models
