@@ -151,8 +151,8 @@ for execution via ``ptest-runner`` or as a standalone BATS suite, as described
 in `Running the Tests`_.
 
 The test suite is built and installed in the image according to the following
-bitbake recipe within ``meta-ewaol-tests/recipes-tests/runtime-integration-tests
-/container-engine-integration-tests.bb``.
+bitbake recipe within
+``meta-ewaol-tests/recipes-tests/runtime-integration-tests/container-engine-integration-tests.bb``.
 
 The tests execution is identical on both Docker and Podman images, as it makes
 use of Podman provided aliases for Docker commands.

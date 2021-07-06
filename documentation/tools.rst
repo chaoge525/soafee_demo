@@ -20,13 +20,16 @@ script:
 
     ./tools/build/doc-build.py --help
 
+To render and explore the documentation, simply open ``public/index.html`` in a
+web browser.
+
 CI Build Tool
 -------------
 
 In addition to the kas config files, ``meta-ewaol-config`` contains a Python
 script for enabling Continuous Integration (CI) builds:
 
-    `tools/build/kas-ci-build.py``
+  ``tools/build/kas-ci-build.py``
 
 Given a space-separated list of build targets (each consisting of one or more
 colon-separated YAML files), this script will run a containerised kas command
