@@ -8,10 +8,10 @@ Contents
    :maxdepth: 2
 
    overview
-   codeline-management
-   yocto-layers
    quickstart
    builds
    validations
+   yocto-layers
+   codeline-management
    tools
    license_link

@@ -68,7 +68,7 @@ N1SDP: build image including tests
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 To build tests for N1SDP using the same process as described in
-:ref:`Build on N1SDP`, you only need to add ``meta-ewaol-config/kas/tests.yml``
+:ref:`Build for N1SDP`, you only need to add ``meta-ewaol-config/kas/tests.yml``
 to the kas build command:
 
 .. code-block:: console

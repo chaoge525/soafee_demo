@@ -85,8 +85,8 @@ another one that includes the Podman container engine.
 FVP-Base
 ========
 
-Build on FVP-Base
------------------
+Build for FVP-Base
+------------------
 
 To build the images for fvp-base machine, you need to:
 
@@ -157,8 +157,8 @@ N1SDP
 To read documentation about the N1SDP board, check the
 `N1SDP Technical Reference Manual`_.
 
-Build on N1SDP
---------------
+Build for N1SDP
+---------------
 
 To build the images via kas for the N1SDP board:
 
