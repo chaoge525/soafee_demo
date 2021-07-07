@@ -28,5 +28,13 @@ High-Level Architecture
 
 .. image:: images/ewaol_arch_overview.png
 
+The EWAOL images include the following major features:
+
+  * Based on ``poky.conf`` distro
+  * Systemd as init system
+  * RPM as the package management system
+  * Docker or Podman as container engine
+  * runc-opencontainers as the OCI container runtime
+  * Development and Test images flavours
 
 .. mdinclude:: ../README.md

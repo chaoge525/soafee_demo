@@ -7,9 +7,7 @@ The high-level structure of the `meta-ewaol` repository is as follows:
   available to be implemented as a EWAOL project distribution.
 
 **meta-ewaol-config**:
-  Directory that contains kas configuration files for specifying and building
-  a software image for the EWAOL project, as well as tooling to
-  support the build process.
+  Directory that contains kas configurations files for building EWAOL images.
 
 **meta-ewaol-tests**:
   Yocto layer that provides recipes and configuration to enable the validation
@@ -17,6 +15,10 @@ The high-level structure of the `meta-ewaol` repository is as follows:
 
 **documentation**:
   Directory that provides documentation for the `meta-ewaol` repository.
+
+**tools**:
+  Directory that provides tools that perform quality-assurance checks on the
+  repository as well as tools and scripts to support EWAOL images builds.
 
 ## Building the documentation
 

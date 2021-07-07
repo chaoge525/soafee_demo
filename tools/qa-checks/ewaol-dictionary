@@ -148,6 +148,7 @@ n1sdp_tests
 neoverse
 nnnn
 oci
+opencontainers
 p
 pc
 pip3
@@ -179,6 +180,7 @@ rmdir
 rpm
 rst
 rtd
+runc
 runfvp
 runtime
 s

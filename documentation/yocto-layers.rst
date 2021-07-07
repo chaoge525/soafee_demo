@@ -34,41 +34,23 @@ meta-ewaol
     * ``meta-ewaol-tests``
     * ``meta-ewaol-bsp`` (only implemented if BSP adaptations are required)
     * ``documentation``
+    * ``tools``
 
 meta-ewaol-config
 ^^^^^^^^^^^^^^^^^
 
-Provides kas and build configurations files and scripts for building EWAOL
-images in a CI environment, as well as tooling for code, license, commit
-message and spell checks.
+Provides kas configurations files for building EWAOL images.
 
 meta-ewaol-distro
 ^^^^^^^^^^^^^^^^^
 
 Yocto distribution layer providing top-level and general policies for the EWAOL
-images:
-
-* Based on ``poky.conf`` distro
-* RPM package management system
-* Systemd as Init system
-* Build targets definition
-  (e.g.: image recipes, images flavours, preferred providers and distro
-  features)
-
-  * development image
-  * Docker and Podman images
-  * Hello-world container image generation
-  * test image
+images. For more details, please see :ref:`High-Level Architecture`.
 
 meta-ewaol-tests
 ^^^^^^^^^^^^^^^^
 
-Yocto layer to validate EWAOL functionalities implementation:
-
-* Container engine and run-time integration tests
-* Tools for validation of external BSP layers as EWAOL compatible
-
-  * External layers can use ``meta-ewaol-bsp`` as a reference implementation
+Yocto layer with recipes including tests to validate EWAOL functionalities.
 
 meta-ewaol-bsp
 ^^^^^^^^^^^^^^
