@@ -1,6 +1,6 @@
-# Sphinx Exclusions
-documentation/_build
-layers/
-./*build*/
-public/
+/*artifacts*
+/*build*
+/documentation/_build
+/layers
+/public
 __pycache__
