@@ -1,0 +1,22 @@
+# Copyright (c) 2021, Arm Limited.
+#
+# SPDX-License-Identifier: MIT
+
+header:
+  version: 10
+
+repos:
+  meta-arm:
+    refspec: hardknott
+
+  meta-openembedded:
+    refspec: hardknott
+
+  meta-security:
+    refspec: hardknott
+
+  meta-virtualization:
+    refspec: hardknott
+
+  poky:
+    refspec: hardknott

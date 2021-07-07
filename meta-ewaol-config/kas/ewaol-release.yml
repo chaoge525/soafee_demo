@@ -1,0 +1,27 @@
+# Copyright (c) 2021, Arm Limited.
+#
+# SPDX-License-Identifier: MIT
+
+######################
+# EWAOL v0.1 Release #
+######################
+
+header:
+  version: 10
+
+repos:
+
+  meta-arm:
+    refspec: e82d9fdd49745a6a064b636f2ea1e02c1750d298
+
+  meta-openembedded:
+    refspec: c51e79dd854460c6f6949a187970d05362152e84
+
+  meta-security:
+    refspec: c6b1eec0e5e94b02160ce0ac3aa9582cbbf7b0ed
+
+  meta-virtualization:
+    refspec: 3508b13acbf669a5169fafca232a5c4ee705dd16
+
+  poky:
+    refspec: da0ce760c5372f8f2ef4c4dfa24b6995db73c66c

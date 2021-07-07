@@ -76,7 +76,7 @@ Checkout the ``meta-ewaol`` repository:
 
    mkdir -p ~/ewaol
    cd ~/ewaol
-   git clone <meta-ewaol-public-repo> -b hardknott
+   git clone <meta-ewaol-repo-url> -b v0.1
 
 Running kas with the build configurations within ``meta-ewaol-config`` will
 build two images by default: one that includes the Docker container engine and

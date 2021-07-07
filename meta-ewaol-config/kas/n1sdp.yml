@@ -5,7 +5,7 @@
 header:
   version: 10
   includes:
-    - base.yml
-    - arm_machines.yml
+    - ewaol-base.yml
+    - arm-machines.yml
 
 machine: n1sdp

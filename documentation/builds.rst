@@ -104,12 +104,14 @@ bitbake build.
 
 Each machine config includes common configuration from:
 
-* ``base.yml``
+* ``ewaol-base.yml``
 
     Defines the image targets, layer dependencies and their software sources
-    and build configuration variables.
+    and build configuration variables. It also includes the
+    ``ewaol-release.yml`` where the layers dependencies are pinned for the
+    specific EWAOL release tag.
 
-* ``arm_machines.yml``
+* ``arm-machines.yml``
 
     Defines the BSPs, layers, and dependencies specific to the Arm reference
     platforms of the supported machines.
@@ -156,17 +158,15 @@ In order to add an external machine to be built with EWAOL, you need to add a
       version: 10
       includes:
         - repo: meta-ewaol
-          file: meta-ewaol-config/kas/base.yml
+          file: meta-ewaol-config/kas/ewaol-base.yml
         - repo: meta-ewaol
           file: meta-ewaol-config/kas/tests.yml
-        - repo: meta-ewaol
-          file: meta-ewaol-config/kas/ewaol-v0.1.yml
 
     repos:
       meta-my-bsp-layer:
 
       meta-ewaol:
-        url: https://<meta-ewaol-public-repo>
+        url: <meta-ewaol-repo-url>
         refspec: v0.1
 
     machine: my-machine

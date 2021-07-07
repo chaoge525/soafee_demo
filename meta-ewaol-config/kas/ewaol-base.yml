@@ -4,6 +4,8 @@
 
 header:
   version: 10
+  includes:
+    - ewaol-release.yml
 
 defaults:
   repos:
@@ -40,7 +42,7 @@ repos:
       meta-poky:
 
 local_conf_header:
-  base: |
+  ewaol-base: |
     CONF_VERSION = "1"
     PACKAGECONFIG_remove_pn-qemu-system-native = "gtk+ sdl"
 
