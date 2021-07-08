@@ -263,10 +263,10 @@ console:
 
 .. code-block:: console
 
-    $ ptest-runner oci-runtime-integration-tests
+    $ ptest-runner container-engine-integration-tests
     START: ptest-runner
     [...]
-    PASS:oci-runtime-integration-tests
+    PASS:container-engine-integration-tests
     [...]
     STOP: ptest-runner
 
