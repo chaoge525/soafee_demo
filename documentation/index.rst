@@ -15,3 +15,4 @@ Contents
    codeline-management
    tools
    license_link
+   changelog

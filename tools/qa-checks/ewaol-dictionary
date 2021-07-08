@@ -1,9 +1,11 @@
+249bca0a13
 2g
 300k_8c2
 36253xxx
 3rd
 64g
 8n1
+ab4d0cf908
 aem
 all_targets
 appends
@@ -44,6 +46,7 @@ ce_test_image
 ce_test_log_dir
 cfg
 cgit
+changelog
 ci
 ci-build
 cmd
@@ -103,6 +106,7 @@ g
 gb
 gbytes
 ghcr
+git0
 github
 gz
 hardknott
@@ -153,6 +157,7 @@ opencontainers
 openembedded
 p
 pc
+pep8
 pip3
 pmic
 pms_0v85
@@ -163,10 +168,13 @@ psu
 _ptest
 ptest
 ptest_
+pycodestyle
+pyspellchecker
 _python
 python3
 quickstart
 Quickstart
+rc93
 read_axi
 readme
 readthedocs
@@ -192,8 +200,10 @@ sdb1
 sdc
 sdcard
 SDKs
+shellcheck
 singleindex
 source_mirror_url
+spdx
 SSTATE
 sstate-cache
 SSTATE_CACHE
@@ -233,6 +243,7 @@ wic
 workloads
 write_axi
 www
+x86_64
 xf
 yaml
 yml
