@@ -23,6 +23,10 @@ More specifically, the ``meta-ewaol`` repository contains Yocto layers,
 configuration files, and tools to support building and validating EWAOL
 functionalities.
 
+.. note::
+    Users of this software stack must consider safety and security implications
+    according to their own usage goals.
+
 High-Level Architecture
 -----------------------
 
