@@ -32,7 +32,6 @@ meta-ewaol
     * ``meta-ewaol-config``
     * ``meta-ewaol-distro``
     * ``meta-ewaol-tests``
-    * ``meta-ewaol-bsp`` (only implemented if BSP adaptations are required)
     * ``documentation``
     * ``tools``
 
@@ -51,11 +50,3 @@ meta-ewaol-tests
 ^^^^^^^^^^^^^^^^
 
 Yocto layer with recipes including tests to validate EWAOL functionalities.
-
-meta-ewaol-bsp
-^^^^^^^^^^^^^^
-
-BSP layer extending other BSP layers to fulfil EWAOL requirements:
-
-* SystemReady configuration and adaptation if required. Ideally should be done
-  in ``meta-arm-bsp``
