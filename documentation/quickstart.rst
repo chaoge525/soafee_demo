@@ -146,10 +146,12 @@ runfvp script:
 
  - Type ``ctrl+c`` and wait for kas process to finish.
 
-To build an image with tests included please refer to
-:ref:`fvp-base: build image including tests`.
+Tests on FVP-Base
+-----------------
 
-To execute tests please refer to :ref:`fvp-base: running tests`.
+* To build an image with tests included please refer to
+  :ref:`fvp-base: build image including tests`.
+* To execute tests please refer to :ref:`fvp-base: running tests`.
 
 N1SDP
 =====
@@ -384,9 +386,12 @@ from a terminal in your host PC:
 
 Then, login as ``root`` without password.
 
-To build image with tests included please refer to :ref:`n1sdp: build image including tests`.
+Tests on N1SDP
+--------------
 
-To execute tests please refer to :ref:`n1sdp: running tests`.
+* To build an image with tests included please refer to
+  :ref:`n1sdp: build image including tests`.
+* To execute tests please refer to :ref:`n1sdp: running tests`.
 
 .. _Potential firmware damage notice: https://community.arm.com/developer/tools-software/oss-platforms/w/docs/604/notice-potential-damage-to-n1sdp-boards-if-using-latest-firmware-release
 .. _N1SDP Technical Reference Manual: https://developer.arm.com/documentation/101489/0000

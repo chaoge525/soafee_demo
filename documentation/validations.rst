@@ -41,6 +41,7 @@ To build tests for fvp-base machine from this example
 * set absolute path to the downloaded package
   (e.g. **FVP_Base_RevC-2xAEMvA_11.14_21.tgz**) in ``FVP_BASE_A_AEM_TARBALL_URI``
 * accept EULA in ``FVP_BASE_A_ARM_EULA_ACCEPT``
+* Add ``:meta-ewaol-config/kas/tests.yml`` to the kas build command:
 
 .. _Arm Architecture Models: https://developer.arm.com/tools-and-software/simulation-models/fixed-virtual-platforms/arm-ecosystem-models
 
@@ -64,11 +65,13 @@ To build tests for fvp-base machine from this example
     .. note::
        The ``fvp_volume`` is a directory that contains "Armv-A Base RevC AEM FVP" package.
 
+* To execute tests please refer to :ref:`fvp-base: running tests`.
+
 N1SDP: build image including tests
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 To build tests for N1SDP using the same process as described in
-:ref:`Build for N1SDP`, you only need to add ``meta-ewaol-config/kas/tests.yml``
+:ref:`Build for N1SDP`, you only need to add ``:meta-ewaol-config/kas/tests.yml``
 to the kas build command:
 
 .. code-block:: console
@@ -77,6 +80,8 @@ to the kas build command:
 
 To deploy the generated images on the board, please refer to the
 :ref:`Deploy on N1SDP` section.
+
+To execute tests please refer to :ref:`n1sdp: running tests`.
 
 Running the Tests
 -----------------
