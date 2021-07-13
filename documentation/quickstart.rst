@@ -199,7 +199,7 @@ The image is produced as files with the `.wic.bmap` and `.wic.gz` extensions.
 They are produced by building the default build target.
 
 Prepare a USB disk (min size of 64 GB).
-(In this example the USB storage device is the **/dev/sdc** device):
+Identify the USB storage device using ``lsblk`` command:
 
 .. code-block:: console
 
@@ -207,6 +207,10 @@ Prepare a USB disk (min size of 64 GB).
    NAME   MAJ:MIN RM   SIZE RO TYPE MOUNTPOINT
    sdc      8:0    0    64G  0 disk
    ...
+
+.. note::
+   In this example, the USB storage device is the **/dev/sdc** device. Be extra
+   careful when copying and pasting the following commands.
 
 Use `bmap-tools` to copy the image to USB disk (docker image in this example):
 
@@ -318,7 +322,7 @@ host PC and copy the required files.
 
 The microSD card is visible on your host PC as a disk device after issuing the
 `USB_ON` command in the MCC console, as performed in the previous step.
-To check using **lsblk**:
+To check using ``lsblk`` command:
 
 .. code-block:: console
 
@@ -327,7 +331,9 @@ To check using **lsblk**:
    sdb      8:0    0     2G  0 disk
    └─sdb1   8:1    0     2G  0 part
 
-In this example we need to mount **/dev/sdb1**:
+.. note::
+   In this example, we need to mount the **/dev/sdb1** partition. Be extra
+   careful when copying and pasting the following commands.
 
 .. code-block:: console
 
