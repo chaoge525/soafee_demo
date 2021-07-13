@@ -197,8 +197,8 @@ on your host via the following command (example on Ubuntu based host):
 USB Storage Device
 ^^^^^^^^^^^^^^^^^^
 
-The image is produced as files with the `.wic.bmap` and `.wic.gz` extensions.
-They are produced by building the default build target.
+The image is produced as files with the ``.wic.bmap`` and ``.wic.gz``
+extensions. They are produced by building the default build target.
 
 Prepare a USB disk (min size of 64 GB).
 Identify the USB storage device using ``lsblk`` command:
@@ -211,10 +211,10 @@ Identify the USB storage device using ``lsblk`` command:
    ...
 
 .. note::
-   In this example, the USB storage device is the **/dev/sdc** device. Be extra
+   In this example, the USB storage device is the ``/dev/sdc`` device. Be extra
    careful when copying and pasting the following commands.
 
-Use `bmap-tools` to copy the image to USB disk (docker image in this example):
+Use ``bmap-tools`` to copy the image to USB disk (docker image in this example):
 
 .. note::
    All partitions and data on the USB disk will be erased. Please backup before
@@ -239,7 +239,7 @@ Board's MCC configuration microSD card
 
 1. Connect the USB-B cable to the DBG USB port of the N1SDP back panel.
 
-2. Find four TTY USB devices in your **/dev** directory. Example:
+2. Find four TTY USB devices in your ``/dev`` directory. Example:
 
 .. code-block:: console
 
@@ -256,15 +256,21 @@ By default the four ports are connected to the following devices:
  - ttyUSB<n+2> System Control Processor (SCP)
  - ttyUSB<n+3> Manageability Control Processor (MCP)
 
-In this guide the ports are: ``ttyUSB0 - MCC, ttyUSB1 - AP, ttyUSB2 - SCP,
-ttyUSB3 - MCP``. The port settings are:
+In this guide the ports are:
+
+ - ttyUSB0: MCC
+ - ttyUSB1: AP
+ - ttyUSB2: SCP
+ - ttyUSB3: MCP
+
+The ports are configured with the following settings:
 
  - 115200 Baud
  - 8N1
  - No hardware or software flow support
 
-3. Connect to the MCC console. Any terminal applications such as  **PuTTy**,
-   **screen** or **minicom**  will work. In this guide, we use the  **screen**
+3. Connect to the MCC console. Any terminal applications such as  ``putty``,
+   ``screen`` or ``minicom``  will work. In this guide, we use the  ``screen``
    command:
 
 .. code-block:: console
@@ -272,7 +278,7 @@ ttyUSB3 - MCP``. The port settings are:
    sudo screen /dev/ttyUSB0 115200
 
 4. Turn the main power switch on the power supply of the N1SDP tower. The MCC
-window will be shown. Type `?` to see MCC firmware version and a list of
+window will be shown. Type ``?`` to see MCC firmware version and a list of
 commands:
 
 .. code-block:: console
@@ -323,8 +329,8 @@ Enable USB:
 host PC and copy the required files.
 
 The microSD card is visible on your host PC as a disk device after issuing the
-`USB_ON` command in the MCC console, as performed in the previous step.
-To check using ``lsblk`` command:
+``USB_ON`` command in the MCC console, as performed in the previous step.
+This can be found using the ``lsblk`` command:
 
 .. code-block:: console
 
@@ -334,7 +340,7 @@ To check using ``lsblk`` command:
    └─sdb1   8:1    0     2G  0 part
 
 .. note::
-   In this example, we need to mount the **/dev/sdb1** partition. Be extra
+   In this example, we need to mount the ``/dev/sdb1`` partition. Be extra
    careful when copying and pasting the following commands.
 
 .. code-block:: console
@@ -360,11 +366,11 @@ onto the mounted microSD card:
 
 .. note::
    If the N1SDP board was manufactured after November 2019 (Serial Number
-   greater than 36253xxx), a different PMIC firmware image must be used to
+   greater than ``36253xxx``), a different PMIC firmware image must be used to
    prevent potential damage to the board. More details can be found in
    `Potential firmware damage notice`_. The ``MB/HBI0316A/io_v123f.txt`` file
    located in the microSD needs to be updated. To update it, set the PMIC image
-   (300k_8c2.bin) to be used in the newer models by running the following
+   (``300k_8c2.bin``) to be used in the newer models by running the following
    commands on your host PC:
 
    .. code-block:: console
