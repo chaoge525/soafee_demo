@@ -20,6 +20,13 @@ stack implementation:
   * Container engine tests
   * Container runtime Kernel configuration check
 
+Supported Arm Reference Platforms:
+
+ * Armv8-A Base RevC AEM FVP (FVP-Base) with
+   ``FVP_Base_RevC-2xAEMvA_11.14_21.tgz`` package version.
+ * N1SDP
+
+
 Quality Assurance Checks Tooling:
 
   * Source code:
