@@ -91,11 +91,11 @@ Build for FVP-Base
 
 To build the images for fvp-base machine, you need to:
 
-* go to `Arm Architecture Models`_ website, and download the "Armv-A Base RevC
-  AEM FVP" package
-* set absolute path to the downloaded package
-  (e.g. **FVP_Base_RevC-2xAEMvA_11.14_21.tgz**) in
-  ``FVP_BASE_A_AEM_TARBALL_URI``
+* download the `FVP_Base_RevC-2xAEMvA_11.14_21.tgz`_ "Armv-A Base AEM FVP FOC
+  (Linux)" package from Arm's website. You need to have an account and be logged
+  in to be able to download it
+* set absolute path to the ``FVP_Base_RevC-2xAEMvA_11.14_21.tgz`` downloaded
+  package in ``FVP_BASE_A_AEM_TARBALL_URI``
 * accept EULA in ``FVP_BASE_A_ARM_EULA_ACCEPT``
 
 Then, use kas to build the images:
@@ -404,4 +404,4 @@ Tests on N1SDP
 
 .. _Potential firmware damage notice: https://community.arm.com/developer/tools-software/oss-platforms/w/docs/604/notice-potential-damage-to-n1sdp-boards-if-using-latest-firmware-release
 .. _N1SDP Technical Reference Manual: https://developer.arm.com/documentation/101489/0000
-.. _Arm Architecture Models: https://developer.arm.com/tools-and-software/simulation-models/fixed-virtual-platforms/arm-ecosystem-models
+.. _FVP_Base_RevC-2xAEMvA_11.14_21.tgz: https://silver.arm.com/download/download.tm?pv=4849271&p=3042387

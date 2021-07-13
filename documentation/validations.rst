@@ -37,15 +37,15 @@ fvp-base: build image including tests
 To build tests for fvp-base machine from this example
 :ref:`fvp-base`, you need to:
 
-* go to `Arm Architecture Models`_ website, and download the
-  "Armv-A Base RevC AEM FVP" package
-* set absolute path to the downloaded package
-  (e.g. **FVP_Base_RevC-2xAEMvA_11.14_21.tgz**) in
-  ``FVP_BASE_A_AEM_TARBALL_URI``
+* download the `FVP_Base_RevC-2xAEMvA_11.14_21.tgz`_ "Armv-A Base AEM FVP FOC
+  (Linux)" package from Arm's website. You need to have an account and be logged
+  in to be able to download it
+* set absolute path to the ``FVP_Base_RevC-2xAEMvA_11.14_21.tgz`` downloaded
+  package in ``FVP_BASE_A_AEM_TARBALL_URI``
 * accept EULA in ``FVP_BASE_A_ARM_EULA_ACCEPT``
 * Add ``:meta-ewaol-config/kas/tests.yml`` to the kas build command:
 
-.. _Arm Architecture Models: https://developer.arm.com/tools-and-software/simulation-models/fixed-virtual-platforms/arm-ecosystem-models
+.. _FVP_Base_RevC-2xAEMvA_11.14_21.tgz: https://silver.arm.com/download/download.tm?pv=4849271&p=3042387
 
   * using ``kas`` directly:
 

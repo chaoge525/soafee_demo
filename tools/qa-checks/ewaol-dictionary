@@ -95,7 +95,9 @@ firmware_primary
 fname
 fname1
 fname2
+foc
 functionalities
+_fvp_base_revc
 fvp
 fvp_base_a_aem_tarball_uri
 fvp_base_a_arm_eula_accept
@@ -168,6 +170,7 @@ psu
 _ptest
 ptest
 ptest_
+pv
 pycodestyle
 pyspellchecker
 _python
@@ -219,6 +222,7 @@ systemd
 systemready
 tgz
 _the
+tm
 tmp
 top_level_test_name
 ttyusb
