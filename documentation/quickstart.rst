@@ -135,6 +135,8 @@ fvp-base emulator with podman or docker flavour:
                     --parameter 'bp.smsc_91c111.enabled=1' \
                     --parameter 'bp.hostbridge.userNetworking=true'"
 
+Then, login as ``root`` without password.
+
 To finish the fvp emulation, you need to close the telnet session and stop the
 runfvp script:
 

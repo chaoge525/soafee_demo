@@ -235,7 +235,7 @@ To start fvp emulation and run tests you need to:
     * grab FVP emulation console in other terminal window with
       ``telnet localhost 5000``
 
-* execute tests with:
+* login as ``root`` without password, then execute tests with:
 
 .. code-block:: console
 
