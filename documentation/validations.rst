@@ -37,15 +37,17 @@ fvp-base: build image including tests
 To build tests for fvp-base machine from this example
 :ref:`fvp-base`, you need to:
 
-* go to `Arm Architecture Models`_ website, and download the "Armv-A Base RevC AEM FVP" package
+* go to `Arm Architecture Models`_ website, and download the
+  "Armv-A Base RevC AEM FVP" package
 * set absolute path to the downloaded package
-  (e.g. **FVP_Base_RevC-2xAEMvA_11.14_21.tgz**) in ``FVP_BASE_A_AEM_TARBALL_URI``
+  (e.g. **FVP_Base_RevC-2xAEMvA_11.14_21.tgz**) in
+  ``FVP_BASE_A_AEM_TARBALL_URI``
 * accept EULA in ``FVP_BASE_A_ARM_EULA_ACCEPT``
 * Add ``:meta-ewaol-config/kas/tests.yml`` to the kas build command:
 
 .. _Arm Architecture Models: https://developer.arm.com/tools-and-software/simulation-models/fixed-virtual-platforms/arm-ecosystem-models
 
-  * using kas directly:
+  * using ``kas`` directly:
 
     .. code-block:: console
 
@@ -53,17 +55,18 @@ To build tests for fvp-base machine from this example
         FVP_BASE_A_ARM_EULA_ACCEPT="True" \
         kas build meta-ewaol-config/kas/fvp-base.yml:meta-ewaol-config/kas/tests.yml
 
-  * using tools/build/kas-ci-build.py:
+  * using ``tools/build/kas-ci-build.py``:
 
     .. code-block:: console
 
-        tools/build/kas-ci-build.py fvp-base.yml:tests.yml --engine-arguments \
+        ./tools/build/kas-ci-build.py fvp-base.yml:tests.yml --engine-arguments \
             '--volume /absolute/path/to/fvp_volume/:/work/fvp_volume \
              --env FVP_BASE_A_AEM_TARBALL_URI="file:///work/fvp_volume/FVP_Base_RevC-2xAEMvA_11.14_21.tgz" \
              --env FVP_BASE_A_ARM_EULA_ACCEPT="True"'
 
     .. note::
-       The ``fvp_volume`` is a directory that contains "Armv-A Base RevC AEM FVP" package.
+       The ``fvp_volume`` is a directory that contains "Armv-A Base RevC AEM FVP
+       " package.
 
 * To execute tests please refer to :ref:`fvp-base: running tests`.
 
@@ -71,8 +74,8 @@ N1SDP: build image including tests
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 To build tests for N1SDP using the same process as described in
-:ref:`Build for N1SDP`, you only need to add ``:meta-ewaol-config/kas/tests.yml``
-to the kas build command:
+:ref:`Build for N1SDP`, you only need to add
+``:meta-ewaol-config/kas/tests.yml`` to the kas build command:
 
 .. code-block:: console
 
@@ -199,10 +202,11 @@ fvp-base: running tests
 
 To start fvp emulation and run tests you need to:
 
-* build the tests using above instructions `fvp-base: build image including tests`_
+* build the tests using above instructions
+  `fvp-base: build image including tests`_
 * start the fvp-base emulator with podman or docker flavour:
 
-  * using kas directly:
+  * using ``kas`` directly:
 
     .. code-block:: console
 
@@ -215,11 +219,11 @@ To start fvp emulation and run tests you need to:
                        --parameter 'bp.smsc_91c111.enabled=1' \
                        --parameter 'bp.hostbridge.userNetworking=true'"
 
-  * using tools/build/kas-ci-build.py:
+  * using ``tools/build/kas-ci-build.py``:
 
     .. code-block:: console
 
-        tools/build/kas-ci-build.py fvp-base.yml:tests.yml \
+        ./tools/build/kas-ci-build.py fvp-base.yml:tests.yml \
             --engine-arguments ' -it -p 5000:5000' \
             --kas-arguments 'shell --keep-config-unchanged \
                 --command "/work/layers/meta-arm/scripts/runfvp \

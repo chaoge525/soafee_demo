@@ -5,9 +5,9 @@ Documentation build
 -------------------
 
 A script automating the documentation build process is available under
-`meta-ewaol/tools/build/doc-build.py`. It will generate an HTML version of the
-documentation under `public/`. To use this script, you should use Python 3.6 or
-higher:
+``tools/build/doc-build.py``. It will generate an HTML version of the
+documentation under ``public/``. To use this script and generate the
+documentation, you should use Python 3.6 or higher:
 
 .. code-block:: console
 
@@ -77,9 +77,9 @@ The available build config YAML files can be queried by passing to the script:
 * ``--list-build-modifiers``
 
 While all specified build config files must be available in the
-``meta-ewaol-config/kas`` directory, if ``all`` is provided as the build target,
-then all default CI build targets will be built. These default CI build targets
-can be queried by passing:
+``meta-ewaol-config/kas`` directory, if ``all`` is provided as the build target
+, then all default CI build targets will be built. These default CI build
+targets can be queried by passing:
 
 * ``--list-ci-build-targets``
 
@@ -100,7 +100,7 @@ would result in a default build folder: ``ci-build/n1sdp_tests/``
 
 The script can also be passed a set of optional named arguments, where these
 arguments and their defaults can be found by passing  ``--help`` to
-``./tools/build/kas-ci-build.py``.
+``tools/build/kas-ci-build.py``.
 
 Note that by default no cache mirrors will be configured, and no artifacts will
 be deployed.

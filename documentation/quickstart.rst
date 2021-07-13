@@ -77,6 +77,7 @@ Checkout the ``meta-ewaol`` repository:
    mkdir -p ~/ewaol
    cd ~/ewaol
    git clone <meta-ewaol-repo-url> -b v0.1
+   cd meta-ewaol
 
 Running kas with the build configurations within ``meta-ewaol-config`` will
 build two images by default: one that includes the Docker container engine and
@@ -115,7 +116,7 @@ an option to the kas build command, as shown in the following example:
 
 .. code-block:: console
 
-   kas build --target ewaol-image-docker meta-ewaol/meta-ewaol-config/kas/fvp-base.yml
+   kas build --target ewaol-image-docker meta-ewaol-config/kas/fvp-base.yml
 
 Run on FVP-Base
 ---------------
@@ -166,7 +167,7 @@ To build the images via kas for the N1SDP board:
 
 .. code-block:: console
 
-   kas build meta-ewaol/meta-ewaol-config/kas/n1sdp.yml
+   kas build meta-ewaol-config/kas/n1sdp.yml
 
 The resulting images will be produced:
  - ``build/tmp/deploy/images/n1sdp/ewaol-image-docker-n1sdp.*``
@@ -178,7 +179,7 @@ an option to the kas build command, as shown in the following example:
 
 .. code-block:: console
 
-   kas build --target ewaol-image-docker meta-ewaol/meta-ewaol-config/kas/n1sdp.yml
+   kas build --target ewaol-image-docker meta-ewaol-config/kas/n1sdp.yml
 
 Deploy on N1SDP
 ---------------
