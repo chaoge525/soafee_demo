@@ -12,10 +12,13 @@ LICENSE = "MIT"
 
 inherit core-image
 
-IMAGE_ROOTFS_SIZE ?= "8192"
+# meta-virtualization/recipes-containers/k3s/README.md states that K3S requires
+# 2GB of space in the rootfs to ensure containers can start
+IMAGE_ROOTFS_SIZE ?= "2097152"
 IMAGE_ROOTFS_EXTRA_SPACE_append = "${@bb.utils.contains("DISTRO_FEATURES", "systemd", " + 4096", "", d)}"
 
 IMAGE_INSTALL += " \
     packagegroup-core-ssh-openssh \
     ca-certificates \
+    k3s-server \
     "
