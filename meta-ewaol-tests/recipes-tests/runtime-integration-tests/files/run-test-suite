@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+#
+# Copyright (c) 2021, Arm Limited.
+#
+# SPDX-License-Identifier: MIT
+
+SCRIPT_DIR=$(dirname "$(readlink -f "${0}")")
+
+if bats "${SCRIPT_DIR}/%TESTNAME%.bats"; then
+    echo "PASS:%TESTNAME%"
+    exit 0
+else
+    echo "FAIL:%TESTNAME%"
+    exit 1
+fi

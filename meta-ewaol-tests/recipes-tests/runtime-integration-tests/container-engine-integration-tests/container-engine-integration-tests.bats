@@ -6,22 +6,26 @@
 
 # Run-time validation tests for the container engine running on a EWAOL system.
 
-# Set configuration defaults
+# Set generic configuration
+
+if [ -z "${CE_TEST_LOG_DIR}" ]; then
+    TEST_LOG_DIR="$(pwd)/logs"
+else
+    TEST_LOG_DIR="${CE_TEST_LOG_DIR}"
+fi
+
+export TEST_LOG_FILE="${TEST_LOG_DIR}/container-engine-integration-tests.log"
+export TEST_STDERR_FILE="${TEST_LOG_DIR}/ce-stderr.log"
+
+# Set test-suite specific configuration
 
 if [ -z "${CE_TEST_IMAGE}" ]; then
     CE_TEST_IMAGE="docker.io/library/alpine"
 fi
 
-if [ -z "${CE_TEST_LOG_DIR}" ]; then
-    CE_TEST_LOG_DIR="$(pwd)/logs"
-fi
-
 if [ -z "${CE_TEST_CLEAN_ENV}" ]; then
     CE_TEST_CLEAN_ENV=1
 fi
-
-export CE_TEST_LOG_FILE="${CE_TEST_LOG_DIR}/container-engine-integration-tests.log"
-export CE_TEST_STDERR_FILE="${CE_TEST_LOG_DIR}/stderr.log"
 
 load container-engine-funcs.sh
 load integration-tests-common-funcs.sh
@@ -71,10 +75,10 @@ container '${container_id}' of image '$(basename ${CE_TEST_IMAGE})'"
 setup_file() {
 
     # Clear and rebuild the log directory
-    rm -rf "${CE_TEST_LOG_DIR}"
-    mkdir -p "${CE_TEST_LOG_DIR}"
+    rm -rf "${TEST_LOG_DIR}"
+    mkdir -p "${TEST_LOG_DIR}"
 
-    if [ "${CE_TEST_CLEAN_ENV}" -eq 1 ]; then
+    if [ "${TEST_CLEAN_ENV}" -eq 1 ]; then
         run clean_test_environment
     fi
 }
@@ -82,7 +86,7 @@ setup_file() {
 # Runs after the final test
 teardown_file() {
 
-    if [ "${CE_TEST_CLEAN_ENV}" -eq 1 ]; then
+    if [ "${TEST_CLEAN_ENV}" -eq 1 ]; then
         run clean_test_environment
     fi
 }

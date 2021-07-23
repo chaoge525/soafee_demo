@@ -6,6 +6,10 @@
 
 # Arg1: Type of message (INFO, DEBUG, PASS, FAIL, SKIP)
 # Arg2: Message to log
+#
+# If message type is FAIL, then an additional DEBUG message will be produced
+# that contains the ${status} and ${output} variable (these are normally
+# defined by BATS) as well as the contents of ${TEST_STDERR_FILE}
 log() {
     if [ -z "${1}" ] ; then
         echo "ERROR:Incorrect arguments to log()"
@@ -21,17 +25,17 @@ log() {
         log_msg="${log_msg}:${2}"
     fi
 
-    echo "${log_msg}" >> "${CE_TEST_LOG_FILE}"
+    echo "${log_msg}" >> "${TEST_LOG_FILE}"
     echo "${log_msg}"
 
     if [ "${1}" == "FAIL" ]; then
         # If the test failed, add additional debugging information
 
-        stderr="$(cat "${CE_TEST_STDERR_FILE}")"
+        stderr="$(cat "${TEST_STDERR_FILE}")"
 
         debug_msg="DEBUG:${BATS_TEST_NAME}:${status:-}:${output:-}:${stderr}"
 
-        echo "${debug_msg}" >> "${CE_TEST_LOG_FILE}"
+        echo "${debug_msg}" >> "${TEST_LOG_FILE}"
         echo "${debug_msg}"
     fi
 }
