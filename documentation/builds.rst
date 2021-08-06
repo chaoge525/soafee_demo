@@ -9,6 +9,29 @@ The currently supported image build targets are:
 Each build target implements the EWAOL software stack, differing only on the
 backend containerisation technology: Docker or Podman.
 
+To facilitate containerised workload orchestration on the edge, both build
+targets include the K3S orchestration package provided by the
+``meta-virtualization`` Yocto layer and extended in ``meta-ewaol``. This
+package provides a K3S server wrapped as a systemd service which auto-starts on
+image boot. The K3S server may be interacted with via the Kubernetes REST API
+or via the Kubernetes command-line tool ``kubectl``, where the `Kubernetes API
+Overview`_ and `kubectl Overview`_ may be referred to for usage instructions.
+Enabling and disabling the systemd service via ``systemctl [start|stop] k3s``
+will bring-up and shutdown the K3S server running on the image, meaning
+containers may remain running (without orchestration) after stopping the
+systemd service. If desired, containers may be stopped prior to shutting down
+the server via the API or command-line tool, or alternatively they may be
+stopped independently from the server status via the provided
+``k3s-killall.sh`` script.
+
+.. note::
+    Example usage of the K3S orchestration package is provided in the form of
+    the K3S integration test suite implementation, documented in
+    :ref:`validations:Image Validation`.
+
+.. _Kubernetes API Overview: https://kubernetes.io/docs/reference/using-api/
+.. _kubectl Overview: https://kubernetes.io/docs/reference/kubectl/overview/
+
 To prepare an EWAOL image build, it is necessary to define the target machine
 for the build via the bitbake ``MACHINE`` parameter. The image build can then be
 customised by defining the desired EWAOL features via the bitbake

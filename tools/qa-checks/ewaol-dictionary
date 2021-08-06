@@ -1,3 +1,4 @@
+
 249bca0a13
 2g
 300k_8c2
@@ -126,12 +127,23 @@ hbi0316a
 html
 http
 https
+initialises
 io_v123f
+K3S
+K3S_
+K3S_TEST_CLEAN_ENV
+K3S_TEST_LOG_DIR
 _kas
 kas
 kas.
 kas-ci-build
 KAS_MACHINE
+killall
+kube
+_kubectl
+kubectl
+_Kubernetes
+Kubernetes
 level_architecture
 license_link
 licensees
@@ -164,6 +176,8 @@ n1sdp
 n1sdp's
 n1sdp_tests
 neoverse
+_Nginx
+Nginx
 nnnn
 oci
 opencontainers
@@ -229,6 +243,7 @@ sdb1
 sdc
 sdcard
 SDKs
+sh
 shellcheck
 singleindex
 soafee
@@ -245,6 +260,7 @@ stdout
 sub_test_name
 sudo
 Sueiro
+systemctl
 systemd
 systemready
 tgz
@@ -278,6 +294,8 @@ validations_n1sdp_running_tests
 verbosity
 virtualization
 w
+webserver
+wget
 wic
 workloads
 write_axi
