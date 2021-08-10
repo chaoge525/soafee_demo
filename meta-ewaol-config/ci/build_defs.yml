@@ -13,3 +13,4 @@ modifiers:
 ci-builds:
     fvp-base.yml:tests.yml:ci.yml
     n1sdp.yml:tests.yml:ci.yml
+    n1sdp.yml:sdk.yml:ci.yml

@@ -1,7 +1,7 @@
 Image Builds
 ============
 
-The currently supported image build targets are:
+The main image build targets are:
 
 * ``ewaol-image-docker``
 * ``ewaol-image-podman``
@@ -59,6 +59,7 @@ The currently supported ``DISTRO_FEATURES`` are:
 
 * ``ewaol-devel``
 * ``ewaol-test``
+* ``ewaol-sdk``
 
 In addition to kas build config files that enable the above build options, an
 image build via kas may be further customised with extra optional config
@@ -87,6 +88,13 @@ configure the image are as follows:
       successfully and compliant with the expected EWAOL software
       functionalities. These tests are provided by the ``meta-ewaol-tests``
       Yocto layer, documented in :ref:`validations:Image Validation`.
+
+* ``ewaol-sdk``
+
+    * Adds the EWAOL Software Development Kit (SDK) which includes packages
+      and image features to support software development on the target image.
+      For more details on the SDK, see
+      `Building EWAOL Software Development Kit (SDK) Image`_
 
 Provided their Yocto layer sources can be found by bitbake via
 ``conf/bblayers.conf``, these features can be enabled by passing them as a
@@ -154,7 +162,7 @@ Build Modifiers
 Build modifier config files specify additional sources and parameter
 customisations relevant to a particular image feature.
 
-There are currently two build modifier YAML files:
+These are the current build modifier YAML files:
 
 * ``tests.yml``
 
@@ -169,6 +177,13 @@ There are currently two build modifier YAML files:
     Considers the image build to be an image built as part of a Continuous
     Integration pipeline, causing the build process to delete its temporary
     work files following build completion.
+
+* ``sdk.yml``
+
+    Changes the default build targets to the SDK images, and appends
+    ``ewaol-sdk`` as a ``DISTRO_FEATURE`` for the build. Documentation for
+    the EWAOL SDK is given in
+    `Building EWAOL Software Development Kit (SDK) Image`_.
 
 .. note::
   If a kas build config does not set a build parameter, the parameter will
@@ -285,3 +300,54 @@ bitbake, it is necessary to prepare a bitbake project as follows:
   specific functionalities not described in this section may therefore be
   enabled by reading these configuration files and manually inserting their
   changes into the build configuration folder.
+
+Building EWAOL Software Development Kit (SDK) Image
+---------------------------------------------------
+
+.. note::
+  Please note that the SDK image requires at least 110 GBytes of free disk
+  space to build!
+
+The EWAOL SDK images enable users to perform common development tasks on the
+target, such as:
+
+  * Application and kernel module compilation
+
+  * Remote debugging
+
+  * Profiling
+
+  * Tracing
+
+  * Runtime package management
+
+The precise list of packages and image features provided as part of the EWAOL
+SDK can be found in ``meta-ewaol-distro/conf/distro/include/ewaol-sdk.inc``.
+
+The Yocto project provides guidance for some of these common development tasks,
+for example `kernel module compilation`_, `profiling and tracing`_, and
+`runtime package management`_.
+
+  .. _kernel module compilation:
+      https://docs.yoctoproject.org/3.3.2/kernel-dev/common.html#building-out-of-tree-modules-on-the-target
+
+  .. _profiling and tracing: https://docs.yoctoproject.org/3.3.2/profile-manual/index.html
+
+  .. _runtime package management:
+      https://docs.yoctoproject.org/3.3.2/dev-manual/common-tasks.html#using-runtime-package-management
+
+To build SDK image append ``meta-ewaol-config/kas/sdk.yml`` configuration
+file to the kas build command. This ``.yml`` file changes the default build
+targets to ``ewaol-image-[docker|podman]-sdk``. For more details about
+selecting configuration files for kas, see: :ref:`quickstart_build_host_setup`.
+
+For example, to build the SDK images for the ``n1sdp`` machine via kas:
+
+.. code-block::
+
+  kas build meta-ewaol-config/kas/n1sdp.yml:meta-ewaol-config/kas/sdk.yml
+
+In this example, the SDK images produced by the kas build will be found at:
+``build/tmp/deploy/images/n1sdp/ewaol-image-[docker|podman]-sdk-n1sdp.*``.
+To deploy the generated images, please refer to the
+:ref:`quickstart_deploy_on_n1sdp` section.

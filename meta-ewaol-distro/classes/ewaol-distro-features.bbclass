@@ -6,7 +6,7 @@
 # the contents of DISTRO_FEATURES
 
 # EWAOL_DISTRO_FEATURES is a list of available features.
-EWAOL_DISTRO_FEATURES = "ewaol-devel ewaol-test"
+EWAOL_DISTRO_FEATURES = "ewaol-devel ewaol-test ewaol-sdk"
 
 # Default must be an item from EWAOL_DISTRO_FEATURES
 EWAOL_DISTRO_FEATURES_DEFAULT ?= "ewaol-devel"
@@ -27,3 +27,7 @@ require ${@bb.utils.contains(\
 # Require inc file for testing DISTRO_FEATURE
 require ${@bb.utils.contains(\
 'DISTRO_FEATURES','ewaol-test','conf/distro/include/ewaol-test.inc', '', d)}
+
+# Require inc file for sdk DISTRO_FEATURE
+require ${@bb.utils.contains(\
+'DISTRO_FEATURES','ewaol-sdk','conf/distro/include/ewaol-sdk.inc', '', d)}

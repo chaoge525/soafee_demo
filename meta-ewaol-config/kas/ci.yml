@@ -7,3 +7,4 @@ header:
 local_conf_header:
   ci: |
     INHERIT += "rm_work"
+    IMAGE_FSTYPES_remove_n1sdp = "wic"

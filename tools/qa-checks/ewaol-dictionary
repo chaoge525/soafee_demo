@@ -138,6 +138,7 @@ kas
 kas.
 kas-ci-build
 KAS_MACHINE
+_kernel
 killall
 kube
 _kubectl
@@ -195,6 +196,7 @@ pms_0v85
 png
 podman
 _potential
+_profiling
 psu
 _ptest
 ptest
@@ -206,11 +208,13 @@ _python
 python3
 pyyaml
 _quickstart_build_for_n1sdp
+_quickstart_build_host_setup
 _quickstart_deploy_on_n1sdp
 _quickstart_fvp
 quickstart
 Quickstart
 quickstart_build_for_n1sdp
+quickstart_build_host_setup
 quickstart_deploy_on_n1sdp
 quickstart_fvp
 rc93
@@ -236,12 +240,14 @@ rtd
 runc
 runfvp
 runtime
+_runtime
 s
 scp
 sdb
 sdb1
 sdc
 sdcard
+sdk
 SDKs
 sh
 shellcheck

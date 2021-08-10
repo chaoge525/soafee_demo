@@ -5,6 +5,8 @@ This documentation explains how to quickly get started with the EWAOL project.
 For more information on building an image for the EWAOL project, see
 :ref:`builds:Image Builds`.
 
+.. _quickstart_build_host_setup:
+
 Build Host Setup
 ****************
 
