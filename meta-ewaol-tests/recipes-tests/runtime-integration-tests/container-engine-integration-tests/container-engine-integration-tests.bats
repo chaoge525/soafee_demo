@@ -34,6 +34,12 @@ load integration-tests-common-funcs.sh
 # suite
 clean_test_environment() {
 
+    # The logging function uses the current test name to categorise any log
+    # messages specific to the test. Here, define this variable manually in
+    # order to similarly categorise all messages relating to the clean-up
+    # activities.
+    export BATS_TEST_NAME="clean_test_environment"
+
     # Remove any dangling containers based on the image
     run get_running_containers "$(basename ${CE_TEST_IMAGE})"
     if [ "${status}" -ne 0 ]; then

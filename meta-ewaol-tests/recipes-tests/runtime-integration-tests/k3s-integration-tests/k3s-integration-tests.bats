@@ -30,6 +30,12 @@ load integration-tests-common-funcs.sh
 # out-of-the-box state, not polluted by a previous test suite execution
 clean_test_environment() {
 
+    # The logging function uses the current test name to categorise any log
+    # messages specific to the test. Here, define this variable manually in
+    # order to similarly categorise all messages relating to the clean-up
+    # activities.
+    export BATS_TEST_NAME="clean_test_environment"
+
     # Start the server if it was stopped
     run systemd_service "is-active"
     if [ "${status}" -ne 0 ]; then

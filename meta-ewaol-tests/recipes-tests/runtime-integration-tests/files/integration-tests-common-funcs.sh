@@ -22,7 +22,7 @@ log() {
 
     log_msg="${1}:${BATS_TEST_NAME}"
     if [ -n "${2}" ]; then
-        log_msg="${log_msg}:${2}"
+        log_msg="${log_msg}:${*:2}"
     fi
 
     echo "${log_msg}" >> "${TEST_LOG_FILE}"
@@ -37,5 +37,6 @@ log() {
 
         echo "${debug_msg}" >> "${TEST_LOG_FILE}"
         echo "${debug_msg}"
+        echo "DEBUG:Test log can be found at ${TEST_LOG_FILE}"
     fi
 }
