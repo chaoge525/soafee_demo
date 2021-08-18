@@ -16,6 +16,7 @@ fi
 
 export TEST_LOG_FILE="${TEST_LOG_DIR}/k3s-integration-tests.log"
 export TEST_STDERR_FILE="${TEST_LOG_DIR}/k3s-stderr.log"
+export TEST_RUN_FILE="${TEST_LOG_DIR}/k3s-test-pgid"
 
 # Set test-suite specific configuration
 
@@ -97,9 +98,16 @@ clean_test_environment() {
 # Runs once before the first test
 setup_file() {
 
-    # Clear and rebuild the log directory
-    rm -rf "${TEST_LOG_DIR}"
+    # Clear and rebuild the logs
+    rm -rf "${TEST_LOG_FILE}" "${TEST_STDERR_FILE}"
     mkdir -p "${TEST_LOG_DIR}"
+
+    _run check_running_test_suite "${TEST_RUN_FILE}"
+    if [ "${status}" -ne 0 ]; then
+        exit 1
+    fi
+
+    _run begin_test_suite "${TEST_RUN_FILE}"
 
     if [ "${K3S_TEST_CLEAN_ENV}" -eq 1 ]; then
         _run clean_test_environment
@@ -112,6 +120,8 @@ teardown_file() {
     if [ "${K3S_TEST_CLEAN_ENV}" -eq 1 ]; then
         _run clean_test_environment
     fi
+
+    _run finish_test_suite "${TEST_RUN_FILE}"
 }
 
 @test 'K3S orchestration of containerised web service' {
