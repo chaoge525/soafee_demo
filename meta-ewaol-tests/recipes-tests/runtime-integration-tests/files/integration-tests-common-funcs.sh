@@ -40,3 +40,11 @@ log() {
         echo "DEBUG:Test log can be found at ${TEST_LOG_FILE}"
     fi
 }
+
+# Wrapper around BATS run to redirect FD3 and avoid hanging execution if
+# subprocess fails or is long-running (e.g. a daemon process).
+# See the following for details:
+#   https://bats-core.readthedocs.io/en/stable/writing-tests.html
+_run() {
+    run "$@" 3>/dev/null
+}

@@ -41,7 +41,7 @@ clean_test_environment() {
     export BATS_TEST_NAME="clean_test_environment"
 
     # Remove any dangling containers based on the image
-    run get_running_containers "$(basename ${CE_TEST_IMAGE})"
+    _run get_running_containers "$(basename ${CE_TEST_IMAGE})"
     if [ "${status}" -ne 0 ]; then
         log "FAIL" "Cleaning test environment - failed getting running \
 containers of image '$(basename ${CE_TEST_IMAGE})'"
@@ -50,7 +50,7 @@ containers of image '$(basename ${CE_TEST_IMAGE})'"
     if [ -n "${output}" ]; then
         for container_id in ${output}; do
 
-            run container_stop "${container_id}"
+            _run container_stop "${container_id}"
             if [ "${status}" -eq 0 ]; then
                 log "INFO" "Stopped a running \
 container '${container_id}' of image '$(basename ${CE_TEST_IMAGE})'"
@@ -63,10 +63,10 @@ container '${container_id}' of image '$(basename ${CE_TEST_IMAGE})'"
     fi
 
     # Remove the image if it exists
-    run does_image_exist "$(basename ${CE_TEST_IMAGE})"
+    _run does_image_exist "$(basename ${CE_TEST_IMAGE})"
     if [ "${status}" -eq 0 ]; then
 
-        run image_remove "$(basename ${CE_TEST_IMAGE})"
+        _run image_remove "$(basename ${CE_TEST_IMAGE})"
         if [ "${status}" -eq 0 ]; then
             log "INFO" "Cleaned test environment - removed image \
 '$(basename ${CE_TEST_IMAGE})'"
@@ -85,7 +85,7 @@ setup_file() {
     mkdir -p "${TEST_LOG_DIR}"
 
     if [ "${TEST_CLEAN_ENV}" -eq 1 ]; then
-        run clean_test_environment
+        _run clean_test_environment
     fi
 }
 
@@ -93,7 +93,7 @@ setup_file() {
 teardown_file() {
 
     if [ "${TEST_CLEAN_ENV}" -eq 1 ]; then
-        run clean_test_environment
+        _run clean_test_environment
     fi
 }
 
@@ -107,7 +107,7 @@ teardown_file() {
     workload="/bin/sh"
 
     subtest="Run a container with a persistent workload"
-    run container_run "${engine_args}" "${CE_TEST_IMAGE}" "${workload}"
+    _run container_run "${engine_args}" "${CE_TEST_IMAGE}" "${workload}"
     if [ "${status}" -ne 0 ]; then
         log "FAIL" "${subtest}"
         return 1
@@ -118,7 +118,7 @@ teardown_file() {
     container_id="${output}"
 
     subtest="Check that the container is running"
-    run check_container_state "${container_id}"
+    _run check_container_state "${container_id}"
     if [ "${status}" -ne 0 ] || [ "${output}" != "running" ]; then
         log "FAIL" "${subtest}"
         return 1
@@ -127,7 +127,7 @@ teardown_file() {
     fi
 
     subtest="Remove the running container"
-    run container_remove "${container_id}"
+    _run container_remove "${container_id}"
     if [ "${status}" -ne 0 ]; then
         log "FAIL" "${subtest}"
         return 1
@@ -136,7 +136,7 @@ teardown_file() {
     fi
 
     subtest="Check the container status is no longer available"
-    run check_container_state "${container_id}"
+    _run check_container_state "${container_id}"
     if [ "${status}" -eq 0 ]; then
         log "FAIL" "${subtest}"
         return 1
@@ -157,7 +157,7 @@ teardown_file() {
     workload="apk update"
 
     subtest="Update apk package lists within container"
-    run container_run "${engine_args}" "${CE_TEST_IMAGE}" "${workload}"
+    _run container_run "${engine_args}" "${CE_TEST_IMAGE}" "${workload}"
     if [ "${status}" -ne 0 ]; then
         log "FAIL" "${subtest}"
         return 1
