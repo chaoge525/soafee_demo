@@ -37,6 +37,8 @@ modules:
             - "*.png"
             - "*.cfg"
             - "*.css"
+            - "*.scc"
+            - "*.patch"
 
     python:
         file_types:
