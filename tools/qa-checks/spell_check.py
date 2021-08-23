@@ -23,10 +23,10 @@ within the file.
 
 import os
 import re
-import shutil
 import subprocess
 import tempfile
 
+import common
 import abstract_check
 
 
@@ -75,7 +75,7 @@ class SpellCheck(abstract_check.AbstractCheck):
         """ The pyspellchecker package is required to run the checker. """
         return ["pyspellchecker"]
 
-    def run_spellcheck(self, path, file_errors, spellcheck):
+    def run_spellcheck(self, path, file_errors):
         """ Run the spellchecker, and return any misspellings as a dict mapping
             the filepath to a list of its misspelt words. """
 
@@ -95,7 +95,7 @@ class SpellCheck(abstract_check.AbstractCheck):
             return
 
         # Compare with the spellcheck object's dictionary
-        errors = list(spellcheck.unknown(file_word_freq.words()))
+        errors = list(self.spellcheck.unknown(file_word_freq.words()))
 
         # Report each error with line numbers
         errors_with_lines = list()
@@ -120,26 +120,6 @@ class SpellCheck(abstract_check.AbstractCheck):
 
         self.num_files_checked += 1
 
-    def check_path(self, path, file_errors, spellcheck):
-        """ Recursive function to descend into all non-excluded directories and
-            find all non-excluded files, relative to the given path. Run the
-            spellchecker script on each file that we encounter. """
-
-        # Don't descend into any excluded directories or check any excluded
-        # files
-        if any([re.fullmatch(pat, path) for pat in self.exclude_patterns]):
-            return
-
-        if os.path.isfile(path):
-            self.run_spellcheck(path, file_errors, spellcheck)
-        else:
-            for next_path in os.listdir(path):
-                self.check_path(os.path.join(path, next_path),
-                                file_errors,
-                                spellcheck)
-
-        return file_errors
-
     def run(self):
         """ Run the spell check.
             If no misspellings are found, then report PASS.
@@ -150,11 +130,11 @@ class SpellCheck(abstract_check.AbstractCheck):
 
         file_errors = dict()
 
-        # Check if we have the script
+        # Check if we have the spellchecker module
         try:
             import spellchecker
 
-            spellcheck = spellchecker.SpellChecker(case_sensitive=True)
+            self.spellcheck = spellchecker.SpellChecker(case_sensitive=True)
 
             dict_path = self.dict_path
             if not os.path.isabs(dict_path):
@@ -165,7 +145,7 @@ class SpellCheck(abstract_check.AbstractCheck):
                                      f"{dict_path}."))
             else:
                 try:
-                    spellcheck.word_frequency.load_text_file(dict_path)
+                    self.spellcheck.word_frequency.load_text_file(dict_path)
                 except UnicodeDecodeError:
                     self.logger.warning(("Could not UTF-8 decode the"
                                          " dictionary file at"
@@ -181,7 +161,11 @@ class SpellCheck(abstract_check.AbstractCheck):
                     continue
 
                 self.logger.debug(f"Running {self.name} check on {path}")
-                self.check_path(path, file_errors, spellcheck)
+                common.recursively_apply_check(
+                    path,
+                    self.run_spellcheck,
+                    file_errors,
+                    self.exclude_patterns)
 
         except ImportError:
             self.logger.error("FAIL")

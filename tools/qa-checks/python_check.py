@@ -23,10 +23,10 @@ reason for the error as given by pycodestyle.
 import logging
 import os
 import re
-import shutil
 import subprocess
 
 import abstract_check
+import common
 
 
 class PythonCheck(abstract_check.AbstractCheck):
@@ -108,28 +108,6 @@ class PythonCheck(abstract_check.AbstractCheck):
 
         self.num_files_checked += 1
 
-    def check_path(self, path, file_errors):
-        """ Recursive function to descend into all non-excluded directories and
-            find all non-excluded files, relative to the given path. Run the
-            pycodestyle script on each Python file that we encounter. """
-
-        import magic
-
-        # Don't descend into any excluded directories or check any excluded
-        # files
-        if any([re.fullmatch(pat, path) for pat in self.exclude_patterns]):
-            return
-
-        if os.path.isfile(path):
-            if any([ftype.lower() in magic.from_file(path, mime=False).lower()
-                    for ftype in self.file_types]):
-                self.run_pycodestyle(path, file_errors)
-        else:
-            for next_path in os.listdir(path):
-                self.check_path(os.path.join(path, next_path), file_errors)
-
-        return file_errors
-
     def run(self):
         """ Run the python check.
             If no errors are found, then report PASS.
@@ -139,40 +117,29 @@ class PythonCheck(abstract_check.AbstractCheck):
         self.logger.debug(f"Running {self.name} check.")
 
         # Check if we can run the tool
-        if "VENV_BIN" in os.environ:
-            self.script_path = shutil.which(self.script,
-                                            path=os.environ["VENV_BIN"])
-        else:
-            self.script_path = shutil.which(self.script)
-
+        self.script_path = common.find_executable(self.logger, self.script)
         if self.script_path is None:
             self.logger.error("FAIL")
             self.logger.error(f"Could not find {self.script} executable")
             return 1
 
         file_errors = dict()
+        for path in self.paths:
 
-        # Also check if we have the magic Python package
-        try:
+            if not os.path.isabs(path):
+                path = os.path.join(self.project_root, path)
 
-            import magic
+            if not os.path.exists(path):
+                file_errors[path] = ["File or directory not found."]
+                continue
 
-            for path in self.paths:
-
-                if not os.path.isabs(path):
-                    path = os.path.join(self.project_root, path)
-
-                if not os.path.exists(path):
-                    file_errors[path] = ["File or directory not found."]
-                    continue
-
-                self.logger.debug(f"Running {self.name} check on {path}")
-                self.check_path(path, file_errors)
-
-        except ImportError:
-            self.logger.error("FAIL")
-            self.logger.error("Failed to load the Python 'magic' module.")
-            return 1
+            self.logger.debug(f"Running {self.name} check on {path}")
+            common.recursively_apply_check(
+                path,
+                self.run_pycodestyle,
+                file_errors,
+                self.exclude_patterns,
+                self.file_types)
 
         if file_errors:
             self.logger.error("FAIL")

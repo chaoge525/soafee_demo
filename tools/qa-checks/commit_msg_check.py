@@ -30,9 +30,9 @@ Any failure will be logged along with the particular validation that failed.
 import email
 import logging
 import os
-import shutil
 import subprocess
 
+import common
 import abstract_check
 
 
@@ -72,7 +72,7 @@ class CommitMsgCheck(abstract_check.AbstractCheck):
         import email_validator
 
         script = "git"
-        script_path = shutil.which(script)
+        script_path = common.find_executable(self.logger, script)
 
         if script_path is None:
             self.logger.error("FAIL")

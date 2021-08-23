@@ -30,6 +30,7 @@ import re
 import subprocess
 import time
 
+import common
 import abstract_check
 
 
@@ -159,28 +160,11 @@ class HeaderCheck(abstract_check.AbstractCheck):
 
         self.num_files_checked += 1
 
-    def check_path(self, path, file_errors):
-        """ Recursive function to descend into all non-excluded directories and
-            find all non-excluded files, relative to the given path. Run the
-            spellchecker script on each file that we encounter. """
-
-        # Don't descend into any excluded directories or check any excluded
-        # files
-        if any([re.fullmatch(pat, path) for pat in self.exclude_patterns]):
-            return
-
-        if os.path.isfile(path):
-            self.check_header(path, file_errors)
-        else:
-            for next_path in os.listdir(path):
-                self.check_path(os.path.join(path, next_path), file_errors)
-        return file_errors
-
     def run(self):
 
-        file_errors = dict()
-
         self.logger.debug(f"Running {self.name} check.")
+
+        file_errors = dict()
         for path in self.paths:
 
             if not os.path.isabs(path):
@@ -191,7 +175,11 @@ class HeaderCheck(abstract_check.AbstractCheck):
                 continue
 
             self.logger.debug(f"Running {self.name} check on {path}")
-            self.check_path(path, file_errors)
+            common.recursively_apply_check(
+                path,
+                self.check_header,
+                file_errors,
+                self.exclude_patterns)
 
         if file_errors:
             self.logger.error("FAIL")

@@ -34,7 +34,6 @@ argument to this script.
 import argparse
 import logging
 import os
-import shutil
 import subprocess
 import sys
 import tempfile
