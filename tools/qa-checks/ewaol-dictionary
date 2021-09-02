@@ -70,10 +70,12 @@ ctrl+c
 customisations
 dbg
 devel
+directory's
 Distro
 DISTRO
 distro_feature
 distro_features
+distro_features_append
 dl-dir
 DL_DIR
 _docker
@@ -90,6 +92,7 @@ ewaol_rel_yocto_overview
 ewaol's
 filepaths
 filesystem
+filesystems
 fin2
 firmware_primary
 fname
@@ -97,11 +100,11 @@ fname1
 fname2
 foc
 functionalities
-_fvp_base_revc
 fvp
 fvp_base_a_aem_tarball_uri
 fvp_base_a_arm_eula_accept
 fvp-base.fvpconf
+_fvp_base_revc
 FVP_Base_RevC-2xAEMvA_11.14_21
 fvp_volume
 g
@@ -157,9 +160,11 @@ nnnn
 oci
 opencontainers
 openembedded
+optionally
 p
 pc
 pep8
+perl
 pip3
 pmic
 pms_0v85

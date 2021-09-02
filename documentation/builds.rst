@@ -9,14 +9,23 @@ The currently supported image build targets are:
 Each build target implements the EWAOL software stack, differing only on the
 backend containerisation technology: Docker or Podman.
 
-For each target image for a target machine, particular EWAOL recipes and
-components within ``meta-ewaol`` repository can be enabled in the build by
-either including them as features passed as bitbake ``DISTRO_FEATURES``
-together with the specified ``MACHINE``, or via kas build configuration YAML
-files with these parameters pre-configured.
+To prepare an EWAOL image build, it is necessary to define the target machine
+for the build via the bitbake ``MACHINE`` parameter. The image build can then be
+customised by defining the desired EWAOL features via the bitbake
+``DISTRO_FEATURES`` parameter, which will enable particular recipes and
+components within the ``meta-ewaol`` repository and any dependent Yocto layers
+necessary to build those features. In addition, it is necessary to define the
+``DISTRO`` for the bitbake build to be ``ewaol`` in order to activate
+EWAOL-specific build configurations.
 
-The available options are provided here, before being further detailed later
-in this document.
+In this document, the available ``MACHINE`` and ``DISTRO_FEATURES`` options that
+are currently supported by ``meta-ewaol`` are first stated below, before being
+described in further detail in :ref:`Distribution Features`. The kas
+configuration YAML files provided for enabling those EWAOL features on the
+supported target machines are described in :ref:`kas Build Configurations`. If
+using the recommended kas build tool is not possible, the manual approach for
+preparing and building an EWAOL image via bitbake is briefly outlined in
+:ref:`Manual Bitbake Build Preparation`.
 
 The currently supported ``MACHINE``\s are:
 
@@ -34,10 +43,7 @@ files, currently:
 
 * ``ci.yml``
 
-Next, the features are defined as they should be configured for an image build
-via bitbake, before descriptions are provided for how they can be easily
-included and further customisations enabled using build configs within
-``meta-ewaol-config/kas``, for use by the kas build tool.
+The above features are now defined as follows.
 
 Distribution Features
 ---------------------
@@ -61,19 +67,22 @@ configure the image are as follows:
 
 Provided their Yocto layer sources can be found by bitbake via
 ``conf/bblayers.conf``, these features can be enabled by passing them as a
-space-separated list into ``DISTRO_FEATURES`` within ``conf/local.conf``.
+space-separated list into ``DISTRO_FEATURES`` within ``conf/local.conf``. This
+build process is described in :ref:`Manual Bitbake Build Preparation`.
 
-``meta-ewaol`` repository also provides kas build config files that will enable
-automatic fetch and inclusion of layer sources, as well as parameter and
-feature specification for building the target images. Extra build config files
-are further provided that enable a wider range of build options without manual
-configuration. These are as follows.
+For use with the recommended kas build tool, the ``meta-ewaol`` repository also
+provides kas build config files that will enable automatic fetch and inclusion
+of layer sources, as well as parameter and feature specification for building
+the target images. Extra build config files are further provided that enable a
+wider range of build options without manual configuration. These are as
+follows.
 
 kas Build Configurations
 ------------------------
 
-The EWAOL quickstart guide illustrates how to build an EWAOL software image via
-kas: :ref:`Minimal Image Build via kas`.
+The EWAOL quickstart guide illustrates how to build an EWAOL software image by
+supplying build configuration YAML files to the kas build tool:
+:ref:`Minimal Image Build via kas`.
 
 The ``meta-ewaol-config/kas`` directory contains build configs to support
 building images via kas for the EWAOL project.
@@ -204,3 +213,52 @@ container instances. This is done using the kernel check bbclass available at
 
 .. _Yocto docker config file: http://git.yoctoproject.org/cgit/cgit.cgi/yocto-kernel-cache/tree/features/docker/docker.cfg
 .. _Kas documentation: https://kas.readthedocs.io/en/latest/userguide.html#including-configuration-files-from-other-repos
+
+Manual Bitbake Build Preparation
+--------------------------------
+
+In order to build an EWAOL image without the kas build tool directly via
+bitbake, it is necessary to prepare a bitbake project as follows:
+
+* Configure dependent Yocto layers
+    The source repositories in which the required Yocto layers can be found
+    are listed in :ref:`Layers Dependencies`. ``conf/bblayers.conf`` must then
+    be configured to provide the paths to the following Yocto layers on the
+    build system:
+
+        * meta-openembedded/meta-filesystems
+        * meta-openembedded/meta-networking
+        * meta-openembedded/meta-oe
+        * meta-openembedded/meta-perl
+        * meta-openembedded/meta-python
+        * meta-security
+        * meta-virtualization
+        * poky/meta
+        * poky/meta-poky
+        * meta-ewaol/meta-ewaol-distro
+
+    If tests are required, the ``meta-ewaol/meta-ewaol-tests`` Yocto layer must
+    also be included.
+
+* Configure the image ``DISTRO``
+    In order to activate EWAOL-specific build configurations, it is necessary
+    for the bitbake ``DISTRO`` to be set to ``ewaol`` in the build directory's
+    ``conf/local.conf`` file by appending:
+
+        ``DISTRO = "ewaol"``
+
+* (Optionally) Configure the image ``DISTRO_FEATURES``
+    The image features as defined in :ref:`Distribution Features` can be
+    configured to enable particular functionalities within the resulting EWAOL
+    image. For example, as ``ewaol-devel`` is set by default, additional
+    features such as EWAOL image validation tests may simply be added to the
+    build by appending the following to ``conf/local.conf``:
+
+        ``DISTRO_FEATURES_append = " ewaol-test"``
+
+.. note::
+  The kas build configuration YAML files within the ``meta-ewaol-config/kas/``
+  directory define how the build will be prepared by the kas build tool. Any
+  specific functionalities not described in this section may therefore be
+  enabled by reading these configuration files and manually inserting their
+  changes into the build configuration folder.
