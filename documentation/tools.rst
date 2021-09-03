@@ -23,6 +23,56 @@ script:
 To render and explore the documentation, simply open ``public/index.html`` in a
 web browser.
 
+Quality Assurance Checks
+------------------------
+
+The project provides tooling for running quality assurance (QA) checks on the
+repository, in order to automatically validate that patches adhere to the
+project's minimal code, submission, and documentation standards. The tooling is
+provided as a set of Python scripts that can be found within the
+``tools/qa-checks/`` directory of the repository.
+
+The ``run-checks.py`` script can be used to perform the validation, for example:
+
+    ``python3 ./tools/qa-checks/run-checks.py``
+
+Detailed usage instructions can be found by passing ``--help`` to the script:
+
+    ``python3 ./tools/qa-checks/run-checks.py --help``
+
+In order to run the tool, the system must have installed Python 3 (version 3.6
+or greater), the PyYAML Python package available via pip (5.4.1 is the
+project's currently supported version), and Git.
+
+The tooling runs a set of modular checks to validate different aspects of the
+repository state. These are briefly described as follows:
+
+* Commit message validation
+    This check ensures that the commit message submitted with the patch adheres
+    to the project's expected format.
+* License and copyright header validation
+    This check validates the inclusion of correctly formatted copyright and
+    license headers for relevant project files.
+* Python code quality validation
+    This check ensures that all Python files within the project are compliant
+    with the code-style conventions in PEP8 as validated by the pycodestyle
+    utility.
+* Shell script code quality validation
+    This check ensures that all shell scripts and BATS files within the project
+    produce no warnings when passed to the ShellCheck static analysis tool.
+* Spelling validation
+    This check aims to validate that there are no English word misspellings
+    within the relevant project files (in particular, the appropriate files
+    within the ``documentation/`` directory). A custom dictionary is maintained
+    within the ``tools/qa-checks`` directory that may be used to hold
+    exceptions, should the check erroneously highlight valid technical
+    terminology.
+
+More detail on the validation steps performed by each check are included at the
+top of each check Python module as in-source documentation. In addition, any
+failed validation will output the specific reason for the failure, enabling it
+to be fixed.
+
 CI Build Tool
 -------------
 

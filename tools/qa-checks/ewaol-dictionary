@@ -113,6 +113,7 @@ gbytes
 ghcr
 git0
 github
+gitlab
 gz
 hardknott
 hashes
@@ -180,6 +181,7 @@ pycodestyle
 pyspellchecker
 _python
 python3
+pyyaml
 quickstart
 Quickstart
 rc93

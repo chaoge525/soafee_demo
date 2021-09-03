@@ -67,9 +67,9 @@ Contributions to the project should follow the same license.
 
 ## Contributions and Bug Reports
 
-This project has not put in place a process for contributions or bug reporting
-currently. If you would like to contribute or have found a bug, please contact
-the maintainers.
+This project has not put in place a process for contributions currently.
+
+For bug reports, please submit an Issue via GitLab.
 
 ## Feedback and support
 
