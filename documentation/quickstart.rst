@@ -76,7 +76,7 @@ Checkout the ``meta-ewaol`` repository:
 
    mkdir -p ~/ewaol
    cd ~/ewaol
-   git clone <meta-ewaol-repo-url> -b v0.1
+   git clone https://git.gitlab.arm.com/ewaol/meta-ewaol.git -b v0.1
    cd meta-ewaol
 
 Running kas with the build configurations within ``meta-ewaol-config`` will

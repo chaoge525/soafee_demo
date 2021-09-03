@@ -175,7 +175,7 @@ In order to add an external machine to be built with EWAOL, you need to add a
       meta-my-bsp-layer:
 
       meta-ewaol:
-        url: <meta-ewaol-repo-url>
+        url: https://git.gitlab.arm.com/ewaol/meta-ewaol.git
         refspec: v0.1
 
     machine: my-machine
