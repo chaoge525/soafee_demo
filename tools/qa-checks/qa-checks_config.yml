@@ -4,7 +4,8 @@
 
 # Keywords:
 #   - ROOT:
-#       Root directory of the project's git repository.
+#       Root directory of the project's git repository (configurable via the
+#       --project_root script argument).
 #   - GITIGNORE_CONTENTS:
 #       This keyword is replaced by the contents of the repository's base
 #       .gitignore file.

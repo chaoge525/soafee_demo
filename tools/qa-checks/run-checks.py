@@ -59,8 +59,11 @@ AVAILABLE_CHECKS = [commit_msg_check.CommitMsgCheck,
                     spell_check.SpellCheck
                     ]
 
-PROJECT_ROOT = f"{os.path.dirname(os.path.abspath(__file__))}/../../"
-PROJECT_ROOT = os.path.abspath(PROJECT_ROOT)
+# The following keywords can be passed as values to the arguments.
+# They will be set to their correct mapped values lazily.
+KEYWORD_MAP = dict()
+KEYWORD_MAP["ROOT"] = None
+KEYWORD_MAP["GITIGNORE_CONTENTS"] = None
 
 
 def convert_gitstyle_pattern_to_regex(pattern):
@@ -85,11 +88,12 @@ def convert_gitstyle_pattern_to_regex(pattern):
     pattern = pattern.replace("*", r"[^/]*")
     pattern = pattern.replace("?", r"[^/]")
 
+    project_root = eval_keyword("ROOT")
     if pattern.startswith("/"):
-        pattern = f"{PROJECT_ROOT}{pattern}"
+        pattern = f"{project_root}{pattern}"
         pass
     else:
-        pattern = f"{PROJECT_ROOT}/+.*{pattern}"
+        pattern = f"{project_root}/+.*{pattern}"
 
     return pattern
 
@@ -98,8 +102,10 @@ def load_gitignore_file():
     """ Checks may ignore the same patterns as .gitignore, so parse the file
         and convert it as a list of regex strings to pass to the checks. """
     ignored = []
+
+    project_root = eval_keyword("ROOT")
     try:
-        with open(f"{PROJECT_ROOT}/.gitignore", 'r') as f:
+        with open(f"{project_root}/.gitignore", 'r') as f:
 
             ignored = []
             for line in f:
@@ -111,10 +117,28 @@ def load_gitignore_file():
     return ignored
 
 
-# The following keywords can be passed as values to the arguments.
-KEYWORD_MAP = dict()
-KEYWORD_MAP["ROOT"] = PROJECT_ROOT
-KEYWORD_MAP["GITIGNORE_CONTENTS"] = load_gitignore_file()
+def eval_keyword(keyword):
+    """ The user may use keywords when configuring the checks. This function
+        provides access to the mapped values for those keywords.
+        To avoid unnecessary work, keyword mappings are only evaluated if they
+        are needed.
+
+        The ROOT keyword is set via a user-argument.
+        """
+
+    if keyword not in KEYWORD_MAP:
+        # This should never happen
+        raise ValueError(f"Internal error: keyword {keyword} not recognised.")
+
+    if KEYWORD_MAP[keyword] is None:
+        if keyword == "GITIGNORE_CONTENTS":
+            KEYWORD_MAP[keyword] = load_gitignore_file()
+        else:
+            # This should never happen
+            raise ValueError((f"Internal error: keyword {keyword} was not"
+                              " initialised."))
+
+    return KEYWORD_MAP[keyword]
 
 
 def parse_options():
@@ -161,12 +185,12 @@ def parse_options():
             parser.add_argument(f"--{name}_{arg}", required=False,
                                 help=(f"{prefix}{msg}"))
 
-    default_config_file = os.path.join(PROJECT_ROOT,
-                                       "tools/qa-checks/qa-checks_config.yml")
+    default_config_file = "tools/qa-checks/qa-checks_config.yml"
     parser.add_argument("--config",
                         default=default_config_file,
                         help=("YAML file that holds configuration defaults for"
-                              f" the checkers (default: {default_config_file})"
+                              " the checkers (default: <PROJECT_ROOT>/"
+                              f"{default_config_file})"
                               ))
 
     parser.add_argument("--no_config",
@@ -203,6 +227,16 @@ def parse_options():
                               " environment directory after the checks have"
                               " been completed (Default: False)"))
 
+    default_root = f"{os.path.dirname(os.path.abspath(__file__))}/../../"
+    default_root = os.path.abspath(default_root)
+
+    parser.add_argument("--project_root",
+                        required=False,
+                        default=default_root,
+                        help=("Define the project root path, from which all"
+                              " provided relative paths will be considered"
+                              f" (Default: {default_root})"))
+
     parser.add_argument("--log", default="info",
                         choices=["debug", "info", "warning"],
                         help="Set the log level (Default: info).")
@@ -221,6 +255,9 @@ def parse_options():
     # rather than replaces the default
     if len(opts.checks) == 0 or "all" in opts.checks:
         opts.checks = check_names
+
+    # Initialise the keyword value to the user-provided root
+    KEYWORD_MAP["ROOT"] = opts.project_root
 
     return opts
 
@@ -345,7 +382,7 @@ def load_check_params(opts, check_name, req_list_vars, req_vars):
             # If it's a list, extend with the contents of the keyword
             # If it's not a list, replace with the contents of the keyword
             if is_list:
-                value = [KEYWORD_MAP[element] if element in KEYWORD_MAP
+                value = [eval_keyword(element) if element in KEYWORD_MAP
                          else element for element in value]
 
                 # Make sure the list is flattened
@@ -359,7 +396,7 @@ def load_check_params(opts, check_name, req_list_vars, req_vars):
                 value = flattened_list
 
             else:
-                value = KEYWORD_MAP[value] if value in KEYWORD_MAP else value
+                value = eval_keyword(value) if value in KEYWORD_MAP else value
                 if type(value) is list:
                     logger.warn(("Used a list keyword for a non-list"
                                  f"parameter: {check_name}_{param}. Discarding"
@@ -410,6 +447,9 @@ def build_check_modules(opts):
                                        list(plain_vars.keys()))
 
             if params:
+                # All check modules have a project_root variable
+                params["project_root"] = eval_keyword("ROOT")
+
                 check = check_module(logger, **params)
                 checkers.append(check)
 

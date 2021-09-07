@@ -75,9 +75,6 @@ class HeaderCheck(abstract_check.AbstractCheck):
         self.logger = logger
         self.__dict__.update(kwargs)
 
-        checker_path = os.path.dirname(os.path.abspath(__file__))
-        self.project_root = os.path.abspath(f"{checker_path}/../../")
-
         # The header block is the first contiguous set of commented lines from
         # the first line that contains a license and copyright header keyword
         # (see below) to the final commented line that contains one.

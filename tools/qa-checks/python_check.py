@@ -60,9 +60,6 @@ class PythonCheck(abstract_check.AbstractCheck):
         self.logger = logger
         self.__dict__.update(kwargs)
 
-        checker_path = os.path.dirname(os.path.abspath(__file__))
-        self.project_root = os.path.abspath(f"{checker_path}/../../")
-
         self.script = "pycodestyle"
         self.script_path = None
 

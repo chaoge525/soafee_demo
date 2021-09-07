@@ -66,9 +66,6 @@ class SpellCheck(abstract_check.AbstractCheck):
 
         self.script_path = None
 
-        checker_path = os.path.dirname(os.path.abspath(__file__))
-        self.project_root = os.path.abspath(f"{checker_path}/../../")
-
         self.num_files_checked = 0
 
     def get_pip_dependencies(self):
