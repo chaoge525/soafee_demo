@@ -34,6 +34,7 @@ argument to this script.
 import argparse
 import logging
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -195,9 +196,16 @@ def parse_options():
                               " without using up a Python virtual environment."
                               " Cannot be passed with --venv."))
 
+    parser.add_argument("--keep_venv",
+                        action="store_true",
+                        default=False,
+                        help=("Do not delete the temporary Python virtual"
+                              " environment directory after the checks have"
+                              " been completed (Default: False)"))
+
     parser.add_argument("--log", default="info",
                         choices=["debug", "info", "warning"],
-                        help="Set log level.")
+                        help="Set the log level (Default: info).")
 
     opts = parser.parse_args()
 
@@ -411,7 +419,7 @@ def build_check_modules(opts):
 def generate_venv_script_args_from_opts(opts):
     """ In order to call this script from the virtual environment, convert the
         processed options to a string array, and adjust settings accordingly:
-        - Replace --venv to --no_venv (venv already built)
+        - Remove --venv and --key_venv, replace with --no_venv (already built)
         - Add --no_process_patterns (patterns already processed)
 
         """
@@ -419,8 +427,8 @@ def generate_venv_script_args_from_opts(opts):
     args = []
     for opt, value in vars(opts).items():
         arg = ""
-        if opt == "venv":
-            # remove the venv argument
+        if opt == "venv" or opt == "keep_venv":
+            # remove the venv arguments
             continue
         elif opt == "no_venv":
             # set the no_venv argument
@@ -543,10 +551,17 @@ def main():
             logger.debug(f"Using existing venv directory: {venv_dirname}")
         else:
             venv_dirname = tempfile.mkdtemp()
-            logger.info(f"Created new venv directory: {venv_dirname}")
+            if opts.keep_venv:
+                logger.info(f"Created new venv directory: {venv_dirname}")
+            else:
+                logger.debug(f"Created new venv directory: {venv_dirname}")
 
         virt_env.create(venv_dirname)
         exit_code = virt_env.returncode
+
+        if opts.venv is None and opts.keep_venv is False:
+            shutil.rmtree(venv_dirname)
+            logger.debug(f"Deleted the venv directory: {venv_dirname}")
 
     exit(exit_code)
 
