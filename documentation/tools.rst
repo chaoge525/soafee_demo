@@ -158,15 +158,18 @@ be deployed.
 Interactive Build Container
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The script allows user to run custom kas commands e.g., ``shell``
-to run FVP emulation or to enter bitbake environment.
+The script allows the user to customise both the container engine arguments as
+well as the kas commands that will be executed, via the following script
+options:
 
-* ``--kas-command COMMAND`` changes default kas command (``build``)
-  to ``COMMAND`` and allows to run e.g. tests on FVP emulator
+* ``--engine-arguments '--foo bar="baz"' ['--bar' [...]]`` allows for additional
+  engine-specific options to be passed to the container engine, e.g. ``-it`` to
+  enable interactive access to a docker container.
 
-* ``--engine-argument '--foo bar="baz"' ['--bar' [...]]`` engine specific
-  options, that are required for custom kas command e.g.:
-  ``-it`` for docker engine
+* ``--kas-arguments ARGS`` customises the arguments string passed to the kas
+  command, allowing the user to run custom commands (e.g. to enter the bitbake
+  environment by passing the ``shell`` string, or to pass specific options for
+  running tests on an FVP). The default string is ``build``.
 
 Cache Mirrors
 ^^^^^^^^^^^^^
