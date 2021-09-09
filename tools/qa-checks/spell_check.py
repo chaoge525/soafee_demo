@@ -21,6 +21,8 @@ the word itself and all of the line numbers where the invalid word was found
 within the file.
 """
 
+import collections
+import itertools
 import os
 import re
 import subprocess
@@ -33,9 +35,11 @@ import abstract_check
 class SpellCheck(abstract_check.AbstractCheck):
     """ Class to check the spelling of words in the project.
 
-        SpellCheck uses the 'pyspellchecker' Python package. The default
-        package language "en" is extended with a custom dictionary found in the
-        script path. """
+        SpellCheck uses the 'pyspellchecker' Python package.
+
+        As the repository contains many non-standard technical words, extend
+        the default built-in dictionary "en" with a custom dictionary of valid
+        words (provided by the 'dict_path' parameter). """
 
     name = "spell"
 
@@ -64,8 +68,6 @@ class SpellCheck(abstract_check.AbstractCheck):
         self.logger = logger
         self.__dict__.update(kwargs)
 
-        self.script_path = None
-
         self.num_files_checked = 0
 
     def get_pip_dependencies(self):
@@ -74,46 +76,139 @@ class SpellCheck(abstract_check.AbstractCheck):
 
     def run_spellcheck(self, path, file_errors):
         """ Run the spellchecker, and return any misspellings as a dict mapping
-            the filepath to a list of its misspelt words. """
+            the filepath to a list of misspelt words and their line numbers.
+            """
 
         rel_path = os.path.relpath(path, self.project_root)
 
-        # Create a word frequency dictionary from the file
         import spellchecker
-        file_word_freq = spellchecker.WordFrequency(case_sensitive=True)
+        word_freq = spellchecker.WordFrequency()
+        hash_regex = re.compile(r"\b([a-f\d]{40}|[A-F\d]{40})\b")
 
-        # There may be many non-text/non-utf8 files in the directory, which
-        # will fail to be loaded as a collection of words, so skip these
+        errors = set()
+
+        # Pass each line of the file through the spell checker
+        # For any detected errors, check if it is excluded from the check
+        # (for example, we don't check the contents of documentation code
+        # blocks)
+
         try:
-            file_word_freq.load_text_file(path)
-        except UnicodeDecodeError:
-            file_errors[rel_path] = [("Couldn't process file due to"
-                                     " UnicodeDecodeError")]
+            with open(path, 'r', encoding="utf-8") as f:
+                text = f.read()  # for matching
+                f.seek(0)  # to iterate over lines later
+
+                exclusions = list()
+
+                # Currently the project has ReStructuredText formatted links
+                # within the Markdown readme
+                if path.endswith(".rst") or path.endswith(".md"):
+                    # Exclude the following:
+                    code = r"(\.\. code-block::.*$)((\n +.*|\s)+)"
+                    link_defs = r"(\.\.\s+_.*$)((\n +.*|\s)+)"
+                    links_in = r"`([^\s]*?)`_"
+                    links_ex = r":ref:`([^\s]*?)`"
+
+                    matches_code = re.finditer(code, text, re.M)
+                    matches_linkdefs = re.finditer(link_defs, text, re.M)
+                    matches_links_in = re.finditer(links_in, text, re.M)
+                    matches_links_ex = re.finditer(links_ex, text, re.M)
+
+                    matches = itertools.chain(matches_code,
+                                              matches_linkdefs,
+                                              matches_links_in,
+                                              matches_links_ex)
+
+                    for _, match in enumerate(matches):
+                        for _, group_text in enumerate(match.groups()):
+                            if not group_text.strip():
+                                continue
+                            exclusions.append(group_text.strip().lower())
+
+                for line in f:
+                    if line.strip() == "":
+                        continue
+
+                    # Test the line for spelling mistakes
+                    word_freq.load_text(line.strip())
+                    words = list(self.spellcheck.unknown(word_freq.words()))
+
+                    for word in words:
+
+                        if any([word in ex for ex in exclusions]):
+                            continue
+
+                        if hash_regex.match(word):
+                            continue
+
+                        errors.add(word)
+
+        except UnicodeDecodeError as e:
+            file_errors[rel_path] = ("Couldn't process file due to"
+                                     " UnicodeDecodeError")
             return
 
-        # Compare with the spellcheck object's dictionary
-        errors = list(self.spellcheck.unknown(file_word_freq.words()))
+        # Map words to a set of lines
+        errors_with_lines = collections.defaultdict(set)
 
-        # Report each error with line numbers
-        errors_with_lines = list()
+        # Get the full word from the token that was parsed from the line, if
+        # necessary. This is to make the custom dictionary more understandable.
+        # For example, "killall" should not be a valid word, unless it is part
+        # of a reference to the "k3s-killall" script. So the latter is the only
+        # word that should be considered valid.
+        # In addition, get the line number(s) for the word
         for word in errors:
-            search = fr"\b{word}\b"
-            cmd = ["grep", "-in", search, path]
+
+            inc_chars = r"][[:alnum:]\+\-_|"
+            search = fr"[{inc_chars}]*{word}[{inc_chars}]*"
+            cmd = ["grep", "-inoP", search, path]
             process = subprocess.run(cmd,
                                      stdout=subprocess.PIPE,
                                      stderr=subprocess.PIPE)
             stdout = process.stdout.decode().strip()
 
-            line_numbers = ["unknown"]
             if process.returncode == 0 and stdout != "":
-                line_numbers = [line.split(":")[0] for line in
-                                stdout.split("\n")]
 
-            error_msg = f"{','.join(line_numbers)}:{word}"
-            errors_with_lines.append(error_msg)
+                full_words = [(line.split(":")[0], line.split(":")[1].strip())
+                              for line in stdout.split("\n")]
+
+                full_errors = list()
+                for line_number, full_word in full_words:
+
+                    # Remove any trailing special characters
+                    full_word = full_word \
+                        .strip() \
+                        .strip("_") \
+                        .strip("+") \
+                        .strip("-") \
+                        .strip("|") \
+                        .strip("[") \
+                        .strip("]")
+
+                    if any([full_word.lower() in ex for ex in exclusions]):
+                        continue
+
+                    # Check if the proper word is an actual spelling mistake /
+                    # is contained in the custom dictionary
+                    if (full_word in errors_with_lines or
+                            self.spellcheck.unknown([full_word])):
+
+                        # Merge the line numbers where it is found
+                        errors_with_lines[full_word].add(line_number)
+
+            else:
+                # Couldn't find the string (this shouldn't happen)
+                # Don't discard the error
+                errors_with_lines[word].add("unknown")
+
+        errors = list()
+
+        # Report all full word errors and their line numbers
+        for word, lines_set in errors_with_lines.items():
+            error_msg = f"{','.join(lines_set)}:{word}"
+            errors.append(error_msg)
 
         if errors_with_lines:
-            file_errors[rel_path] = errors_with_lines
+            file_errors[rel_path] = errors
 
         self.num_files_checked += 1
 
@@ -127,11 +222,10 @@ class SpellCheck(abstract_check.AbstractCheck):
 
         file_errors = dict()
 
-        # Check if we have the spellchecker module
         try:
             import spellchecker
 
-            self.spellcheck = spellchecker.SpellChecker(case_sensitive=True)
+            self.spellcheck = spellchecker.SpellChecker()
 
             dict_path = self.dict_path
             if not os.path.isabs(dict_path):
@@ -164,7 +258,7 @@ class SpellCheck(abstract_check.AbstractCheck):
                     file_errors,
                     self.exclude_patterns)
 
-        except ImportError:
+        except ImportError as e:
             self.logger.error("FAIL")
             self.logger.error("Failed to load the Python spellchecker module.")
             return 1
