@@ -2,9 +2,9 @@
 #
 # SPDX-License-Identifier: MIT
 
-######################
-# EWAOL v0.1 Release #
-######################
+##########################
+# EWAOL v0.2-rc1 Release #
+##########################
 
 header:
   version: 10
@@ -12,16 +12,16 @@ header:
 repos:
 
   meta-arm:
-    refspec: e82d9fdd49745a6a064b636f2ea1e02c1750d298
+    refspec: e9d695f132353018f795bb8732da8916cd8cc66c
 
   meta-openembedded:
-    refspec: c51e79dd854460c6f6949a187970d05362152e84
+    refspec: 7bd7e1da9034e72ca4262dba55f70b2b23499aae
 
   meta-security:
-    refspec: c6b1eec0e5e94b02160ce0ac3aa9582cbbf7b0ed
+    refspec: 5050d1267ad41288c903086030594f8702bfa039
 
   meta-virtualization:
-    refspec: 3508b13acbf669a5169fafca232a5c4ee705dd16
+    refspec: c19c9927855abb63e89f9d853ba0cb258a2de415
 
   poky:
-    refspec: da0ce760c5372f8f2ef4c4dfa24b6995db73c66c
+    refspec: 5dad70fedb5fc38dbbd498d668b95ea9dba48293

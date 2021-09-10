@@ -34,29 +34,29 @@ The high-level structure of the `meta-ewaol` repository is as follows:
 ## Layers Dependencies
 
 The repository contains Yocto layers that require dependencies as follows. The
-layers revisions are related to the EWAOL v0.1.1 release.
+layers revisions are related to the EWAOL v0.2-rc1 release.
 
 The `meta-ewaol-distro` layer depends on:
 
     URI: git://git.yoctoproject.org/poky
     layers: meta, meta-poky
     branch: hardknott
-    revision: da0ce760c5372f8f2ef4c4dfa24b6995db73c66c
+    revision: 5dad70fedb5fc38dbbd498d668b95ea9dba48293
 
     URI: git://git.openembedded.org/meta-openembedded
     layers: meta-filesystems, meta-networking, meta-oe, meta-perl, meta-python
     branch: hardknott
-    revision: c51e79dd854460c6f6949a187970d05362152e84
+    revision: 7bd7e1da9034e72ca4262dba55f70b2b23499aae
 
     URI: git://git.yoctoproject.org/meta-security
     layers: meta-security
     branch: hardknott
-    revision: c6b1eec0e5e94b02160ce0ac3aa9582cbbf7b0ed
+    revision: 5050d1267ad41288c903086030594f8702bfa039
 
     URI: git://git.yoctoproject.org/meta-virtualization
     layers: meta-virtualization
     branch: hardknott
-    revision: 3508b13acbf669a5169fafca232a5c4ee705dd16
+    revision: c19c9927855abb63e89f9d853ba0cb258a2de415
 
 
 The `meta-ewaol-tests` layer depends on:
@@ -64,7 +64,7 @@ The `meta-ewaol-tests` layer depends on:
     URI: git://git.yoctoproject.org/poky
     layers: meta
     branch: hardknott
-    revision: da0ce760c5372f8f2ef4c4dfa24b6995db73c66c
+    revision: 5dad70fedb5fc38dbbd498d668b95ea9dba48293
 
 ## Repository License
 

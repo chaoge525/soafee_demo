@@ -15,7 +15,7 @@ A number of dependencies are required to build projects with Yocto.
 be installed on the Build Host.
 
 .. _The Yocto Project documentation:
-   https://docs.yoctoproject.org/3.3.1/singleindex.html#required-packages-for-the-build-host
+   https://docs.yoctoproject.org/3.3.2/singleindex.html#required-packages-for-the-build-host
 
 ``meta-ewaol-config`` contains build configs for kas, a tool for easily setting
 up bitbake based projects. Each build config is a YAML file that specifies
