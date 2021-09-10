@@ -27,6 +27,8 @@ functionalities.
     Users of this software stack must consider safety and security implications
     according to their own usage goals.
 
+.. _overview_high-level_architecture:
+
 High-Level Architecture
 -----------------------
 

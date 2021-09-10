@@ -1,6 +1,8 @@
 Tools
 =====
 
+.. _tools_documentation_build:
+
 Documentation build
 -------------------
 
@@ -228,7 +230,7 @@ default. Much of this output can be redirected to a log file using:
     ``--log-file=[path]``
 
 This will cause ``STDOUT`` to contain only important messages, while the log
-file will recieve the full output. If enabled, the log file should be consulted
+file will receive the full output. If enabled, the log file should be consulted
 to check the current progress of the containerised build.
 
 The log path will be created if it does not exist.

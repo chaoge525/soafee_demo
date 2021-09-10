@@ -22,10 +22,11 @@ The high-level structure of the `meta-ewaol` repository is as follows:
 
 ## Building the documentation
 
-See the :ref:`Documentation build` section of the tools documentation page.
+See the :ref:`tools_documentation_build` section of the tools documentation page.
+
+.. _readme_layers_dependencies:
 
 ## Layers Dependencies
-
 
 The repository contains Yocto layers that require dependencies as follows. The
 layers revisions are related to the EWAOL v0.1 release.
@@ -61,7 +62,8 @@ The `meta-ewaol-tests` layer depends on:
 
 ## Repository License
 
-The software is provided under an MIT license (more details in :ref:`License`).
+The software is provided under an MIT license (more details in
+:ref:`license_link:License`).
 
 Contributions to the project should follow the same license.
 

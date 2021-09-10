@@ -3,7 +3,7 @@ Project Quickstart
 
 This documentation explains how to quickly get started with the EWAOL project.
 For more information on building an image for the EWAOL project, see
-:ref:`Image Builds`.
+:ref:`builds:Image Builds`.
 
 Build Host Setup
 ****************
@@ -12,7 +12,7 @@ A number of dependencies are required to build projects with Yocto.
 `The Yocto Project documentation`_ provides the list of essential packages to
 be installed on the Build Host.
 
-.. _The Yocto project documentation:
+.. _The Yocto Project documentation:
    https://docs.yoctoproject.org/3.3.1/singleindex.html#required-packages-for-the-build-host
 
 ``meta-ewaol-config`` contains build configs for kas, a tool for easily setting
@@ -54,7 +54,9 @@ build config arguments to kas.
 
 The build configurations and the distribution features available for EWAOL
 project builds within ``meta-ewaol`` repository are described in:
-:ref:`Image Builds`.
+:ref:`builds:Image Builds`.
+
+.. _quickstart_minimal_image_build_via_kas:
 
 Minimal Image Build via kas
 ***************************
@@ -68,7 +70,7 @@ following machines:
   ``MACHINE`` implemented in `meta-arm-bsp`_.
 
 .. _meta-arm-bsp:
-   https://git.yoctoproject.org/cgit/cgit.cgi/meta-arm/tree/meta-arm-bsp/documentation/fvp-base.md
+   https://git.yoctoproject.org/cgit/cgit.cgi/meta-arm/tree/meta-arm-bsp/documentation
 
 Checkout the ``meta-ewaol`` repository:
 
@@ -82,6 +84,8 @@ Checkout the ``meta-ewaol`` repository:
 Running kas with the build configurations within ``meta-ewaol-config`` will
 build two images by default: one that includes the Docker container engine and
 another one that includes the Podman container engine.
+
+.. _quickstart_fvp-base:
 
 FVP-Base
 ========
@@ -153,14 +157,16 @@ Tests on FVP-Base
 -----------------
 
 * To build an image with tests included please refer to
-  :ref:`fvp-base: build image including tests`.
-* To execute tests please refer to :ref:`fvp-base: running tests`.
+  :ref:`validations_fvp-base_build_image_including_tests`.
+* To execute tests please refer to :ref:`validations_fvp-base_running_tests`.
 
 N1SDP
 =====
 
 To read documentation about the N1SDP board, check the
 `N1SDP Technical Reference Manual`_.
+
+.. _quickstart_build_for_n1sdp:
 
 Build for N1SDP
 ---------------
@@ -182,6 +188,8 @@ an option to the kas build command, as shown in the following example:
 .. code-block:: console
 
    kas build --target ewaol-image-docker meta-ewaol-config/kas/n1sdp.yml
+
+.. _quickstart_deploy_on_n1sdp:
 
 Deploy on N1SDP
 ---------------
@@ -405,8 +413,8 @@ Tests on N1SDP
 --------------
 
 * To build an image with tests included please refer to
-  :ref:`n1sdp: build image including tests`.
-* To execute tests please refer to :ref:`n1sdp: running tests`.
+  :ref:`validations_n1sdp_build_image_including_tests`.
+* To execute tests please refer to :ref:`validations_n1sdp_running_tests`.
 
 .. _Potential firmware damage notice: https://community.arm.com/developer/tools-software/oss-platforms/w/docs/604/notice-potential-damage-to-n1sdp-boards-if-using-latest-firmware-release
 .. _N1SDP Technical Reference Manual: https://developer.arm.com/documentation/101489/0000

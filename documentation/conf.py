@@ -62,3 +62,10 @@ html_static_path = ['_static']
 html_css_files = [
     'css/custom.css',
 ]
+
+# -- Options for autosectionlabel --------------------------------------------
+
+# Prefix each section label with the name of the document it is in
+autosectionlabel_prefix_document = True
+# Only generate automatic section labels for document titles
+autosectionlabel_maxdepth = 1

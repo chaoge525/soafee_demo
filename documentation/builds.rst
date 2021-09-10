@@ -20,12 +20,12 @@ EWAOL-specific build configurations.
 
 In this document, the available ``MACHINE`` and ``DISTRO_FEATURES`` options that
 are currently supported by ``meta-ewaol`` are first stated below, before being
-described in further detail in :ref:`Distribution Features`. The kas
-configuration YAML files provided for enabling those EWAOL features on the
-supported target machines are described in :ref:`kas Build Configurations`. If
-using the recommended kas build tool is not possible, the manual approach for
-preparing and building an EWAOL image via bitbake is briefly outlined in
-:ref:`Manual Bitbake Build Preparation`.
+described in further detail in `Distribution Features`_. The kas configuration
+YAML files provided for enabling those EWAOL features on the supported target
+machines are described in `kas Build Configurations`_. If using the recommended
+kas build tool is not possible, the manual approach for preparing and building
+an EWAOL image via bitbake is briefly outlined in
+`Manual Bitbake Build Preparation`_.
 
 The currently supported ``MACHINE``\s are:
 
@@ -63,12 +63,12 @@ configure the image are as follows:
     * Includes the EWAOL test suites provided to validate the image is running
       successfully and compliant with the expected EWAOL software
       functionalities. These tests are provided by the ``meta-ewaol-tests``
-      Yocto layer, documented in :ref:`Image Validation`.
+      Yocto layer, documented in :ref:`validations:Image Validation`.
 
 Provided their Yocto layer sources can be found by bitbake via
 ``conf/bblayers.conf``, these features can be enabled by passing them as a
 space-separated list into ``DISTRO_FEATURES`` within ``conf/local.conf``. This
-build process is described in :ref:`Manual Bitbake Build Preparation`.
+build process is described in `Manual Bitbake Build Preparation`_.
 
 For use with the recommended kas build tool, the ``meta-ewaol`` repository also
 provides kas build config files that will enable automatic fetch and inclusion
@@ -82,7 +82,7 @@ kas Build Configurations
 
 The EWAOL quickstart guide illustrates how to build an EWAOL software image by
 supplying build configuration YAML files to the kas build tool:
-:ref:`Minimal Image Build via kas`.
+:ref:`quickstart_minimal_image_build_via_kas`.
 
 The ``meta-ewaol-config/kas`` directory contains build configs to support
 building images via kas for the EWAOL project.
@@ -139,7 +139,7 @@ There are currently two build modifier YAML files:
     the inclusion of ``meta-ewaol-tests`` as a Yocto layer source for the
     build, and appends the ``ewaol-test`` feature as a ``DISTRO_FEATURE`` for
     the build. Additional documentation for the EWAOL tests layer is given in
-    :ref:`Image Validation`.
+    :ref:`validations:Image Validation`.
 
 * ``ci.yml``
 
@@ -222,9 +222,9 @@ bitbake, it is necessary to prepare a bitbake project as follows:
 
 * Configure dependent Yocto layers
     The source repositories in which the required Yocto layers can be found
-    are listed in :ref:`Layers Dependencies`. ``conf/bblayers.conf`` must then
-    be configured to provide the paths to the following Yocto layers on the
-    build system:
+    are listed in :ref:`readme_layers_dependencies`. ``conf/bblayers.conf``
+    must then be configured to provide the paths to the following Yocto layers
+    on the build system:
 
         * meta-openembedded/meta-filesystems
         * meta-openembedded/meta-networking
@@ -248,11 +248,11 @@ bitbake, it is necessary to prepare a bitbake project as follows:
         ``DISTRO = "ewaol"``
 
 * (Optionally) Configure the image ``DISTRO_FEATURES``
-    The image features as defined in :ref:`Distribution Features` can be
-    configured to enable particular functionalities within the resulting EWAOL
-    image. For example, as ``ewaol-devel`` is set by default, additional
-    features such as EWAOL image validation tests may simply be added to the
-    build by appending the following to ``conf/local.conf``:
+    The image features as defined in `Distribution Features`_ can be configured
+    to enable particular functionalities within the resulting EWAOL image. For
+    example, as ``ewaol-devel`` is set by default, additional features such as
+    EWAOL image validation tests may simply be added to the build by appending
+    the following to ``conf/local.conf``:
 
         ``DISTRO_FEATURES_append = " ewaol-test"``
 

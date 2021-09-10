@@ -44,7 +44,7 @@ meta-ewaol-distro
 ^^^^^^^^^^^^^^^^^
 
 Yocto distribution layer providing top-level and general policies for the EWAOL
-images. For more details, please see :ref:`High-Level Architecture`.
+images. For more details, please see :ref:`overview_high-level_architecture`.
 
 meta-ewaol-tests
 ^^^^^^^^^^^^^^^^
