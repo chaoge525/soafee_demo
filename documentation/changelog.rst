@@ -1,6 +1,35 @@
 Changelog & Release Notes
 #########################
 
+v0.1.1
+******
+
+New Features
+============
+
+No new features were introduced.
+
+Changed
+=======
+
+Documentation:
+
+  * Added manual bitbake build preparation documentation
+  * Added QA checks documentation
+  * Added meta-ewaol public repository URL
+  * CI Build Tool documentation fixes
+  * Refactor Sphinx auto section labels and cross-references links
+
+Limitations
+===========
+
+Same as `v0.1 Limitations`_.
+
+Resolved and Known Issues
+=========================
+
+None.
+
 v0.1
 ****
 
@@ -89,6 +118,7 @@ Changed
 
 Initial version.
 
+.. _v0.1 Limitations:
 
 Limitations
 ===========
