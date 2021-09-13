@@ -22,6 +22,7 @@ Documentation:
   * Added public documentation URL
   * Added link to SOAFEE URL
   * Refactored Layer Dependencies on README.md
+  * Added Gitlab Pages integration via .gitlab-ci.yml
 
 Limitations
 ===========
