@@ -1,3 +1,11 @@
+## Documentation
+
+The project's documentation can be browsed at: `<https://ewaol.sites.arm.com>`_
+
+### Building the documentation
+
+See the :ref:`tools_documentation_build` section of the tools documentation page.
+
 ## Repository Structure
 
 The high-level structure of the `meta-ewaol` repository is as follows:
@@ -20,16 +28,12 @@ The high-level structure of the `meta-ewaol` repository is as follows:
   Directory that provides tools that perform quality-assurance checks on the
   repository as well as tools and scripts to support EWAOL images builds.
 
-## Building the documentation
-
-See the :ref:`tools_documentation_build` section of the tools documentation page.
-
 .. _readme_layers_dependencies:
 
 ## Layers Dependencies
 
 The repository contains Yocto layers that require dependencies as follows. The
-layers revisions are related to the EWAOL v0.1 release.
+layers revisions are related to the EWAOL v0.1.1 release.
 
 The `meta-ewaol-distro` layer depends on:
 

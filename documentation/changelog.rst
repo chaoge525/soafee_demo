@@ -19,6 +19,7 @@ Documentation:
   * Added meta-ewaol public repository URL
   * CI Build Tool documentation fixes
   * Refactor Sphinx auto section labels and cross-references links
+  * Added public documentation URL
 
 Limitations
 ===========
