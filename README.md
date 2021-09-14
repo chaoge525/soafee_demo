@@ -1,6 +1,7 @@
 ## Documentation
 
-The project's documentation can be browsed at: `<https://ewaol.sites.arm.com>`_
+The project's documentation can be browsed at
+https://ewaol.sites.arm.com/meta-ewaol
 
 ### Building the documentation
 
