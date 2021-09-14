@@ -69,7 +69,13 @@ class CommitMsgCheck(abstract_check.AbstractCheck):
 
         self.logger.debug(f"Running {self.name} check.")
 
-        import email_validator
+        try:
+            import email_validator
+        except ImportError:
+            self.logger.error("FAIL")
+            self.logger.error((f"Failed to import the Python email_validator"
+                               " module."))
+            return 1
 
         script = "git"
         script_path = common.find_executable(self.logger, script)

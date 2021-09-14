@@ -271,11 +271,10 @@ def load_param_from_config(config_filename, check_name, param, list_param):
 
         Return None if no value could be found. """
 
-    import yaml
-
     value = None
 
     try:
+        import yaml
 
         with open(config_filename, 'r') as config_file:
             config = yaml.safe_load(config_file)
@@ -324,6 +323,11 @@ def load_param_from_config(config_filename, check_name, param, list_param):
 
     except FileNotFoundError:
         logger.error(f"Config file '{config_filename}' was not found.")
+        exit(1)
+    except ImportError:
+        logger.error(("Could not import the Python yaml module. Either install"
+                      " 'pyyaml' via pip on the host system to load"
+                      " the YAML configuration file, or pass --no_config."))
         exit(1)
 
     return value
