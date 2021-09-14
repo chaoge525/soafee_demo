@@ -21,6 +21,7 @@ Documentation:
   * Refactor Sphinx auto section labels and cross-references links
   * Added public documentation URL
   * Added link to SOAFEE URL
+  * Refactored Layer Dependencies on README.md
 
 Limitations
 ===========
