@@ -25,6 +25,7 @@ modules:
     commit_msg:
         title_length: 80
         body_length: 80
+        commits: "-1"
 
     header:
         exclude_patterns:

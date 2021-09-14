@@ -30,7 +30,9 @@ Any failure will be logged along with the particular validation that failed.
 import email
 import logging
 import os
+import re
 import subprocess
+import urllib
 
 import common
 import abstract_check
@@ -50,6 +52,14 @@ class CommitMsgCheck(abstract_check.AbstractCheck):
         plain_vars["title_length"] = "Maximum number of characters in title."
         plain_vars["body_length"] = ("Maximum number of characters in each"
                                      " line of message body.")
+        plain_vars["commits"] = ("Defines the commit messages to check. Can be"
+                                 " defined in one of two formats: '-N' to"
+                                 " check the latest N commit messages, or"
+                                 " 'commit1(,commit2,...)' as a string list of"
+                                 " commits to check. The commits must be valid"
+                                 " when passed to the 'git show' command, for"
+                                 " example a commit SHA or a relative commit"
+                                 " like HEAD~2.")
 
         return list_vars, plain_vars
 
@@ -61,6 +71,40 @@ class CommitMsgCheck(abstract_check.AbstractCheck):
         """ For email validation, this checker requires the 'email_validator'
             package from pypi. """
         return ["email_validator"]
+
+    def parse_commits_str(self, commits_str):
+        """ Convert the commits that the user requested into a list of commits
+            that may be checked one at a time by being passed to the 'git show'
+            command.
+            Acceptable formats are:
+              -N
+              SHA1(,SHA2,...)
+              HEAD~1(,HEAD~2,...)
+        """
+
+        try:
+
+            commits = []
+            if commits_str.startswith("-"):
+                count = int(commits_str.split("-")[1])
+
+                for i in range(count):
+                    commits.append(f"HEAD~{i}")
+
+            else:
+                commits = commits_str.split(",")
+
+                # Remove any blank commits
+                commits = [commit for commit in commits if commit]
+
+        except Exception as e:
+            self.logger.error(("Invalid format for the desired commits to"
+                               f" check: '{commits_str}'. Please see paramater"
+                               " usage. Aborting the check."))
+            self.logger.error(f"Exception was: {type(e)} {e}")
+            exit(1)
+
+        return commits
 
     def run(self):
         """ Run the git commit message check.
@@ -85,6 +129,8 @@ class CommitMsgCheck(abstract_check.AbstractCheck):
             self.logger.error(f"Could not find {script}")
             return 1
 
+        commits = self.parse_commits_str(self.commits)
+
         errors = []
 
         for path in self.paths:
@@ -96,13 +142,13 @@ class CommitMsgCheck(abstract_check.AbstractCheck):
             if not os.path.isabs(path):
                 path = os.path.abspath(path)
 
-            tests = {}
-            tests["signed_off"] = ((f"{script} -C {path} log -1 | grep"
-                                    " 'Signed-off-by:'"))
+            for commit in commits:
 
-            tests["commit_msg"] = f"{script} -C {path} log -1 --pretty=%B"
+                # If printing an error message, attach this to identify which
+                # commit had the error
+                target = f"{os.path.basename(path)}:{commit}"
 
-            for test, cmd in tests.items():
+                cmd = f"{script} -C {path} show {commit} -q --format=%B"
 
                 process = subprocess.Popen(cmd,
                                            stdout=subprocess.PIPE,
@@ -110,62 +156,76 @@ class CommitMsgCheck(abstract_check.AbstractCheck):
                 stdout, _ = process.communicate()
                 stdout = stdout.decode().strip()
 
-                if test == "signed_off":
-                    # Check that all sign offs have a valid form:
-                    # "Signed-off-by: Name <valid@email.dom>"
+                if process.returncode != 0 or stdout == "":
+                    errors.append(("Failed to get a commit message using:"
+                                   f" {cmd}."))
+                    continue
 
-                    correct = "Signed-off-by: Name <valid@email.dom>"
+                # Check that all sign offs have a valid format
 
-                    if process.returncode != 0 or stdout == "":
-                        errors.append(f"{test}: {correct} not found")
+                correct_sign_off = "Signed-off-by: Name <valid@email.dom>"
+                signed_off = "Signed-off-by:"
+                matches = re.findall(fr"(^.*?{signed_off}.*?$)",
+                                     stdout,
+                                     re.MULTILINE)
 
-                    for idx, line in enumerate(stdout.split("\n")):
-                        valid = True
+                if not matches:
+                    errors.append((f"{target}:Could not find a '{signed_off}'"
+                                   f" line in the commit message."))
+                    continue
 
-                        try:
-                            name, addr = email.utils.parseaddr(line)
+                for line in matches:
 
-                            # Check email address
-                            email_validator.validate_email(addr)
+                    valid = True
+                    try:
+                        name, addr = email.utils.parseaddr(line)
 
-                            # Check name is found
-                            if name == "":
-                                valid = False
+                        # Check email address
+                        email_validator.validate_email(addr)
 
-                        except email_validator.EmailNotValidError:
+                        # Check name is found
+                        if name == "":
                             valid = False
 
-                        if not valid:
-                            errors.append((f"{test}: '{line}' failed"
-                                           " validation. Must be formed as"
-                                           f" '{correct}'"))
+                    except email_validator.EmailNotValidError:
+                        valid = False
 
-                elif test == "commit_msg":
+                    if not valid:
+                        errors.append((f"{target}:Failed sign-off validation:"
+                                       " '{line}'. Must be formed as"
+                                       f" '{correct_sign_off}'"))
 
-                    if process.returncode != 0 or stdout == "":
-                        errors.append((f"{test}: no commit message found via"
-                                       " '{cmd}'"))
+                # Iterate over the full message and validate the other aspects
 
-                    # Iterate over the commit message and check its validity
-                    for idx, line in enumerate(stdout.split("\n")):
+                for idx, line in enumerate(stdout.split("\n")):
 
-                        if idx == 0:
-                            if line == "":
-                                errors.append(f"{test}: Title is empty")
-                            elif len(line) > int(self.title_length):
-                                errors.append((f"{test}: Title is too long"
-                                               f" ({len(line)} >"
-                                               f" {self.title_length}):"
-                                               f" '{line}'"))
-
-                        elif idx == 1 and line != "":
-                            errors.append(f"{test}: Line {idx} is not empty")
-
-                        elif idx > 1 and len(line) > int(self.body_length):
-                            errors.append((f"{test}: Line {idx} is too long"
+                    if idx == 0:
+                        if line == "":
+                            errors.append(f"{target}:Message title is empty")
+                        elif len(line) > int(self.title_length):
+                            errors.append((f"{target}:Title is too long"
                                            f" ({len(line)} >"
-                                           f" {self.body_length}):"
+                                           f" {self.title_length}):"
                                            f" '{line}'"))
+
+                    elif idx == 1 and line != "":
+                        errors.append((f"{target}:The message title must be"
+                                       " followed by a blank line"))
+
+                    elif idx > 1 and len(line) > int(self.body_length):
+
+                        # Ignore lines that are URLs, which are allowed to
+                        # break the maximum character length
+                        try:
+                            if urllib.parse.urlparse(line.strip()):
+                                continue
+                        except ValueError:
+                            # Not a value URL
+                            pass
+
+                        errors.append((f"{target}:Line {idx} is too long"
+                                       f" ({len(line)} > {self.body_length}):"
+                                       f"'{line}'"))
 
         if errors:
             self.logger.error("FAIL")
