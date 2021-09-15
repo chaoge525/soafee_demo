@@ -78,16 +78,16 @@ to be fixed.
 CI Build Tool
 -------------
 
-In addition to the kas config files, ``meta-ewaol-config`` contains a Python
-script for enabling Continuous Integration (CI) builds:
+The repository provides a Python script to support building EWAOL images for
+Continuous Integration (CI) purposes:
 
   ``tools/build/kas-ci-build.py``
 
 Given a space-separated list of build targets (each consisting of one or more
-colon-separated YAML files), this script will run a containerised kas command
-for each target. The container instance will configure and build the image,
-then package and deploy it along with relevant build artifacts for use by later
-CI pipeline stages.
+colon-separated YAML files present in the ``meta-ewaol-config/kas`` directory),
+this script will run a containerised kas command for each target. The container
+instance will configure and build the image, then package and deploy it along
+with relevant build artifacts for use by later CI pipeline stages.
 
 Dependencies
 ^^^^^^^^^^^^
