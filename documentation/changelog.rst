@@ -24,6 +24,7 @@ Documentation:
   * Refactored Layer Dependencies on README.md
   * Added Gitlab Pages integration via .gitlab-ci.yml
   * Updated kas installation instructions
+  * Increased the free storage requirement for building to 65 GBytes
 
 Limitations
 ===========

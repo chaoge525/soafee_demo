@@ -37,7 +37,7 @@ For more details on kas, see `kas Introduction`_.
 .. _kas Introduction: https://kas.readthedocs.io/en/latest/intro.html
 
 .. note::
-  The Build Host machine should have at least 50 GBytes of free disk space for
+  The Build Host machine should have at least 65 GBytes of free disk space for
   the next steps to work correctly.
 
 Build configuration YAML files can then be built via kas by running:
