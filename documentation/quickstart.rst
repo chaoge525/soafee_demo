@@ -26,9 +26,13 @@ On the Build Host, install the kas setup tool:
 
 .. code-block:: console
 
-    pip3 install --user kas
+    sudo -H pip3 install kas
 
-For more details on kas, see `kas Introduction`_:
+For more details on kas installation, see `kas Dependencies & installation`_.
+
+.. _kas Dependencies & installation: https://kas.readthedocs.io/en/latest/userguide.html#dependencies-installation
+
+For more details on kas, see `kas Introduction`_.
 
 .. _kas Introduction: https://kas.readthedocs.io/en/latest/intro.html
 

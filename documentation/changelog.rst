@@ -23,6 +23,7 @@ Documentation:
   * Added link to SOAFEE URL
   * Refactored Layer Dependencies on README.md
   * Added Gitlab Pages integration via .gitlab-ci.yml
+  * Updated kas installation instructions
 
 Limitations
 ===========
