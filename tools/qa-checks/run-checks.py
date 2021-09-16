@@ -187,7 +187,6 @@ def parse_options():
 
     default_config_file = "tools/qa-checks/qa-checks_config.yml"
     parser.add_argument("--config",
-                        default=default_config_file,
                         help=("YAML file that holds configuration defaults for"
                               " the checkers (default: <PROJECT_ROOT>/"
                               f"{default_config_file})"
@@ -255,6 +254,9 @@ def parse_options():
     # rather than replaces the default
     if len(opts.checks) == 0 or "all" in opts.checks:
         opts.checks = check_names
+
+    if opts.config is None:
+        opts.config = os.path.join(opts.project_root, default_config_file)
 
     # Initialise the keyword value to the user-provided root
     KEYWORD_MAP["ROOT"] = opts.project_root
