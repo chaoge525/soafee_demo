@@ -120,12 +120,12 @@ def mk_newdir(path):
 
 
 # replaces colon seperated names of kas config files with full paths
-def kasconfig_format(kasfiles, layer_dir, kas_dir, mnt_dir):
+def kasconfig_format(kasfiles, project_root, kas_dir, mnt_dir):
 
     def format_path(kfile):
         return os.path.join(mnt_dir,
                             os.path.relpath(os.path.join(kas_dir, kfile),
-                                            layer_dir))
+                                            project_root))
 
     return ":".join(map(format_path, kasfiles.split(":")))
 
@@ -137,25 +137,15 @@ def get_config():
 
     # Get path of script and from their path to kas file directory
     config["script_dir"] = os.path.dirname(os.path.realpath(sys.argv[0]))
-    # Path were dependant layers will be downloaded
-    config["layer_dir"] = os.path.normpath(os.path.join(config["script_dir"],
-                                                        "../.."))
+    # Project root path
+    config["project_root"] = os.path.normpath(
+        os.path.join(config["script_dir"], "../.."))
     # Path of kas directory of meta-ewaol-config
     config["kas_dir"] = os.path.normpath(
-        os.path.join(config["layer_dir"], "meta-ewaol-config/kas"))
+        os.path.join(config["project_root"], "meta-ewaol-config/kas"))
     # Path of the ci build definitions file
     config["build_defs"] = os.path.normpath(os.path.join(
-        config["layer_dir"], "meta-ewaol-config/ci/build_defs.yml"))
-    # Default output directory
-    config["out_dir"] = os.path.join(config["layer_dir"], "ci-build")
-    # Default artifact directory
-    config["artifacts_dir"] = os.path.join(config["out_dir"], "artifacts")
-    # Default parent of SSTATE_DIR and DL_DIR
-    config["cache_dir"] = os.path.join(config["out_dir"], "yocto-cache")
-    # Default SSTATE_DIR
-    config["sstate_dir"] = os.path.join(config["cache_dir"], "sstate-cache")
-    # Default DL_DIR
-    config["dl_dir"] = os.path.join(config["cache_dir"], "downloads")
+        config["project_root"], "meta-ewaol-config/ci/build_defs.yml"))
 
     desc = ("kas-ci-build is used for building yocto based projects, using "
             "the kas image to handle build dependencies.")
@@ -180,16 +170,19 @@ def get_config():
              (:) seperated list of .yml files to merge, or 'all'.")
 
     parser.add_argument(
+        "--out-dir",
+        default=f"{os.path.relpath(config['project_root'])}/ci-build",
+        help="Path to build directory (default: %(default)s/)")
+
+    parser.add_argument(
         "--sstate-dir",
-        default=config["sstate_dir"],
         help=f"Path to local sstate cache for this build \
-             (default: {os.path.relpath(config['sstate_dir'])}/)")
+             (default: <OUT_DIR>/yocto-cache/sstate-cache/)")
 
     parser.add_argument(
         "--dl-dir",
-        default=config["dl_dir"],
         help=f"Path to local downloads cache for this build \
-             (default: {os.path.relpath(config['dl_dir'])}/)")
+             (default: <OUT_DIR>/yocto-cache/downloads/)")
 
     parser.add_argument(
         "--sstate-mirror",
@@ -209,10 +202,9 @@ def get_config():
 
     parser.add_argument(
         "--artifacts-dir",
-        default=config["artifacts_dir"],
         help=f"Specify the directory to store the build logs, config and \
              images after the build if --deploy-artifacts is enabled \
-             (default: {os.path.relpath(config['artifacts_dir'])}/)")
+             (default: <OUT_DIR>/artifacts/)")
 
     parser.add_argument(
         "--network-mode",
@@ -243,6 +235,12 @@ def get_config():
              containers due to lack of support for KAS_BUILD_DIR.")
 
     parser.add_argument(
+        "-j",
+        default=f"{os.cpu_count()}",
+        help="Sets number of threads used by bitbake, by exporting\
+             environment variable BB_NUMBER_THREADS = J\
+             (default: %(default)s).")
+    parser.add_argument(
         "--kas-arguments",
         default="build",
         help="Arguments to be passed to kas executable within the container \
@@ -272,6 +270,18 @@ def get_config():
     args = vars(parser.parse_args())
 
     config.update(args)
+
+    config["out_dir"] = os.path.realpath(config['out_dir'])
+
+    if config["artifacts_dir"] is None:
+        # Default artifact directory
+        config["artifacts_dir"] = f"{config['out_dir']}/artifacts"
+    if config["sstate_dir"] is None:
+        # Default SSTATE_DIR
+        config["sstate_dir"] = f'{config["out_dir"]}/yocto-cache/sstate-cache'
+    if config["dl_dir"] is None:
+        # Default DL_DIR
+        config["dl_dir"] = f"{config['out_dir']}/yocto-cache/downloads"
 
     return config
 
@@ -454,7 +464,7 @@ def main():
 
         # Mount and set up workdir
         work_dir_name = "/work"
-        engine.add_volume(config["layer_dir"], work_dir_name)
+        engine.add_volume(config["project_root"], work_dir_name)
         engine.add_arg(f"--workdir={work_dir_name}")
         engine.add_env("KAS_WORK_DIR", work_dir_name)
 
@@ -495,12 +505,14 @@ def main():
 
         # kasfiles must be relative to container filesystem
         kas_config = kasconfig_format(task,
-                                      config["layer_dir"],
+                                      config["project_root"],
                                       config["kas_dir"],
                                       work_dir_name)
 
         if config['engine_arguments']:
             engine.add_arg(config['engine_arguments'])
+
+        engine.add_env('BB_NUMBER_THREADS', config['j'])
 
         # Execute the command
         exit_code |= engine.run(kas_config, config['kas_arguments'])

@@ -65,6 +65,7 @@ env:
     SOURCE_MIRROR_URL: ""
     INHERIT: ""
     BB_GENERATE_MIRROR_TARBALLS: ""
+    BB_NUMBER_THREADS: ""
 
 target:
   - ewaol-image-podman

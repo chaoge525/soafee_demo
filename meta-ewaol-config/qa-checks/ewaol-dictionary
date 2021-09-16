@@ -41,6 +41,7 @@ directory's
 DISTRO_FEATURE
 DISTRO_FEATURES
 DISTRO_FEATURES_append
+dl-dir
 DL_DIR
 ewaol
 ewaol_arch_overview

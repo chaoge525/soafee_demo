@@ -153,10 +153,14 @@ definitions file will update the default CI targets produced by ``all``.
 
 By default, the script will set:
 
-- Build output: ``ci-build/[build_id]/``
+- Build output: ``ci-build/``
+- Target build directory: ``ci-build/[build_id]/``
 - bitbake ``SSTATE_CACHE``: ``ci-build/yocto-cache/sstate-cache/``
 - bitbake ``DL_DIR``: ``ci-build/yocto-cache/downloads/``
 
+Above directories can be changed with build script parameters: ``--out-dir``
+for setting build output, ``--sstate-dir`` for setting sstate cache directory
+and ``--dl-dir`` for setting downloads directory.
 The ``[build_id]`` is given by replacing each colon in the list of YAML
 files for the build target with an underscore (_), and excluding all ``.yml``
 file extensions. For example, the ``n1sdp.yml:tests.yml`` build target above
