@@ -99,16 +99,17 @@ FVP-Base
 Build for FVP-Base
 ------------------
 
-To build the images for fvp-base machine, you need to:
+To build the images for the fvp-base machine, you need to:
 
-* download the `FVP_Base_RevC-2xAEMvA_11.14_21.tgz`_ "Armv-A Base AEM FVP FOC
+* Download the `FVP_Base_RevC-2xAEMvA_11.14_21.tgz`_ "Armv-A Base AEM FVP FOC
   (Linux)" package from Arm's website. You need to have an account and be logged
   in to be able to download it
-* set absolute path to the ``FVP_Base_RevC-2xAEMvA_11.14_21.tgz`` downloaded
-  package in ``FVP_BASE_A_AEM_TARBALL_URI``
-* accept EULA in ``FVP_BASE_A_ARM_EULA_ACCEPT``
+* Set ``FVP_BASE_A_AEM_TARBALL_URI`` to the absolute path of the downloaded
+  package ``FVP_Base_RevC-2xAEMvA_11.14_21.tgz``
+* Accept the EULA by setting ``FVP_BASE_A_ARM_EULA_ACCEPT`` to ``True``
+* Run the kas build command with those environment variables
 
-Then, use kas to build the images:
+Therefore, to build the images via kas for the fvp-base machine:
 
 .. code-block:: console
 
@@ -117,6 +118,7 @@ Then, use kas to build the images:
    kas build meta-ewaol-config/kas/fvp-base.yml
 
 The resulting images will be produced:
+
  - ``build/tmp/deploy/images/fvp-base/ewaol-image-docker-fvp-base.*``
  - ``build/tmp/deploy/images/fvp-base/ewaol-image-podman-fvp-base.*``
 
@@ -131,8 +133,8 @@ an option to the kas build command, as shown in the following example:
 Run on FVP-Base
 ---------------
 
-To start fvp emulation and connect to its terminal, you need to start the
-fvp-base emulator with podman or docker flavour:
+To start FVP emulation and connect to its terminal, you need to start the FVP
+emulator and pass the particular (Docker or Podman) image to run:
 
 .. code-block:: console
 
@@ -145,19 +147,19 @@ fvp-base emulator with podman or docker flavour:
                     --parameter 'bp.smsc_91c111.enabled=1' \
                     --parameter 'bp.hostbridge.userNetworking=true'"
 
-Then, login as ``root`` without password.
+Then, log-in as ``root`` without password.
 
-To finish the fvp emulation, you need to close the telnet session and stop the
-runfvp script:
+To finish the FVP emulation you need to first close the telnet session and then
+stop the runfvp script:
 
 1. To close the telnet session:
 
- - Escape to telnet console with ``ctrl+]``.
- - Run ``quit`` to close the session.
+  * Escape to telnet console with ``ctrl+]``
+  * Run ``quit`` to close the session.
 
-2. To stop the runfvp:
+2. To stop the runfvp script:
 
- - Type ``ctrl+c`` and wait for kas process to finish.
+  * Type ``ctrl+c`` and wait for kas process to finish
 
 Tests on FVP-Base
 -----------------
@@ -184,6 +186,7 @@ To build the images via kas for the N1SDP board:
    kas build meta-ewaol-config/kas/n1sdp.yml
 
 The resulting images will be produced:
+
  - ``build/tmp/deploy/images/n1sdp/ewaol-image-docker-n1sdp.*``
  - ``build/tmp/deploy/images/n1sdp/ewaol-image-podman-n1sdp.*``
 
@@ -413,7 +416,7 @@ from a terminal in your host PC:
 
    sudo screen /dev/ttyUSB1 115200
 
-Then, login as ``root`` without password.
+Then, log-in as ``root`` without password.
 
 Tests on N1SDP
 --------------

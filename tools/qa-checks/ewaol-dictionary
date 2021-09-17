@@ -105,6 +105,7 @@ k3s-killall
 kube-system
 kubectl
 licensees
+localhost
 md
 mdinclude
 meta-arm-bsp

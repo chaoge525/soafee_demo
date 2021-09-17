@@ -34,23 +34,28 @@ executed using the Bash Automated Test Suite (BATS_).
 
 .. _validations_fvp-base_build_image_including_tests:
 
-fvp-base: build image including tests
+FVP-Base: Build Image Including Tests
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-To build tests for fvp-base machine from this example
-:ref:`quickstart_fvp-base`, you need to:
+To build images which include tests for the fvp-base machine, the process is
+similar to the example given in :ref:`quickstart_fvp-base`, but includes
+appending an additional configuration file ``:meta-ewaol-config/kas/tests.yml``
+to the kas build command, which adds tests to the build. The process is:
 
-* download the `FVP_Base_RevC-2xAEMvA_11.14_21.tgz`_ "Armv-A Base AEM FVP FOC
+* Download the `FVP_Base_RevC-2xAEMvA_11.14_21.tgz`_ "Armv-A Base AEM FVP FOC
   (Linux)" package from Arm's website. You need to have an account and be logged
   in to be able to download it
-* set absolute path to the ``FVP_Base_RevC-2xAEMvA_11.14_21.tgz`` downloaded
-  package in ``FVP_BASE_A_AEM_TARBALL_URI``
-* accept EULA in ``FVP_BASE_A_ARM_EULA_ACCEPT``
-* Add ``:meta-ewaol-config/kas/tests.yml`` to the kas build command:
+* Set ``FVP_BASE_A_AEM_TARBALL_URI`` to the absolute path of the downloaded
+  package ``FVP_Base_RevC-2xAEMvA_11.14_21.tgz``
+* Accept the EULA by setting ``FVP_BASE_A_ARM_EULA_ACCEPT`` to ``True``
+* Add ``:meta-ewaol-config/kas/tests.yml`` when running the kas build command
+  with those environment variables
 
 .. _FVP_Base_RevC-2xAEMvA_11.14_21.tgz: https://silver.arm.com/download/download.tm?pv=4849271&p=3042387
 
-  * using ``kas`` directly:
+Therefore, to build images which include tests for the fvp-base machine:
+
+  * Using ``kas`` directly:
 
     .. code-block:: console
 
@@ -58,7 +63,7 @@ To build tests for fvp-base machine from this example
         FVP_BASE_A_ARM_EULA_ACCEPT="True" \
         kas build meta-ewaol-config/kas/fvp-base.yml:meta-ewaol-config/kas/tests.yml
 
-  * using ``tools/build/kas-ci-build.py``:
+  * Using ``tools/build/kas-ci-build.py``:
 
     .. code-block:: console
 
@@ -68,19 +73,20 @@ To build tests for fvp-base machine from this example
              --env FVP_BASE_A_ARM_EULA_ACCEPT="True"'
 
     .. note::
-       The ``fvp_volume`` is a directory that contains "Armv-A Base RevC AEM FVP
-       " package.
+       In the example, ``fvp_volume`` is a directory that contains the "Armv-A
+       Base RevC AEM FVP" package.
 
-* To execute tests please refer to `fvp-base: running tests`_.
+To execute tests please refer to `FVP-Base: Running Tests`_.
 
 .. _validations_n1sdp_build_image_including_tests:
 
-N1SDP: build image including tests
+N1SDP: Build Image Including Tests
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-To build tests for N1SDP using the same process as described in
-:ref:`quickstart_build_for_n1sdp`, you only need to add
-``:meta-ewaol-config/kas/tests.yml`` to the kas build command:
+To build images which include tests for the N1SDP machine, follow the same
+process as described in :ref:`quickstart_build_for_n1sdp`, but append an
+additional configuration file ``:meta-ewaol-config/kas/tests.yml`` to the kas
+build command:
 
 .. code-block:: console
 
@@ -89,7 +95,7 @@ To build tests for N1SDP using the same process as described in
 To deploy the generated images on the board, please refer to the
 :ref:`quickstart_deploy_on_n1sdp` section.
 
-To execute tests please refer to `n1sdp: running tests`_.
+To execute tests please refer to `N1SDP: Running Tests`_.
 
 Running the Tests
 -----------------
@@ -123,16 +129,17 @@ of these results are described in `Test Logging`_.
 
 .. _validations_fvp-base_running_tests:
 
-fvp-base: running tests
+FVP-Base: Running Tests
 ^^^^^^^^^^^^^^^^^^^^^^^
 
-To start fvp emulation and run tests you need to:
+To start FVP emulation and run tests you need to:
 
-* build the tests using above instructions
-  `fvp-base: build image including tests`_
-* start the fvp-base emulator with podman or docker flavour:
+* Build an image that include tests using the above instructions
+  `FVP-Base: Build Image Including Tests`_
+* Start the FVP emulator and pass the particular (Podman or Docker)
+  tests-enabled image to run:
 
-  * using ``kas`` directly:
+  * Using ``kas`` directly:
 
     .. code-block:: console
 
@@ -145,7 +152,7 @@ To start fvp emulation and run tests you need to:
                        --parameter 'bp.smsc_91c111.enabled=1' \
                        --parameter 'bp.hostbridge.userNetworking=true'"
 
-  * using ``tools/build/kas-ci-build.py``:
+  * Using ``tools/build/kas-ci-build.py``:
 
     .. code-block:: console
 
@@ -158,64 +165,66 @@ To start fvp emulation and run tests you need to:
                            --parameter \"bp.smsc_91c111.enabled=1\" \
                            --parameter \"bp.hostbridge.userNetworking=true\""'
 
-    * grab FVP emulation console in other terminal window with
-      ``telnet localhost 5000``
+* Connect to the FVP emulation console in another terminal window via:
+  ``telnet localhost 5000``
 
-* login as ``root`` without password, then execute all tests with:
+* Log-in as ``root`` without password, then execute all tests with:
 
-.. code-block:: console
+    .. code-block:: console
 
-    $ ptest-runner
-    START: ptest-runner
-    [...]
-    PASS:container-engine-integration-tests
-    [...]
-    PASS:k3s-integration-tests
-    [...]
-    STOP: ptest-runner
+        $ ptest-runner
+        START: ptest-runner
+        [...]
+        PASS:container-engine-integration-tests
+        [...]
+        PASS:k3s-integration-tests
+        [...]
+        STOP: ptest-runner
 
-  * to run a specific integration test suite, provide its identifier as an
-  argument to ``ptest-runner``.
+  * To run a specific integration test suite, provide its identifier as an
+    argument to ``ptest-runner``.
 
-* to finish the fvp emulation you need to close telnet session
-  and stop the runfvp script:
+To finish the FVP emulation you need to first close the telnet session and then
+stop the runfvp script:
 
-  1. to close telnet session:
+1. To close the telnet session:
 
-    * escape to telnet console with ``ctrl+]``
-    * run ``quit`` to close the session.
+  * Escape to telnet console with ``ctrl+]``
+  * Run ``quit`` to close the session.
 
-  2. to stop the runfvp:
+2. To stop the runfvp script:
 
-    * type ``ctrl+c`` and wait for kas process to finish
+  * Type ``ctrl+c`` and wait for kas process to finish
 
 .. _validations_n1sdp_running_tests:
 
-n1sdp: running tests
+N1SDP: Running Tests
 ^^^^^^^^^^^^^^^^^^^^
 
 To run tests on N1SDP you need to:
 
-* build the tests using above instructions `n1sdp: build image including tests`_
-* boot a n1sdp board using the images generated by kas using the information
-  from the :ref:`quickstart_deploy_on_n1sdp` section.
+* Build an image that include tests using the above instructions
+  `N1SDP: Build Image Including Tests`_
 
-Log in as ``root`` without password. All tests can then be launched from the
-main console:
+* Boot an N1SDP board and deploy the image using the information from the
+  :ref:`quickstart_deploy_on_n1sdp` section.
 
-.. code-block:: console
+* Log-in as ``root`` without password, then execute all tests from the AP
+  console with:
 
-    $ ptest-runner
-    START: ptest-runner
-    [...]
-    PASS:container-engine-integration-tests
-    [...]
-    PASS:k3s-integration-tests
-    [...]
-    STOP: ptest-runner
+    .. code-block:: console
 
-To run a specific integration test suite, provide its identifier as an argument
-to ``ptest-runner``.
+        $ ptest-runner
+        START: ptest-runner
+        [...]
+        PASS:container-engine-integration-tests
+        [...]
+        PASS:k3s-integration-tests
+        [...]
+        STOP: ptest-runner
+
+  * To run a specific integration test suite, provide its identifier as an argument
+    to ``ptest-runner``.
 
 Test Logging
 ------------
@@ -241,7 +250,7 @@ Where ``RESULT`` is either ``PASS`` or ``FAIL``.
 On a test failure, a debugging message with prefix ``DEBUG`` will be written to
 the log. The format of a debugging message is:
 
-    ``DEBUG:[top_level_test_name]:[return_code]:[stdout]:[stderr]```
+    ``DEBUG:[top_level_test_name]:[return_code]:[stdout]:[stderr]``
 
 Additional informational messages may appear in the log file with ``INFO`` or
 ``DEBUG`` prefixes, e.g. to log that an environment clean-up action occurred.
