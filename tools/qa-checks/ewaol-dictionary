@@ -125,6 +125,7 @@ ptest
 pycodestyle
 pyspellchecker
 python3
+rc1
 return_code
 rst
 runc-opencontainers
