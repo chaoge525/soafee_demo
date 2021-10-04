@@ -59,7 +59,7 @@ def parse_options(logger):
 
     # Parse Arguments and assign to args object
     parser = argparse.ArgumentParser(
-        prog=__name__,
+        prog=os.path.basename(__file__),
         formatter_class=argparse.RawDescriptionHelpFormatter,
         description=f"{desc}\n{usage}\n{example}\n\n")
 
