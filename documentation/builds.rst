@@ -260,7 +260,7 @@ bitbake, it is necessary to prepare a bitbake project as follows:
 
 * Configure dependent Yocto layers
     The source repositories in which the required Yocto layers can be found
-    are listed in :ref:`readme_layers_dependencies`. ``conf/bblayers.conf``
+    are listed in :ref:`readme_layer_dependencies`. ``conf/bblayers.conf``
     must then be configured to provide the paths to the following Yocto layers
     on the build system:
 

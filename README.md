@@ -1,89 +1,45 @@
-## Documentation
+# Edge Workload Abstraction and Orchestration Layer (EWAOL)
+
+EWAOL is the reference implementation for SOAFEE (Scalable Open Architecture
+For Embedded Edge), the Arm lead industry initiative for extending cloud-native
+software development to automotive, with a special focus on real-time and
+functional safety. For more details on SOAFEE, please see <http://soafee.io>.
+
+The Edge Workload Abstraction and Orchestration Layer (EWAOL) project provides
+users with a standards based framework using containers for the deployment and
+orchestration of applications on edge platforms.
+
+## EWAOL Documentation
 
 The project's documentation can be browsed at
-https://ewaol.sites.arm.com/meta-ewaol
+<https://ewaol.sites.arm.com/meta-ewaol>.
 
-### Building the documentation
+To build a local version of the documentation, a Python build script that
+automates the documentation build process is available under
+`tools/build/doc-build.py`. It will generate an HTML version of the
+documentation under `public/`. To use this script and generate the
+documentation, you should use Python 3.6 or higher:
 
-See the :ref:`tools_documentation_build` section of the tools documentation page.
+    ./tools/build/doc-build.py
 
-## Repository Structure
+For more information about the parameters, call the help function of the
+script:
 
-The high-level structure of the `meta-ewaol` repository is as follows:
+    ./tools/build/doc-build.py --help
 
-**meta-ewaol-distro**:
-  Yocto layer that provides the top-level image recipes and general policies
-  available to be implemented as a EWAOL project distribution.
-
-**meta-ewaol-config**:
-  Directory that contains kas configurations files for building EWAOL images.
-
-**meta-ewaol-tests**:
-  Yocto layer that provides recipes and configuration to enable the validation
-  of images built for the EWAOL project.
-
-**documentation**:
-  Directory that provides documentation for the `meta-ewaol` repository.
-
-**tools**:
-  Directory that provides tools that perform quality-assurance checks on the
-  repository as well as tools and scripts to support EWAOL images builds.
-
-.. _readme_layers_dependencies:
-
-## Layers Dependencies
-
-The repository contains Yocto layers that require dependencies as follows. The
-layers revisions are related to the EWAOL v0.2-rc1 release.
-
-The `meta-ewaol-distro` layer depends on:
-
-    URI: git://git.yoctoproject.org/poky
-    layers: meta, meta-poky
-    branch: hardknott
-    revision: 5dad70fedb5fc38dbbd498d668b95ea9dba48293
-
-    URI: git://git.openembedded.org/meta-openembedded
-    layers: meta-filesystems, meta-networking, meta-oe, meta-perl, meta-python
-    branch: hardknott
-    revision: 7bd7e1da9034e72ca4262dba55f70b2b23499aae
-
-    URI: git://git.yoctoproject.org/meta-security
-    layers: meta-security
-    branch: hardknott
-    revision: 5050d1267ad41288c903086030594f8702bfa039
-
-    URI: git://git.yoctoproject.org/meta-virtualization
-    layers: meta-virtualization
-    branch: hardknott
-    revision: c19c9927855abb63e89f9d853ba0cb258a2de415
-
-
-The `meta-ewaol-tests` layer depends on:
-
-    URI: git://git.yoctoproject.org/poky
-    layers: meta
-    branch: hardknott
-    revision: 5dad70fedb5fc38dbbd498d668b95ea9dba48293
+To render and explore the documentation, simply open `public/index.html` in a
+web browser.
 
 ## Repository License
 
-The software is provided under an MIT license (more details in
-:ref:`license_link:License`).
+The software is provided under an MIT license.
+
+License details may be found in the [local license file](license.rst), or as
+part of the project documentation.
 
 Contributions to the project should follow the same license.
 
-## Contributions and Bug Reports
+## Contact
 
-This project has not put in place a process for contributions currently.
-
-For bug reports, please submit an Issue via GitLab.
-
-## Feedback and support
-
-To request support please contact Arm at support@arm.com. Arm licensees may
-also contact Arm via their partner managers.
-
-## Maintainer(s)
-
-* Diego Sueiro <diego.sueiro@arm.com>
+Please see the project documentation for the list of maintainers, as well as the
+process for contributions, bug reports, feedback and support.
