@@ -341,7 +341,7 @@ file to the kas build command. This ``.yml`` file changes the default build
 targets to ``ewaol-image-[docker|podman]-sdk``. For more details about
 selecting configuration files for kas, see: :ref:`quickstart_build_host_setup`.
 
-For example, to build the SDK images for the ``n1sdp`` machine via kas:
+For example, to build the SDK images for the N1SDP via kas:
 
 .. code-block::
 

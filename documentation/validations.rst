@@ -37,10 +37,10 @@ executed using the Bash Automated Test Suite (BATS_).
 FVP-Base: Build Image Including Tests
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-To build images which include tests for the fvp-base machine, the process is
-similar to the example given in :ref:`quickstart_fvp-base`, but includes
-appending an additional configuration file ``:meta-ewaol-config/kas/tests.yml``
-to the kas build command, which adds tests to the build. The process is:
+To build images which include tests for the FVP-Base, the process is similar to
+the example given in :ref:`quickstart_fvp-base`, but includes appending an
+additional configuration file ``:meta-ewaol-config/kas/tests.yml`` to the kas
+build command, which adds tests to the build. The process is:
 
 * Download the `FVP_Base_RevC-2xAEMvA_11.14_21.tgz`_ "Armv-A Base AEM FVP FOC
   (Linux)" package from Arm's website. You need to have an account and be logged
@@ -53,7 +53,7 @@ to the kas build command, which adds tests to the build. The process is:
 
 .. _FVP_Base_RevC-2xAEMvA_11.14_21.tgz: https://silver.arm.com/download/download.tm?pv=4849271&p=3042387
 
-Therefore, to build images which include tests for the fvp-base machine:
+Therefore, to build images which include tests for the FVP-Base:
 
   * Using ``kas`` directly:
 
@@ -131,6 +131,12 @@ of these results are described in `Test Logging`_.
 
 FVP-Base: Running Tests
 ^^^^^^^^^^^^^^^^^^^^^^^
+
+.. note::
+    FVP-Base represents a complete Arm system model and therefore provides a
+    full simulation which includes processor, memory and peripherals. Users
+    running an EWAOL image on the FVP may therefore observe lower performance
+    compared to running it on a physical platform.
 
 To start FVP emulation and run tests you need to:
 

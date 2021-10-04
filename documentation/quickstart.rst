@@ -70,10 +70,10 @@ Minimal Image Build via kas
 This section describes how to build images for the EWAOL project for the
 following machines:
 
-- The Armv8-A Base RevC AEM FVP machine, corresponding to the ``fvp-base``
-  ``MACHINE`` implemented in `meta-arm-bsp`_.
-- The Neoverse N1 System Development Platform, corresponding to the ``n1sdp``
-  ``MACHINE`` implemented in `meta-arm-bsp`_.
+- The Armv8-A Base RevC AEM Fixed Virtual Platform (FVP-Base), corresponding to
+  the ``fvp-base`` ``MACHINE`` implemented in `meta-arm-bsp`_.
+- The Neoverse N1 System Development Platform (N1SDP), corresponding to the
+  ``n1sdp`` ``MACHINE`` implemented in `meta-arm-bsp`_.
 
 .. _meta-arm-bsp:
    https://git.yoctoproject.org/cgit/cgit.cgi/meta-arm/tree/meta-arm-bsp/documentation
@@ -99,7 +99,7 @@ FVP-Base
 Build for FVP-Base
 ------------------
 
-To build the images for the fvp-base machine, you need to:
+To build the images for the FVP-Base platform, you need to:
 
 * Download the `FVP_Base_RevC-2xAEMvA_11.14_21.tgz`_ "Armv-A Base AEM FVP FOC
   (Linux)" package from Arm's website. You need to have an account and be logged
@@ -109,7 +109,7 @@ To build the images for the fvp-base machine, you need to:
 * Accept the EULA by setting ``FVP_BASE_A_ARM_EULA_ACCEPT`` to ``True``
 * Run the kas build command with those environment variables
 
-Therefore, to build the images via kas for the fvp-base machine:
+Therefore, to build the images via kas for the FVP-Base:
 
 .. code-block:: console
 
@@ -132,6 +132,12 @@ an option to the kas build command, as shown in the following example:
 
 Run on FVP-Base
 ---------------
+
+.. note::
+    FVP-Base represents a complete Arm system model and therefore provides a
+    full simulation which includes processor, memory and peripherals. Users
+    running an EWAOL image on the FVP may therefore observe lower performance
+    compared to running it on a physical platform.
 
 To start FVP emulation and connect to its terminal, you need to start the FVP
 emulator and pass the particular (Docker or Podman) image to run:
