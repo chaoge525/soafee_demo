@@ -1,9 +1,19 @@
 Tools
 =====
 
+The following tooling is provided as part of the ``meta-ewaol`` repository:
+
+* `Documentation Build`_
+* `Quality Assurance Checks`_
+* `CI Build Tool`_
+
+The tools are validated on the Ubuntu 18.04.6 LTS Linux distribution running
+Python 3.6. Any particular dependencies required to run the tools are detailed
+in their relevant sections, below.
+
 .. _tools_documentation_build:
 
-Documentation build
+Documentation Build
 -------------------
 
 A script automating the documentation build process is available under

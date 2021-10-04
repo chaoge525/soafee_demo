@@ -17,8 +17,9 @@ The project's documentation can be browsed at
 To build a local version of the documentation, a Python build script that
 automates the documentation build process is available under
 `tools/build/doc-build.py`. It will generate an HTML version of the
-documentation under `public/`. To use this script and generate the
-documentation, you should use Python 3.6 or higher:
+documentation under `public/`. This script, which is supported on Ubuntu 18.04
+LTS systems running Python 3.6 or higher, can be used to generate the
+documentation via:
 
     ./tools/build/doc-build.py
 
