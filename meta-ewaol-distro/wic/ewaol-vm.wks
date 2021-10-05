@@ -1,0 +1,7 @@
+# Copyright (c) 2021, Arm Limited.
+#
+# SPDX-License-Identifier: MIT
+
+part / --source rootfs --ondisk sda --fstype=ext4 --label root --align 1024 --extra-space 100 --use-uuid
+
+bootloader  --ptable gpt

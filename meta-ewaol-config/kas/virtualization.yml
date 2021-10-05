@@ -1,0 +1,13 @@
+# Copyright (c) 2021, Arm Limited.
+#
+# SPDX-License-Identifier: MIT
+
+header:
+  version: 10
+
+local_conf_header:
+  virtualization: |
+    DISTRO_FEATURES:append = " ewaol-virtualization"
+
+target:
+  - ewaol-host-image

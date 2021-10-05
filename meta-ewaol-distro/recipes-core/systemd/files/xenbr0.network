@@ -1,0 +1,12 @@
+# Copyright (c) 2021, Arm Limited.
+#
+# SPDX-License-Identifier: MIT
+
+[Match]
+Name=xenbr0
+
+[Network]
+DHCP=ipv4
+
+[Link]
+RequiredForOnline=routable
