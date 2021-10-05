@@ -84,7 +84,7 @@ EWAOL release tags
 * `Patch` releases are mainly used for hot fixes which are then back ported to
   the development branch.
 * Both `Major` and `Minor` releases may receive fixes, improvements and new
-  features whilst `Patch` releases only receive fixes. Poky and 3rd Party layers
+  features while `Patch` releases only receive fixes. Poky and 3rd Party layers
   release/stable branches might be updated and pinned.
 
 .. _Yocto Release Process: https://docs.yoctoproject.org/ref-manual/release-process.html

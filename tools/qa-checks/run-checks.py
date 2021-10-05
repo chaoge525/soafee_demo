@@ -128,7 +128,7 @@ def eval_keyword(keyword):
 
     if keyword not in KEYWORD_MAP:
         # This should never happen
-        raise ValueError(f"Internal error: keyword {keyword} not recognised.")
+        raise ValueError(f"Internal error: keyword {keyword} not recognized.")
 
     if KEYWORD_MAP[keyword] is None:
         if keyword == "GITIGNORE_CONTENTS":
@@ -136,7 +136,7 @@ def eval_keyword(keyword):
         else:
             # This should never happen
             raise ValueError((f"Internal error: keyword {keyword} was not"
-                              " initialised."))
+                              " initialized."))
 
     return KEYWORD_MAP[keyword]
 
@@ -258,7 +258,7 @@ def parse_options():
     if opts.config is None:
         opts.config = os.path.join(opts.project_root, default_config_file)
 
-    # Initialise the keyword value to the user-provided root
+    # Initialize the keyword value to the user-provided root
     KEYWORD_MAP["ROOT"] = opts.project_root
 
     return opts

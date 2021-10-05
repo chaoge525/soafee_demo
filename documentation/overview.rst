@@ -46,7 +46,7 @@ The EWAOL images include the following major features:
   * RPM as the package management system
   * Docker or Podman as container engine
   * runc-opencontainers as the OCI container runtime
-  * Development and Test images flavours
+  * Development and Test images flavors
 
 Repository Structure
 --------------------

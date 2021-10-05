@@ -20,7 +20,7 @@ These integration tests are described later in this document.
 
 To support building and validating EWAOL images within CI environments, a Python
 wrapper script is provided at ``tools/build/kas-ci-build.py`` that runs a
-containerised kas command via Docker, and initialises sensible defaults for CI
+containerized kas command via Docker, and initializes sensible defaults for CI
 purposes. The script is highly-configurable, and is documented at
 :ref:`tools_ci_build_tool`.
 
@@ -92,7 +92,7 @@ To execute tests please refer to `FVP-Base: Running Tests`_.
 N1SDP: Build Image Including Tests
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-To build images which include tests for the N1SDP machine, follow the same
+To build images which include tests for the N1SDP board, follow the same
 process as described in :ref:`quickstart_build_for_n1sdp`, but append an
 additional configuration file ``:meta-ewaol-config/kas/tests.yml`` to the kas
 build command:
@@ -296,7 +296,7 @@ Currently the test suite contains two top-level integration tests, which run
 consecutively in the following order.
 
 | 1. ``run container`` is composed of four sub-tests:
-|    1.1. Run a containerised detached workload via the ``docker run`` command
+|    1.1. Run a containerized detached workload via the ``docker run`` command
 |        - Pull an image from the network
 |        - Create and start a container
 |    1.2. Check the container is running via the ``docker inspect`` command
@@ -305,12 +305,12 @@ consecutively in the following order.
 |        - Remove the container from the container list
 |    1.4. Check the container is not found via the ``docker inspect`` command
 | 2. ``container network connectivity`` is composed of a single sub-test:
-|    2.1 Run a containerised, immediate (non-detached) network-based workload
+|    2.1 Run a containerized, immediate (non-detached) network-based workload
          via the ``docker run`` command
 |        - Create and start a container, re-using the existing image
 |        - Update package lists within container from external network
 
-The tests can be customised via environment variables passed to the execution,
+The tests can be customized via environment variables passed to the execution,
 each prefixed by ``CE_`` to identify the variable as associated to the
 container engine tests:
 
@@ -368,13 +368,13 @@ validates the deployment and high-availability of a test workload based on the
 
 .. _Nginx: https://www.nginx.com/
 
-| 1. ``K3S orchestration of containerised web service`` is composed of many
+| 1. ``K3S orchestration of containerized web service`` is composed of many
      sub-tests, grouped here by test area:
 |    **Workload Deployment:**
 |    1.1. Ensure server is running via systemd service
 |        - ``kubectl`` check that built-in kube-system Pods are available
 |    1.2. Deploy test Nginx workload from YAML file via ``kubectl apply``
-|    1.3. Ensure Pod replicas are initialised via ``kubectl wait``
+|    1.3. Ensure Pod replicas are initialized via ``kubectl wait``
 |    1.4. Create Service to expose Deployment via ``kubectl expose``
 |    1.5. Get IP of resulting Service via ``kubectl get``
 |    1.6. Ensure web service is accessible via ``wget``
@@ -400,10 +400,10 @@ validates the deployment and high-availability of a test workload based on the
 |    1.20. Check systemd service is running after configuration change
 |    1.21. Delete test Nginx workload via ``kubectl delete``
 |    1.22. Deploy test Nginx workload from YAML file via ``kubectl apply``
-|    1.23. Ensure Pod replicas are not initialised (as no worker available) via
+|    1.23. Ensure Pod replicas are not initialized (as no worker available) via
            ``kubectl get``
 
-The tests can be customised via environment variables passed to the execution,
+The tests can be customized via environment variables passed to the execution,
 each prefixed by ``K3S_`` to identify the variable as associated to the
 K3S orchestration tests:
 
@@ -422,7 +422,7 @@ A clean environment is expected when running the K3S integration tests, to
 ensure that the system is ready to be validated. For example, the test suite
 expects that the Pods created from any previous execution of the integration
 tests have been deleted, in order to test that a new Deployment successfully
-initialises new Pods for orchestration.
+initializes new Pods for orchestration.
 
 Therefore, if ``K3S_TEST_CLEAN_ENV`` is set to ``1`` (as is default), running
 the test suite will perform an environment clean before and after the suite

@@ -51,7 +51,7 @@ stack implementation:
     or Podman (version: ``3.2.1+git0+ab4d0cf908``) as container engines
   * runc-opencontainers (version: ``1.0.0+rc93+git0+249bca0a13``) as the OCI
     container runtime
-  * Development and Test image flavours
+  * Development and Test image flavors
   * Container engine tests
   * Container runtime Kernel configuration check
 

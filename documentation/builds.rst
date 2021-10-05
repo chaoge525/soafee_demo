@@ -7,9 +7,9 @@ The main image build targets are:
 * ``ewaol-image-podman``
 
 Each build target implements the EWAOL software stack, differing only on the
-backend containerisation technology: Docker or Podman.
+backend containerization technology: Docker or Podman.
 
-To facilitate containerised workload orchestration on the edge, both build
+To facilitate containerized workload orchestration on the edge, both build
 targets include the K3S orchestration package provided by the
 ``meta-virtualization`` Yocto layer and extended in ``meta-ewaol``. This
 package provides a K3S server wrapped as a systemd service which auto-starts on
@@ -34,7 +34,7 @@ stopped independently from the server status via the provided
 
 To prepare an EWAOL image build, it is necessary to define the target machine
 for the build via the bitbake ``MACHINE`` parameter. The image build can then be
-customised by defining the desired EWAOL features via the bitbake
+customized by defining the desired EWAOL features via the bitbake
 ``DISTRO_FEATURES`` parameter, which will enable particular recipes and
 components within the ``meta-ewaol`` repository and any dependent Yocto layers
 necessary to build those features. In addition, it is necessary to define the
@@ -62,7 +62,7 @@ The currently supported ``DISTRO_FEATURES`` are:
 * ``ewaol-sdk``
 
 In addition to kas build config files that enable the above build options, an
-image build via kas may be further customised with extra optional config
+image build via kas may be further customized with extra optional config
 files, currently:
 
 * ``ci.yml``
@@ -120,7 +120,7 @@ building images via kas for the EWAOL project.
 
 Build configs are modular, where combining config files will result in an image
 produced with their combined configuration. Further, build configs files can
-extend other build configs files, thereby enabling specialised configurations
+extend other build configs files, thereby enabling specialized configurations
 that inherit common and thus shared build configurations.
 
 The kas build configs implemented for the EWAOL project fall into two
@@ -160,7 +160,7 @@ Build Modifiers
 ^^^^^^^^^^^^^^^
 
 Build modifier config files specify additional sources and parameter
-customisations relevant to a particular image feature.
+customizations relevant to a particular image feature.
 
 These are the current build modifier YAML files:
 
@@ -218,7 +218,7 @@ In order to add an external machine to be built with EWAOL, you need to add a
 
     machine: my-machine
 
-To read more about how to customise this configuration file, check the
+To read more about how to customize this configuration file, check the
 `Kas documentation`_. Images for ``my-machine`` can be built by running the
 following kas command:
 

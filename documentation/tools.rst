@@ -97,7 +97,7 @@ Continuous Integration (CI) purposes:
 
 Given a space-separated list of build targets (each consisting of one or more
 colon-separated YAML files present in the ``meta-ewaol-config/kas`` directory),
-this script will run a containerised kas command for each target. The container
+this script will run a containerized kas command for each target. The container
 instance will configure and build the image, then package and deploy it along
 with relevant build artifacts for use by later CI pipeline stages.
 
@@ -172,7 +172,7 @@ be deployed.
 Interactive Build Container
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The script allows the user to customise both the container engine arguments as
+The script allows the user to customize both the container engine arguments as
 well as the kas commands that will be executed, via the following script
 options:
 
@@ -180,7 +180,7 @@ options:
   engine-specific options to be passed to the container engine, e.g. ``-it`` to
   enable interactive access to a docker container.
 
-* ``--kas-arguments ARGS`` customises the arguments string passed to the kas
+* ``--kas-arguments ARGS`` customizes the arguments string passed to the kas
   command, allowing the user to run custom commands (e.g. to enter the bitbake
   environment by passing the ``shell`` string, or to pass specific options for
   running tests on an FVP). The default string is ``build``.
@@ -201,7 +201,7 @@ Here, ``[path]`` refers to the path on the local machine, not a path internal
 to the container image execution.
 
 As an alternative option, the environment variables ``SSTATE_MIRRORS`` and
-``SOURCE_MIRROR_URL`` will be carried through to the containerised bitbake
+``SOURCE_MIRROR_URL`` will be carried through to the containerized bitbake
 build if set in the build environment. ``INHERIT`` and
 ``BB_GENERATE_MIRROR_TARBALLS`` are also passed through to bitbake using
 ``BB_ENV_EXTRAWHITE``.
@@ -243,6 +243,6 @@ default. Much of this output can be redirected to a log file using:
 
 This will cause ``STDOUT`` to contain only important messages, while the log
 file will receive the full output. If enabled, the log file should be consulted
-to check the current progress of the containerised build.
+to check the current progress of the containerized build.
 
 The log path will be created if it does not exist.

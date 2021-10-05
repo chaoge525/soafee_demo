@@ -124,7 +124,7 @@ teardown_file() {
     _run finish_test_suite "${TEST_RUN_FILE}"
 }
 
-@test 'K3S orchestration of containerised web service' {
+@test 'K3S orchestration of containerized web service' {
 
     subtest="Check or wait for server to be running"
     # shellcheck disable=SC2034
@@ -160,7 +160,7 @@ teardown_file() {
                 fi
             done
             if [ "${status}" -eq 0 ]; then
-                # All system-pods have been initialised
+                # All system-pods have been initialized
                 break
             fi
         fi
