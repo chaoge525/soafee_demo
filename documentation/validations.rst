@@ -3,7 +3,7 @@ Image Validation
 
 The ``meta-ewaol-tests`` Yocto layer contains recipes and configuration for
 including run-time integration tests into a target image, to be run manually
-after booting the image, or within a Continuous Integration process.
+after booting the image, or within a Continuous Integration (CI) process.
 
 The EWAOL integration tests provide a mechanism to validate that an image has
 functionality that is compliant with the EWAOL project, where the
@@ -17,6 +17,15 @@ functionality of:
 * K3S Container Orchestration
 
 These integration tests are described later in this document.
+
+To support building and validating EWAOL images within CI environments, a Python
+wrapper script is provided at ``tools/build/kas-ci-build.py`` that runs a
+containerised kas command via Docker, and initialises sensible defaults for CI
+purposes. The script is highly-configurable, and is documented at
+:ref:`tools_ci_build_tool`.
+
+In this page, instructions are provided both for running the kas tool directly,
+as well as when using the provided Python wrapper script.
 
 Building the Tests
 ------------------

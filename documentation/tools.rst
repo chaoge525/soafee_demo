@@ -85,6 +85,8 @@ top of each check Python module as in-source documentation. In addition, any
 failed validation will output the specific reason for the failure, enabling it
 to be fixed.
 
+.. _tools_ci_build_tool:
+
 CI Build Tool
 -------------
 
