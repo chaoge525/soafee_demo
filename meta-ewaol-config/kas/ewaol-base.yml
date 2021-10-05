@@ -22,6 +22,10 @@ repos:
       meta-arm-bsp: excluded
       meta-arm-toolchain: excluded
 
+  meta-ewaol:
+    layers:
+      meta-ewaol-distro:
+
   meta-openembedded:
     url: https://git.openembedded.org/meta-openembedded
     path: layers/meta-openembedded
@@ -31,10 +35,6 @@ repos:
       meta-networking:
       meta-python:
       meta-perl:
-
-  meta-ewaol:
-    layers:
-      meta-ewaol-distro:
 
   meta-virtualization:
     url: https://git.yoctoproject.org/git/meta-virtualization
