@@ -185,7 +185,7 @@ def parse_options():
             parser.add_argument(f"--{name}_{arg}", required=False,
                                 help=(f"{prefix}{msg}"))
 
-    default_config_file = "tools/qa-checks/qa-checks_config.yml"
+    default_config_file = "meta-ewaol-config/qa-checks/qa-checks_config.yml"
     parser.add_argument("--config",
                         help=("YAML file that holds configuration defaults for"
                               " the checkers (default: <PROJECT_ROOT>/"

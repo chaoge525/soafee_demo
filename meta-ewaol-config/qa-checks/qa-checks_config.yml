@@ -30,7 +30,7 @@ modules:
     header:
         exclude_patterns:
             - GITIGNORE_CONTENTS
-            - "/tools/qa-checks/ewaol-dictionary"
+            - "/meta-ewaol-config/qa-checks/ewaol-dictionary"
             - "*.git"
             - "*.gitignore"
             - "*.md"
@@ -62,4 +62,4 @@ modules:
             - "/documentation/conf.py"
             - "/documentation/Makefile"
             - "/documentation/index.rst"
-        dict_path: "tools/qa-checks/ewaol-dictionary"
+        dict_path: "meta-ewaol-config/qa-checks/ewaol-dictionary"

@@ -76,8 +76,8 @@ repository state. These are briefly described as follows:
     This check aims to validate that there are no English word misspellings
     within the relevant project files (in particular, the appropriate files
     within the ``documentation/`` directory). A custom dictionary is maintained
-    within the ``tools/qa-checks`` directory that may be used to hold
-    exceptions, should the check erroneously highlight valid technical
+    within the ``meta-ewaol-config/qa-checks`` directory that may be used to
+    hold exceptions, should the check erroneously highlight valid technical
     terminology.
 
 More detail on the validation steps performed by each check are included at the
