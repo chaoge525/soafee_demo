@@ -14,6 +14,6 @@ IMAGE_FEATURES_append = " \
  debug-tweaks \
  ssh-server-openssh"
 
-IMAGE_INSTALL_append = " kernel-devsrc kernel-modules"
+IMAGE_INSTALL_append = " kernel-base kernel-devsrc kernel-modules"
 
 IMAGE_INSTALL_append_aarch64 = " gator-daemon"
