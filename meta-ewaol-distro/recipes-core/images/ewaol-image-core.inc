@@ -19,6 +19,7 @@ IMAGE_ROOTFS_EXTRA_SPACE_append = "${@bb.utils.contains("DISTRO_FEATURES", "syst
 
 IMAGE_INSTALL += " \
     packagegroup-core-ssh-openssh \
+    wget \
     ca-certificates \
     k3s-server \
     "
