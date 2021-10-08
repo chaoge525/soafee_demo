@@ -197,7 +197,7 @@ In order to add an external machine to be built with EWAOL, you need to add a
 ``MACHINE`` name of the external machine) to your Yocto BSP layer:
 ``meta-my-bsp-layer``. This file should have the following structure:
 
-.. code-block:: console
+.. code-block:: yaml
 
     header:
       version: 10
@@ -341,7 +341,7 @@ selecting configuration files for kas, see: :ref:`quickstart_build_host_setup`.
 
 For example, to build the SDK images for the N1SDP via kas:
 
-.. code-block::
+.. code-block:: console
 
   kas build meta-ewaol-config/kas/n1sdp.yml:meta-ewaol-config/kas/sdk.yml
 

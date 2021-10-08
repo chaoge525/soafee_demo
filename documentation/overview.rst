@@ -81,7 +81,7 @@ layers revisions are related to the EWAOL v0.2-rc1 release.
 
 The ``meta-ewaol-distro`` layer depends on:
 
-.. code-block::
+.. code-block:: yaml
 
     URI: git://git.yoctoproject.org/poky
     layers: meta, meta-poky
@@ -106,7 +106,7 @@ The ``meta-ewaol-distro`` layer depends on:
 
 The ``meta-ewaol-tests`` layer depends on:
 
-.. code-block::
+.. code-block:: yaml
 
     URI: git://git.yoctoproject.org/poky
     layers: meta

@@ -93,7 +93,7 @@ Documentation Pages:
 
 Third-party Yocto layers used to build the software stack:
 
-.. code-block:: console
+.. code-block:: yaml
 
    URI: git://git.yoctoproject.org/poky/meta
    branch: hardknott
