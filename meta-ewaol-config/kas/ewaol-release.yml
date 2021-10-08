@@ -12,16 +12,16 @@ header:
 repos:
 
   meta-arm:
-    refspec: e9d695f132353018f795bb8732da8916cd8cc66c
+    refspec: 71686ac05c34e53950268bfe0d52c3624e78c190
 
   meta-openembedded:
-    refspec: 7bd7e1da9034e72ca4262dba55f70b2b23499aae
+    refspec: f44e1a2b575826e88b8cb2725e54a7c5d29cf94a
 
   meta-security:
-    refspec: 5050d1267ad41288c903086030594f8702bfa039
+    refspec: 16c68aae0fdfc20c7ce5cf4da0a9fff8bdd75769
 
   meta-virtualization:
-    refspec: c19c9927855abb63e89f9d853ba0cb258a2de415
+    refspec: 8e36520924fdadda20d7a6d09d9884e65a5555c2
 
   poky:
-    refspec: 5dad70fedb5fc38dbbd498d668b95ea9dba48293
+    refspec: 269265c00091fa65f93de6cad32bf24f1e7f72a3
