@@ -94,17 +94,27 @@ N1SDP: Build Image Including Tests
 
 To build images which include tests for the N1SDP board, follow the same
 process as described in :ref:`quickstart_build_for_n1sdp`, but append an
-additional configuration file ``:meta-ewaol-config/kas/tests.yml`` to the kas
-build command:
+additional configuration file ``meta-ewaol-config/kas/tests.yml`` to the kas
+build command.
 
-.. code-block:: console
+Therefore, to build images which include EWAOL validation tests for N1SDP:
 
-    kas build meta-ewaol-config/kas/n1sdp.yml:meta-ewaol-config/kas/tests.yml
+  * Using ``kas`` directly:
+
+    .. code-block:: console
+
+      kas build meta-ewaol-config/kas/n1sdp.yml:meta-ewaol-config/kas/tests.yml
+
+  * Using ``tools/build/kas-ci-build.py``:
+
+    .. code-block:: console
+
+      ./tools/build/kas-ci-build.py n1sdp.yml:tests.yml
 
 To deploy the generated images on the board, please refer to the
 :ref:`quickstart_deploy_on_n1sdp` section.
 
-To execute tests please refer to `N1SDP: Running Tests`_.
+To execute the tests please refer to `N1SDP: Running Tests`_.
 
 Running the Tests
 -----------------
