@@ -9,11 +9,11 @@ apply_workload() {
 }
 
 query_kubectl() {
-    kubectl get "${1}" "${2}" -o jsonpath="${3}" 2>"${TEST_STDERR_FILE}"
+    kubectl --request-timeout=60s get "${1}" "${2}" -o jsonpath="${3}" 2>"${TEST_STDERR_FILE}"
 }
 
 kubectl_wait() {
-    kubectl wait --for=condition="${3}" "${1}" "${2}" 2>"${TEST_STDERR_FILE}"
+    kubectl wait --timeout=60s --for=condition="${3}" "${1}" "${2}" 2>"${TEST_STDERR_FILE}"
 }
 
 kubectl_delete() {

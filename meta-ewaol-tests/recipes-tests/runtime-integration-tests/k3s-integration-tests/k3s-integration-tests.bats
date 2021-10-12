@@ -31,18 +31,7 @@ load integration-tests-common-funcs.sh
 # out-of-the-box state, not polluted by a previous test suite execution
 clean_test_environment() {
 
-    # The logging function uses the current test name to categorise any log
-    # messages specific to the test. Here, define this variable manually in
-    # order to similarly categorise all messages relating to the clean-up
-    # activities.
     export BATS_TEST_NAME="clean_test_environment"
-
-    # Start the server if it was stopped
-    _run systemd_service "is-active"
-    if [ "${status}" -ne 0 ]; then
-        log "DEBUG" "Starting K3S systemd service..."
-        _run systemd_service "start"
-    fi
 
     # Delete the service that wraps the test deployment if it exists
     _run query_kubectl "service" "k3s-test-service" "{.spec}"
@@ -95,49 +84,29 @@ clean_test_environment() {
     fi
 }
 
-# Runs once before the first test
-setup_file() {
+ensure_k3s_is_running() {
 
-    # Clear and rebuild the logs
-    rm -rf "${TEST_LOG_FILE}" "${TEST_STDERR_FILE}"
-    mkdir -p "${TEST_LOG_DIR}"
-
-    _run check_running_test_suite "${TEST_RUN_FILE}"
-    if [ "${status}" -ne 0 ]; then
-        exit 1
+    # If the service is inactive, start it
+    _run systemd_service "is-active"
+    if [ "${output}" != "active" ] && [ "${output}" != "activating" ]; then
+        log "DEBUG" "Starting K3S systemd service..."
+        _run systemd_service "start"
     fi
 
-    _run begin_test_suite "${TEST_RUN_FILE}"
-
-    if [ "${K3S_TEST_CLEAN_ENV}" = "1" ]; then
-        _run clean_test_environment
-    fi
-}
-
-# Runs after the final test
-teardown_file() {
-
-    if [ "${K3S_TEST_CLEAN_ENV}" = "1" ]; then
-        _run clean_test_environment
-    fi
-
-    _run finish_test_suite "${TEST_RUN_FILE}"
-}
-
-@test 'K3S orchestration of containerized web service' {
-
-    subtest="Check or wait for server to be running"
     # shellcheck disable=SC2034
     for i in {1..300..10}; do
-        log "DEBUG" "${subtest}..."
 
-        # Check the server is running
+        log "DEBUG" "Ensure systemd service has finished activating..."
+
         _run systemd_service "is-active"
         if [ "${status}" -ne 0 ]; then
+            log "DEBUG" "Service state is: '${output}'"
             sleep 10
             continue
         fi
-        # Check the system-pods have been created
+
+        log "DEBUG" "Ensure all system pods are running..."
+
         _run query_kubectl "pods" "--namespace=kube-system" \
             "{range .items[*]}{@.status.phase}:{end}"
         if [ "${status}" -ne 0 ]; then
@@ -154,6 +123,7 @@ teardown_file() {
                 fi
                 if [ "${phase}" != "Running" ] && \
                    [ "${phase}" != "Succeeded" ]; then
+                    log "DEBUG" "Found system pod in state: ${phase}"
                     status=1
                     sleep 10
                     break
@@ -165,12 +135,58 @@ teardown_file() {
             fi
         fi
     done
+
+    subtest="Ensure k3s is running"
     if [ "${status}" -ne 0 ]; then
         log "FAIL" "${subtest}"
         return 1
     else
         log "PASS" "${subtest}"
     fi
+}
+
+# Runs once before the first test
+setup_file() {
+
+    # The logging function uses the current test name to categorise any log
+    # messages specific to the test. Here, define this variable manually in
+    # order to similarly categorise all messages relating to the set-up
+    # activities.
+    export BATS_TEST_NAME="Test suite setup"
+
+    # Clear and rebuild the logs
+    rm -rf "${TEST_LOG_FILE}" "${TEST_STDERR_FILE}"
+    mkdir -p "${TEST_LOG_DIR}"
+
+    _run check_running_test_suite "${TEST_RUN_FILE}"
+    if [ "${status}" -ne 0 ]; then
+        exit 1
+    fi
+
+    _run begin_test_suite "${TEST_RUN_FILE}"
+
+    _run ensure_k3s_is_running
+
+    if [ "${K3S_TEST_CLEAN_ENV}" = "1" ]; then
+        _run clean_test_environment
+    fi
+}
+
+# Runs after the final test
+teardown_file() {
+
+    export BATS_TEST_NAME="Test suite shutdown"
+
+    if [ "${K3S_TEST_CLEAN_ENV}" = "1" ]; then
+        _run clean_test_environment
+    fi
+
+    _run ensure_k3s_is_running
+
+    _run finish_test_suite "${TEST_RUN_FILE}"
+}
+
+@test 'K3S orchestration of containerized web service' {
 
     subtest="Deploy workload"
     _run apply_workload "k3s-test-deployment.yaml"

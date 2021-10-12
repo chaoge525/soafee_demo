@@ -376,41 +376,44 @@ Currently the test suite contains a single top-level integration test which
 validates the deployment and high-availability of a test workload based on the
 `Nginx`_ webserver. This integration test is described below.
 
+As part of the test-suite initialization, the k3s systemd service will be
+started (if it is not already). The test suite will not be run until the service
+is in the 'active' state, and all 'kube-system' pods are either running, or have
+completed their workload.
+
 .. _Nginx: https://www.nginx.com/
 
 | 1. ``K3S orchestration of containerized web service`` is composed of many
      sub-tests, grouped here by test area:
 |    **Workload Deployment:**
-|    1.1. Ensure server is running via systemd service
-|        - ``kubectl`` check that built-in kube-system Pods are available
-|    1.2. Deploy test Nginx workload from YAML file via ``kubectl apply``
-|    1.3. Ensure Pod replicas are initialized via ``kubectl wait``
-|    1.4. Create Service to expose Deployment via ``kubectl expose``
-|    1.5. Get IP of resulting Service via ``kubectl get``
-|    1.6. Ensure web service is accessible via ``wget``
+|    1.1. Deploy test Nginx workload from YAML file via ``kubectl apply``
+|    1.2. Ensure Pod replicas are initialized via ``kubectl wait``
+|    1.3. Create Service to expose Deployment via ``kubectl expose``
+|    1.4. Get IP of resulting Service via ``kubectl get``
+|    1.5. Ensure web service is accessible via ``wget``
 |    **Pod Failure Tolerance:**
-|    1.7. Get random Pod name from Deployment name via ``kubectl get``
-|    1.8. Delete random Pod via ``kubectl delete``
-|    1.9. Ensure web service is still accessible via ``wget``
+|    1.6. Get random Pod name from Deployment name via ``kubectl get``
+|    1.7. Delete random Pod via ``kubectl delete``
+|    1.8. Ensure web service is still accessible via ``wget``
 |    **Deployment Upgrade:**
-|    1.10. Get image version of random Pod via ``kubectl get``
-|    1.11. Upgrade image version of Deployment via ``kubectl set``
-|    1.12. Ensure web service is still accessible via ``wget``
-|    1.13. Get upgraded image version of random Pod via ``kubectl get``
+|    1.9. Get image version of random Pod via ``kubectl get``
+|    1.10. Upgrade image version of Deployment via ``kubectl set``
+|    1.11. Ensure web service is still accessible via ``wget``
+|    1.12. Get upgraded image version of random Pod via ``kubectl get``
 |    **Server Failure Tolerance:**
-|    1.14. Stop K3S server systemd service
-|    1.15. Ensure web service remains accessible via ``wget``
-|    1.16. Restart the systemd service
-|    1.17. Ensure server is running via systemd service
-|    1.18. Check K3S server is again responding to ``kubectl get``
+|    1.13. Stop K3S server systemd service
+|    1.14. Ensure web service remains accessible via ``wget``
+|    1.15. Restart the systemd service
+|    1.16. Ensure server is running via systemd service
+|    1.17. Check K3S server is again responding to ``kubectl get``
 |    **Server Configuration Change:**
-|    1.19. Add systemd override to change server's command-line arguments
+|    1.18. Add systemd override to change server's command-line arguments
 |         - Configuration change to run the server without built-in worker
 |         - Reload and restart the systemd service
-|    1.20. Check systemd service is running after configuration change
-|    1.21. Delete test Nginx workload via ``kubectl delete``
-|    1.22. Deploy test Nginx workload from YAML file via ``kubectl apply``
-|    1.23. Ensure Pod replicas are not initialized (as no worker available) via
+|    1.19. Check systemd service is running after configuration change
+|    1.20. Delete test Nginx workload via ``kubectl delete``
+|    1.21. Deploy test Nginx workload from YAML file via ``kubectl apply``
+|    1.22. Ensure Pod replicas are not initialized (as no worker available) via
            ``kubectl get``
 
 The tests can be customized via environment variables passed to the execution,
@@ -440,7 +443,6 @@ execution.
 
 The environment clean operation involves:
 
-    * Starting the K3S systemd service if it is not currently active
     * Deleting any previous K3S test Service
     * Deleting any previous K3S test Deployment, ensuring corresponding Pods
       are also deleted
