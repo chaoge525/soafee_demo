@@ -92,7 +92,7 @@ setup_file() {
 
     _run begin_test_suite "${TEST_RUN_FILE}"
 
-    if [ "${TEST_CLEAN_ENV}" -eq 1 ]; then
+    if [ "${CE_TEST_CLEAN_ENV}" = "1" ]; then
         _run clean_test_environment
     fi
 }
@@ -100,7 +100,7 @@ setup_file() {
 # Runs after the final test
 teardown_file() {
 
-    if [ "${TEST_CLEAN_ENV}" -eq 1 ]; then
+    if [ "${CE_TEST_CLEAN_ENV}" = "1" ]; then
         _run clean_test_environment
     fi
 

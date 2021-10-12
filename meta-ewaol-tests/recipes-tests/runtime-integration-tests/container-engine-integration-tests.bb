@@ -12,6 +12,7 @@ LICENSE = "MIT"
 LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/MIT;md5=0835ade698e0bcf8506ecda2f7b4f302"
 
 TEST_SUITE_NAME = "container-engine-integration-tests"
+TEST_SUITE_PREFIX = "CE"
 
 TEST_FILES = "file://container-engine-integration-tests.bats \
               file://container-engine-funcs.sh \

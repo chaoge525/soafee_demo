@@ -21,8 +21,11 @@ do_install() {
         install "${WORKDIR}/${test_file}" "${D}/${TEST_DIR}"
     done
 
-    install -m 755 "${WORKDIR}/run-test-suite" "${D}/${TEST_DIR}/run-${TEST_SUITE_NAME}"
-    sed -i "s#%TESTNAME%#${TEST_SUITE_NAME}#g" "${D}/${TEST_DIR}/run-${TEST_SUITE_NAME}"
+    install -m 755 "${WORKDIR}/run-test-suite" \
+        "${D}/${TEST_DIR}/run-${TEST_SUITE_NAME}"
+
+    sed -i "s#%TESTNAME%#${TEST_SUITE_NAME}#g" \
+        "${D}/${TEST_DIR}/run-${TEST_SUITE_NAME}"
 
 }
 
@@ -33,5 +36,6 @@ do_install_ptest() {
 
     sed -i "s#%TESTDIR%#${TEST_DIR}#g" ${D}${PTEST_PATH}/run-ptest
     sed -i "s#%TESTNAME%#${TEST_SUITE_NAME}#g" ${D}${PTEST_PATH}/run-ptest
+    sed -i "s#%TESTPREFIX%#${TEST_SUITE_PREFIX}#g" ${D}${PTEST_PATH}/run-ptest
 
 }
