@@ -183,7 +183,7 @@ options:
 * ``--kas-arguments ARGS`` customizes the arguments string passed to the kas
   command, allowing the user to run custom commands (e.g. to enter the bitbake
   environment by passing the ``shell`` string, or to pass specific options for
-  running tests on an FVP). The default string is ``build``.
+  running tests). The default string is ``build``.
 
 Cache Mirrors
 ^^^^^^^^^^^^^

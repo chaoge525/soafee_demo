@@ -162,8 +162,8 @@ def get_config():
     usage = ("A kas config yaml file from meta-ewaol-config/kas must be "
              "provided, and any optional arguments.")
     example = ("Example:\n$ ./kas-ci-build all\nto pull the required layers "
-               "and build both n1sdp and fvp-base images sequentially, with "
-               "no local cache mirrors.")
+               "and build all images (as output by --list-ci-build-targets) "
+               "sequentially, with no local cache mirrors.")
 
     # Parse Arguments and assign to args object
     parser = argparse.ArgumentParser(

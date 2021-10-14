@@ -3,7 +3,6 @@
 # SPDX-License-Identifier: MIT
 
 machines:
-    fvp-base
     n1sdp
 
 modifiers:
@@ -11,6 +10,5 @@ modifiers:
     ci.yml
 
 ci-builds:
-    fvp-base.yml:tests.yml:ci.yml
     n1sdp.yml:tests.yml:ci.yml
     n1sdp.yml:sdk.yml:ci.yml

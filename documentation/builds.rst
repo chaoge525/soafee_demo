@@ -50,9 +50,8 @@ kas build tool is not possible, the manual approach for preparing and building
 an EWAOL image via bitbake is briefly outlined in
 `Manual Bitbake Build Preparation`_.
 
-The currently supported ``MACHINE``\s are:
+The currently supported ``MACHINE`` is:
 
-* ``fvp-base``
 * ``n1sdp``
 
 The currently supported ``DISTRO_FEATURES`` are:
@@ -134,9 +133,8 @@ Machine configs specify the target machine for the kas build. These define the
 layers and configurations required to build a EWAOL project software image to
 run on that machine.
 
-``meta-ewaol-config`` currently provides two machine build configs:
+``meta-ewaol-config`` currently provides a single machine build config:
 
-* ``fvp-base.yml``
 * ``n1sdp.yml``
 
 The name of the machine config YAML file matches the ``MACHINE`` name for the
@@ -154,7 +152,7 @@ Each machine config includes common configuration from:
 * ``arm-machines.yml``
 
     Defines the BSPs, layers, and dependencies specific to the Arm reference
-    platforms of the supported machines.
+    platform of the supported machine.
 
 Build Modifiers
 ^^^^^^^^^^^^^^^

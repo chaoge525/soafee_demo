@@ -41,52 +41,6 @@ executed using the Bash Automated Test Suite (BATS_).
 .. _ptest: https://wiki.yoctoproject.org/wiki/Ptest
 .. _BATS: https://github.com/bats-core/bats-core
 
-.. _validations_fvp-base_build_image_including_tests:
-
-FVP-Base: Build Image Including Tests
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-To build images which include tests for the FVP-Base, the process is similar to
-the example given in :ref:`quickstart_fvp-base`, but includes appending an
-additional configuration file ``:meta-ewaol-config/kas/tests.yml`` to the kas
-build command, which adds tests to the build. The process is:
-
-* Download the `FVP_Base_RevC-2xAEMvA_11.14_21.tgz`_ "Armv-A Base AEM FVP FOC
-  (Linux)" package from Arm's website. You need to have an account and be logged
-  in to be able to download it
-* Set ``FVP_BASE_A_AEM_TARBALL_URI`` to the absolute path of the downloaded
-  package ``FVP_Base_RevC-2xAEMvA_11.14_21.tgz``
-* Accept the EULA by setting ``FVP_BASE_A_ARM_EULA_ACCEPT`` to ``True``
-* Add ``:meta-ewaol-config/kas/tests.yml`` when running the kas build command
-  with those environment variables
-
-.. _FVP_Base_RevC-2xAEMvA_11.14_21.tgz: https://silver.arm.com/download/download.tm?pv=4849271&p=3042387
-
-Therefore, to build images which include tests for the FVP-Base:
-
-  * Using ``kas`` directly:
-
-    .. code-block:: console
-
-        FVP_BASE_A_AEM_TARBALL_URI="file:///absolute/path/to/FVP_Base_RevC-2xAEMvA_11.14_21.tgz" \
-        FVP_BASE_A_ARM_EULA_ACCEPT="True" \
-        kas build meta-ewaol-config/kas/fvp-base.yml:meta-ewaol-config/kas/tests.yml
-
-  * Using ``tools/build/kas-ci-build.py``:
-
-    .. code-block:: console
-
-        ./tools/build/kas-ci-build.py fvp-base.yml:tests.yml --engine-arguments \
-            '--volume /absolute/path/to/fvp_volume/:/work/fvp_volume \
-             --env FVP_BASE_A_AEM_TARBALL_URI="file:///work/fvp_volume/FVP_Base_RevC-2xAEMvA_11.14_21.tgz" \
-             --env FVP_BASE_A_ARM_EULA_ACCEPT="True"'
-
-    .. note::
-       In the example, ``fvp_volume`` is a directory that contains the "Armv-A
-       Base RevC AEM FVP" package.
-
-To execute tests please refer to `FVP-Base: Running Tests`_.
-
 .. _validations_n1sdp_build_image_including_tests:
 
 N1SDP: Build Image Including Tests
@@ -145,81 +99,6 @@ sub-test. If a sub-test fails, its individual result will be included in the
 output with a similar format. In addition, if a test failed then debugging
 information will be provided in the output with a ``DEBUG`` prefix. The format
 of these results are described in `Test Logging`_.
-
-.. _validations_fvp-base_running_tests:
-
-FVP-Base: Running Tests
-^^^^^^^^^^^^^^^^^^^^^^^
-
-.. note::
-    FVP-Base represents a complete Arm system model and therefore provides a
-    full simulation which includes processor, memory and peripherals. Users
-    running an EWAOL image on the FVP may therefore observe lower performance
-    compared to running it on a physical platform.
-
-To start FVP emulation and run tests you need to:
-
-* Build an image that include tests using the above instructions
-  `FVP-Base: Build Image Including Tests`_
-* Start the FVP emulator and pass the particular (Podman or Docker)
-  tests-enabled image to run:
-
-  * Using ``kas`` directly:
-
-    .. code-block:: console
-
-      kas shell --keep-config-unchanged \
-          meta-ewaol-config/kas/fvp-base.yml:meta-ewaol-config/kas/tests.yml \
-              --command "../layers/meta-arm/scripts/runfvp \
-                   tmp/deploy/images/fvp-base/ewaol-image-[docker|podman]-fvp-base.fvpconf \
-                   --console \
-                   -- \
-                       --parameter 'bp.smsc_91c111.enabled=1' \
-                       --parameter 'bp.hostbridge.userNetworking=true'"
-
-  * Using ``tools/build/kas-ci-build.py``:
-
-    .. code-block:: console
-
-        ./tools/build/kas-ci-build.py fvp-base.yml:tests.yml \
-            --engine-arguments ' -it -p 5000:5000' \
-            --kas-arguments 'shell --keep-config-unchanged \
-                --command "/work/layers/meta-arm/scripts/runfvp \
-                    tmp/deploy/images/fvp-base/ewaol-image-[docker|podman]-fvp-base.fvpconf \
-                       -- \
-                           --parameter \"bp.smsc_91c111.enabled=1\" \
-                           --parameter \"bp.hostbridge.userNetworking=true\""'
-
-* Connect to the FVP emulation console in another terminal window via:
-  ``telnet localhost 5000``
-
-* Log-in as ``root`` without password, then execute all tests with:
-
-    .. code-block:: console
-
-        $ ptest-runner
-        START: ptest-runner
-        [...]
-        PASS:container-engine-integration-tests
-        [...]
-        PASS:k3s-integration-tests
-        [...]
-        STOP: ptest-runner
-
-  * To run a specific integration test suite, provide its identifier as an
-    argument to ``ptest-runner``.
-
-To finish the FVP emulation you need to first close the telnet session and then
-stop the runfvp script:
-
-1. To close the telnet session:
-
-  * Escape to telnet console with ``ctrl+]``
-  * Run ``quit`` to close the session.
-
-2. To stop the runfvp script:
-
-  * Type ``ctrl+c`` and wait for kas process to finish
 
 .. _validations_n1sdp_running_tests:
 

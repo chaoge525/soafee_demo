@@ -68,10 +68,8 @@ Minimal Image Build via kas
 ***************************
 
 This section describes how to build images for the EWAOL project for the
-following machines:
+following machine:
 
-- The Armv8-A Base RevC AEM Fixed Virtual Platform (FVP-Base), corresponding to
-  the ``fvp-base`` ``MACHINE`` implemented in `meta-arm-bsp`_.
 - The Neoverse N1 System Development Platform (N1SDP), corresponding to the
   ``n1sdp`` ``MACHINE`` implemented in `meta-arm-bsp`_.
 
@@ -90,89 +88,6 @@ Checkout the ``meta-ewaol`` repository:
 Running kas with the build configurations within ``meta-ewaol-config`` will
 build two images by default: one that includes the Docker container engine and
 another one that includes the Podman container engine.
-
-.. _quickstart_fvp-base:
-
-FVP-Base
-========
-
-Build for FVP-Base
-------------------
-
-To build the images for the FVP-Base platform, you need to:
-
-* Download the `FVP_Base_RevC-2xAEMvA_11.14_21.tgz`_ "Armv-A Base AEM FVP FOC
-  (Linux)" package from Arm's website. You need to have an account and be logged
-  in to be able to download it
-* Set ``FVP_BASE_A_AEM_TARBALL_URI`` to the absolute path of the downloaded
-  package ``FVP_Base_RevC-2xAEMvA_11.14_21.tgz``
-* Accept the EULA by setting ``FVP_BASE_A_ARM_EULA_ACCEPT`` to ``True``
-* Run the kas build command with those environment variables
-
-Therefore, to build the images via kas for the FVP-Base:
-
-.. code-block:: console
-
-   FVP_BASE_A_AEM_TARBALL_URI="file:///absolute/path/to/FVP_Base_RevC-2xAEMvA_11.14_21.tgz" \
-   FVP_BASE_A_ARM_EULA_ACCEPT="True" \
-   kas build meta-ewaol-config/kas/fvp-base.yml
-
-The resulting images will be produced:
-
- - ``build/tmp/deploy/images/fvp-base/ewaol-image-docker-fvp-base.*``
- - ``build/tmp/deploy/images/fvp-base/ewaol-image-podman-fvp-base.*``
-
-To build only one image corresponding to a particular container engine, specify
-the ``--target`` (either ``ewaol-image-docker`` or ``ewaol-image-podman``) as
-an option to the kas build command, as shown in the following example:
-
-.. code-block:: console
-
-   kas build --target ewaol-image-docker meta-ewaol-config/kas/fvp-base.yml
-
-Run on FVP-Base
----------------
-
-.. note::
-    FVP-Base represents a complete Arm system model and therefore provides a
-    full simulation which includes processor, memory and peripherals. Users
-    running an EWAOL image on the FVP may therefore observe lower performance
-    compared to running it on a physical platform.
-
-To start FVP emulation and connect to its terminal, you need to start the FVP
-emulator and pass the particular (Docker or Podman) image to run:
-
-.. code-block:: console
-
-   kas shell --keep-config-unchanged \
-       meta-ewaol-config/kas/fvp-base.yml \
-           --command "../layers/meta-arm/scripts/runfvp \
-                tmp/deploy/images/fvp-base/ewaol-image-[docker|podman]-fvp-base.fvpconf \
-                --console \
-                -- \
-                    --parameter 'bp.smsc_91c111.enabled=1' \
-                    --parameter 'bp.hostbridge.userNetworking=true'"
-
-Then, log-in as ``root`` without password.
-
-To finish the FVP emulation you need to first close the telnet session and then
-stop the runfvp script:
-
-1. To close the telnet session:
-
-  * Escape to telnet console with ``ctrl+]``
-  * Run ``quit`` to close the session.
-
-2. To stop the runfvp script:
-
-  * Type ``ctrl+c`` and wait for kas process to finish
-
-Tests on FVP-Base
------------------
-
-* To build an image with tests included please refer to
-  :ref:`validations_fvp-base_build_image_including_tests`.
-* To execute tests please refer to :ref:`validations_fvp-base_running_tests`.
 
 N1SDP
 =====
@@ -433,4 +348,3 @@ Tests on N1SDP
 
 .. _Potential firmware damage notice: https://community.arm.com/developer/tools-software/oss-platforms/w/docs/604/notice-potential-damage-to-n1sdp-boards-if-using-latest-firmware-release
 .. _N1SDP Technical Reference Manual: https://developer.arm.com/documentation/101489/0000
-.. _FVP_Base_RevC-2xAEMvA_11.14_21.tgz: https://silver.arm.com/download/download.tm?pv=4849271&p=3042387

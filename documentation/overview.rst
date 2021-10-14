@@ -16,8 +16,8 @@ software stack is divided into the following software layers:
 
 * **System software**: Platform specific software composed of firmware and
   operating system. EWAOL does not provide the system software but uses meta-arm
-  and meta-arm-bsp to provide an example reference stack using the N1SDP and
-  Base FVP platforms.
+  and meta-arm-bsp to provide an example reference stack using the N1SDP
+  platform.
 
 EWAOL is the reference implementation for SOAFEE (Scalable Open Architecture
 For Embedded Edge), the Arm lead industry initiative for extending cloud-native
