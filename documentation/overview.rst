@@ -101,7 +101,7 @@ The ``meta-ewaol-distro`` layer depends on:
     URI: git://git.yoctoproject.org/meta-virtualization
     layers: meta-virtualization
     branch: hardknott
-    revision: 8e36520924fdadda20d7a6d09d9884e65a5555c2
+    revision: 7f719ef40896b6c78893add8485fda995b00d51d
 
 
 The ``meta-ewaol-tests`` layer depends on:
