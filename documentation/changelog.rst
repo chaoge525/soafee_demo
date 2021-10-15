@@ -1,6 +1,101 @@
 Changelog & Release Notes
 #########################
 
+v0.2
+****
+
+New Features
+============
+
+* Introduced K3S container orchestration support, as well as its integration
+  tests
+* Removed support for the FVP Base-A reference platform
+* Introduced EWAOL Software Development Kit (SDK) distro image type which
+  includes packages and features to support software development on the target
+
+Changed
+=======
+
+Third-party Yocto layers used to build the software stack:
+
+.. code-block:: yaml
+
+    URI: git://git.yoctoproject.org/poky
+    layers: meta, meta-poky
+    branch: hardknott
+    revision: 269265c00091fa65f93de6cad32bf24f1e7f72a3
+
+    URI: git://git.openembedded.org/meta-openembedded
+    layers: meta-filesystems, meta-networking, meta-oe, meta-perl, meta-python
+    branch: hardknott
+    revision: f44e1a2b575826e88b8cb2725e54a7c5d29cf94a
+
+    URI: git://git.yoctoproject.org/meta-security
+    layers: meta-security
+    branch: hardknott
+    revision: 16c68aae0fdfc20c7ce5cf4da0a9fff8bdd75769
+
+    URI: git://git.yoctoproject.org/meta-virtualization
+    layers: meta-virtualization
+    branch: hardknott
+    revision: 7f719ef40896b6c78893add8485fda995b00d51d
+
+    URI: git://git.yoctoproject.org/meta-arm
+    layers: meta-arm, meta-arm-bsp, meta-arm-toolchain
+    branch: hardknott
+    revision: 71686ac05c34e53950268bfe0d52c3624e78c190
+
+Main software components versions:
+
+  * Systemd (version: ``247.6``) as init system
+  * K3S container orchestration engine (version: ``v1.20.11+k3s2``)
+  * Docker (version: ``20.10.3+git11ecfe8a81b7040738333f777681e55e2a867160``)
+    or Podman (version: ``3.2.1+git0+ab4d0cf908``) as container engines
+  * runc-opencontainers (version: ``1.0.0+rc93+git0+249bca0a13``) as the OCI
+
+
+Configs:
+
+  * Only include meta-arm layers when required
+
+Distro:
+
+  * Introduced EWAOL Software Development Kit (SDK) distro image type
+  * Introduced K3S container orchestration support
+
+Documentation:
+
+  * Refactored README.md to not include it in the final rendered documentation
+
+Tools:
+
+  * Introduced the kas-runner.py tool to support loading build environment
+    configurations from yaml files. This tool is still in experimental stage
+    and will be replacing kas-ci-build.py in the future
+  * Added '-j' and '--out-dir' parameters to kas-ci-build.py set the maximum
+    number of cpu threads available for bitbake and allow user to change build
+    directory
+  * Moved project specific configurations for QA checks to meta-ewaol-config
+  * Various improvements in QA checks for spelling, commit message and license
+    header
+
+Tests:
+
+  * Introduced K3S container orchestration integration tests
+  * Improved tests logging and cleanup tasks
+  * Multiple tests suites share the same base directory structure and common
+    files
+
+Limitations
+===========
+
+None.
+
+Resolved and Known Issues
+=========================
+
+None.
+
 v0.1.1
 ******
 
