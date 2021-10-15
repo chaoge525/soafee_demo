@@ -12,6 +12,16 @@ defaults:
     refspec: hardknott
 
 repos:
+
+  # Since in ewaol-release.yml we pin meta-arm repo, we exclude its layers in
+  # here and eneable them in arm-machines.yml when included by specific kas
+  # configs (e.g. n1sdp.yml)
+  meta-arm:
+    layers:
+      meta-arm: excluded
+      meta-arm-bsp: excluded
+      meta-arm-toolchain: excluded
+
   meta-openembedded:
     url: https://git.openembedded.org/meta-openembedded
     path: layers/meta-openembedded

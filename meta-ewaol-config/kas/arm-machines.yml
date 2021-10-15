@@ -10,7 +10,7 @@ repos:
     url: https://git.yoctoproject.org/git/meta-arm
     path: layers/meta-arm
     layers:
-      meta-arm:
-      meta-arm-bsp:
-      meta-arm-toolchain:
+      meta-arm: included
+      meta-arm-bsp: included
+      meta-arm-toolchain: included
 
