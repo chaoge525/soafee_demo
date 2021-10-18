@@ -75,7 +75,7 @@ env:
     SOURCE_MIRROR_URL: ""
     INHERIT: ""
     BB_GENERATE_MIRROR_TARBALLS: ""
-    BB_NUMBER_THREADS: ""
+    BB_NUMBER_THREADS: "${@os.cpu_count()}"
 
 target:
   - ewaol-image-podman

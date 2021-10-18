@@ -275,9 +275,10 @@ def get_config():
 
     parser.add_argument(
         "-j",
-        help=f"Sets number of threads used by bitbake, by exporting\
-             environment variable BB_NUMBER_THREADS = J\
-             (default: {args_defaults['j']})")
+        help=f"Sets number of threads used by bitbake, by exporting \
+             environment variable BB_NUMBER_THREADS = J. Usually it is set to \
+             ({os.cpu_count()}), unless a different number of threads is set \
+             in a kas config file used for the build.")
 
     parser.add_argument(
         "--kas-arguments",
@@ -563,7 +564,8 @@ def main():
         if config['engine_arguments']:
             engine.add_arg(config['engine_arguments'])
 
-        engine.add_env('BB_NUMBER_THREADS', config['j'])
+        if config['j']:
+            engine.add_env('BB_NUMBER_THREADS', config['j'])
 
         # Execute the command
         exit_code |= engine.run(kas_config, config['kas_arguments'])
