@@ -173,13 +173,12 @@ def parse_options():
                         help=("Add a specific check to run, or 'all'"
                               " (default: 'all')."))
 
+    # Internal usage: a requested check may be skipped using this option (e.g.
+    # due to failed dependency-installation in the virtual environment)
     parser.add_argument("--skip", action="append", default=[],
                         choices=check_names,
                         dest="skip_checks",
-                        help=("Internal usage. A requested check module can"
-                              " be skipped by passing its name via this"
-                              " parameter, resulting in the check being marked"
-                              " as failed."))
+                        help=argparse.SUPPRESS)
 
     # Each check has its own path options to include/exclude
     for check in AVAILABLE_CHECKS:
@@ -208,12 +207,13 @@ def parse_options():
                               " meaning user-arguments will be appended to"
                               " the defaults given in the YAML file)."))
 
+    # Internal usage: If set, any supplied patterns will not be considered
+    # gitstyle patterns, and will therefore not be converted for regex
+    # matching. This parameter indicates that this has already been done by the
+    # caller of the script)
     parser.add_argument("--no_process_patterns",
                         action="store_true",
-                        help=("Internal usage. If set, any supplied patterns"
-                              " will not be considered gitstyle patterns, and"
-                              " will therefore not be converted for regex"
-                              " matching."))
+                        help=argparse.SUPPRESS)
 
     parser.add_argument("--venv",
                         required=False,
