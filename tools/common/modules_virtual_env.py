@@ -6,6 +6,7 @@
 
 import logging
 import os
+import shlex
 import subprocess
 import urllib.request
 import venv
@@ -108,9 +109,9 @@ class ModulesVirtualEnv(venv.EnvBuilder):
                     self.logger.error((f"Could not install {pip_dep} within"
                                        " the virtual env."))
 
-        for failed_module in failed_modules:
+        for failed_mod in failed_modules:
 
-            if failed_module is None:
+            if failed_mod is None:
                 # The dependencies necessary to run the script itself failed
                 # Therefore we must abort
                 self.logger.error(("Script direct dependency could not be"
@@ -120,16 +121,41 @@ class ModulesVirtualEnv(venv.EnvBuilder):
             else:
                 # If a module's dependencies could not be installed, skip it
                 self.logger.warning(("Dependency installation failed for"
-                                     f" {failed_module}. Removing "
-                                     f"'{failed_module}' from script "
+                                     f" {failed_mod}. Removing "
+                                     f"'{failed_mod}' from script "
                                      "execution."))
 
-                self.arg_str = " ".join(filter(lambda arg:
-                                               failed_module not in arg,
-                                               self.arg_str.split(" ")))
+                # Use shlex to parse arguments with quoted strings, and remove
+                # any arguments that are for the module, or have the module as
+                # a value
+                filtered_args = filter(lambda arg:
+                                       not arg.startswith(f"--{failed_mod}_")
+                                       and not arg.endswith(f"={failed_mod}"),
+                                       shlex.split(self.arg_str))
+
+                # shlex removes quotes when it parses the string into tokens.
+                # As this will be passed as command line arguments, we should
+                # quote any value.
+                def quote_value(arg):
+                    """ If the argument is key=value then return the argument
+                        with the value quoted such as key="value", to handle
+                        spaces in the value. """
+
+                    if " " in arg:
+                        arg_split = arg.split("=", 1)
+                        if len(arg_split) == 1:
+                            raise ValueError(("The argument string provided to"
+                                              f" {__file__} must contain"
+                                              " key-value pairs separated by"
+                                              f" '='. Found: {self.arg_str}"))
+                        elif len(arg_split) > 1:
+                            arg = f"{arg_split[0]}=\"{arg_split[1]}\""
+                    return arg
+
+                self.arg_str = " ".join(list(map(quote_value, filtered_args)))
 
                 # Remove from the modules list (given by module_pip_deps)
-                self.module_pip_deps.pop(failed_module)
+                self.module_pip_deps.pop(failed_mod)
 
     def install_pip(self, context):
         """ Install pip into the venv context by getting and installing the
