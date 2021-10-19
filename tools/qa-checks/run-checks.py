@@ -32,6 +32,7 @@ argument to this script.
 """
 
 import argparse
+import inspect
 import logging
 import os
 import shutil
@@ -172,6 +173,14 @@ def parse_options():
                         help=("Add a specific check to run, or 'all'"
                               " (default: 'all')."))
 
+    parser.add_argument("--skip", action="append", default=[],
+                        choices=check_names,
+                        dest="skip_checks",
+                        help=("Internal usage. A requested check module can"
+                              " be skipped by passing its name via this"
+                              " parameter, resulting in the check being marked"
+                              " as failed."))
+
     # Each check has its own path options to include/exclude
     for check in AVAILABLE_CHECKS:
 
@@ -249,6 +258,12 @@ def parse_options():
         logger.error((f"Cannot provide a path via --venv while also setting"
                       " --no_venv."))
         exit(1)
+
+    # Only allow a check to be skipped if it has been provided
+    if opts.skip_checks:
+        if any([skip not in opts.checks for skip in opts.skip_checks]):
+            logger.error("Cannot skip a check that wasn't requested.")
+            exit(1)
 
     # Set default here because the append action extends the argparse default
     # rather than replaces the default
@@ -439,16 +454,18 @@ def load_check_params(opts, check_name, req_list_vars, req_vars):
 def build_check_modules(opts):
     """ For each module, check that we have values for all required variables
         either from the command-line arguments, and/or from the configuration
-        YAML file. """
+        YAML file. Ignore any skipped checks. """
 
     checkers = []
 
     for check_module in AVAILABLE_CHECKS:
-        if check_module.name in opts.checks:
+        name = check_module.name
+        if name in opts.checks and name not in opts.skip_checks:
+
             list_vars, plain_vars = check_module.get_vars()
 
             params = load_check_params(opts,
-                                       check_module.name,
+                                       name,
                                        list(list_vars.keys()),
                                        list(plain_vars.keys()))
 
@@ -490,6 +507,11 @@ def generate_venv_script_args_from_opts(opts):
         elif opt == "checks":
             for check in value:
                 arg = f"--check={check}"
+                args.append(arg)
+            continue
+        elif opt == "skip_checks":
+            for check in value:
+                arg = f"--skip={check}"
                 args.append(arg)
             continue
         else:
@@ -535,7 +557,7 @@ def main():
         for key, val in vars(opts).items():
             # We change the venv arguments programmatically, so don't print to
             # avoid confusing the user with a different value
-            if "venv" not in key:
+            if "venv" not in key and "skip_checks" not in key:
                 logger.debug(f"{key}:{val}")
         logger.debug("***")
 
@@ -559,14 +581,35 @@ def main():
 
             exit_code |= rc
 
+        for skipped_check in opts.skip_checks:
+
+            # Get the check module object from the name
+            skipped_module = next(filter(lambda module:
+                                         module.name == skipped_check,
+                                         AVAILABLE_CHECKS))
+
+            # Report the failure from the context of the skipped module, by
+            # first overriding the filename used by the logger, outputting the
+            # failure, then resetting the filename
+
+            skipped_filename = inspect.getmodule(skipped_module).__file__
+            logger.filename_override = os.path.basename(skipped_filename)
+            logger.error("FAIL")
+            logger.filename_override = None
+
+            failed_modules.add(skipped_check)
+            exit_code |= 1
+
         fail_str = ""
         if failed_modules:
             fail_str = f" ({','.join(failed_modules)})"
 
-        check_count_str = "checks" if len(checkers) == 1 else "checks"
-        logger.info((f"Ran {len(checkers)} {check_count_str} of which"
-                     f" {len(failed_modules)} failed{fail_str}. Exit code:"
-                     f" {exit_code}."))
+        total_checks = len(checkers) + len(opts.skip_checks)
+        total_check_str = "check" if total_checks == 1 else "checks"
+
+        logger.info((f"Ran {total_checks} {total_check_str} of which"
+                     f" {len(failed_modules)} failed{fail_str}."
+                     f" Exit code: {exit_code}."))
 
     else:
         # Create a virtual environment that installs the necessary
@@ -612,9 +655,46 @@ def main():
     exit(exit_code)
 
 
+class FilenameFormatter(logging.Formatter):
+    """ The script's standard logging format includes the filename to identify
+        what the message relates to (e.g. 'python-check.py: PASS').
+        However, we may want to output a message pertaining to a particular
+        module, from outside that module (e.g. 'python-check.py: SKIPPED').
+
+        As the Python logging module determines the filename by inspecting the
+        stack via the sys module, the value of this variable cannot easily be
+        changed. Therefore, this class conditionally swaps the logging
+        format to a custom one that reads the contents of the logger's
+        filename_override string (if it is not None) instead of using the
+        filename variable. """
+
+    def __init__(self):
+        self.fmt_str = "%(levelname)-8s:{filename}:%(message)s"
+        logging.getLogger().filename_override = None
+        super().__init__(fmt=self.fmt_str.format(filename="%(filename)-24s"),
+                         style='%')
+
+    def format(self, record):
+        original_format = self._style._fmt
+
+        if logging.getLogger().filename_override:
+            self._style._fmt = self.fmt_str.format(
+                filename=f"{logging.getLogger().filename_override:24}")
+
+        output = logging.Formatter.format(self, record)
+
+        if logging.getLogger().filename_override:
+            self._style._fmt = original_format
+
+        return output
+
+
 if __name__ == "__main__":
-    log_format = "%(levelname)-8s:%(filename)-24s:%(message)s"
-    logging.basicConfig(format=log_format)
-    logger = logging.getLogger(__name__)
+
+    basic_log_format = "%(levelname)-8s:%(filename)-24s:%(message)s"
+    formatter = FilenameFormatter()
+    logging.basicConfig(format=basic_log_format)
+    logger = logging.getLogger()
+    logger.handlers[0].setFormatter(formatter)
 
     main()

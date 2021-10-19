@@ -6,7 +6,6 @@
 
 import logging
 import os
-import shlex
 import subprocess
 import urllib.request
 import venv
@@ -24,9 +23,8 @@ class ModulesVirtualEnv(venv.EnvBuilder):
               names to be installed by pip in the Python virtual environment.
               e.g. module_pip_deps["code_check"] = ["pyyaml", "pycodestyle"]
 
-        If a dependency fails to be installed, all script arguments containing
-        the module name (substring given by dict key) are removed from the
-        script call.
+        If a dependency fails to be installed, the module name is added to the
+        script arguments as a skipped module (via the --skip parameter).
 
         If a dependency is given with a None key (no module), then it is
         considered essential to run the script itself, and execution will abort
@@ -56,7 +54,7 @@ class ModulesVirtualEnv(venv.EnvBuilder):
         os.environ['VENV_BIN'] = context.bin_path
 
         # Install any dependencies
-        self.install_dependencies(context)
+        failed_modules = self.install_dependencies(context)
 
         # Check that at least one module's dependencies were satisfied
         # Ignore the non-module dependencies
@@ -64,6 +62,12 @@ class ModulesVirtualEnv(venv.EnvBuilder):
             self.logger.error(("All requested modules failed dependency"
                                " installation. Aborting"))
             exit(1)
+
+        # Any modules that fail their dependency installation are added as a
+        # skipped module to the script arguments, enabling the script to handle
+        # what should be done with them
+        for module in failed_modules:
+            self.arg_str += f" --skip={module}"
 
         # Call the script from the venv context
         cmd = f"{context.env_exe} {self.script} {self.arg_str}"
@@ -82,11 +86,16 @@ class ModulesVirtualEnv(venv.EnvBuilder):
         # Set the returncode variable to report as the result of the venv
         self.returncode = process.returncode
 
+        # If modules were skipped, make sure we don't return success
+        # (Though this shouldn't happen, as skips should be reflected as a
+        # failure from the executed script)
+        if failed_modules and self.returncode == 0:
+            self.returncode = len(failed_modules)
+
     def install_dependencies(self, context):
         """ Parse the dependency dict and install using the venv context.
-            Failed module dependency installs will be removed from the script
-            arguments, failed dependency installs not specific to any module
-            will cause an abort. """
+            Return any modules that failed to have their dependencies installed
+            """
 
         if any(deps for deps in self.module_pip_deps.values()):
             self.install_pip(context)
@@ -119,43 +128,13 @@ class ModulesVirtualEnv(venv.EnvBuilder):
                 exit(1)
 
             else:
-                # If a module's dependencies could not be installed, skip it
-                self.logger.warning(("Dependency installation failed for"
-                                     f" {failed_mod}. Removing "
-                                     f"'{failed_mod}' from script "
-                                     "execution."))
-
-                # Use shlex to parse arguments with quoted strings, and remove
-                # any arguments that are for the module, or have the module as
-                # a value
-                filtered_args = filter(lambda arg:
-                                       not arg.startswith(f"--{failed_mod}_")
-                                       and not arg.endswith(f"={failed_mod}"),
-                                       shlex.split(self.arg_str))
-
-                # shlex removes quotes when it parses the string into tokens.
-                # As this will be passed as command line arguments, we should
-                # quote any value.
-                def quote_value(arg):
-                    """ If the argument is key=value then return the argument
-                        with the value quoted such as key="value", to handle
-                        spaces in the value. """
-
-                    if " " in arg:
-                        arg_split = arg.split("=", 1)
-                        if len(arg_split) == 1:
-                            raise ValueError(("The argument string provided to"
-                                              f" {__file__} must contain"
-                                              " key-value pairs separated by"
-                                              f" '='. Found: {self.arg_str}"))
-                        elif len(arg_split) > 1:
-                            arg = f"{arg_split[0]}=\"{arg_split[1]}\""
-                    return arg
-
-                self.arg_str = " ".join(list(map(quote_value, filtered_args)))
+                self.logger.error(("Dependency installation failed for"
+                                   f" {failed_mod}."))
 
                 # Remove from the modules list (given by module_pip_deps)
                 self.module_pip_deps.pop(failed_mod)
+
+        return failed_modules
 
     def install_pip(self, context):
         """ Install pip into the venv context by getting and installing the
