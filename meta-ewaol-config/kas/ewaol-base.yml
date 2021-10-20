@@ -9,7 +9,7 @@ header:
 
 defaults:
   repos:
-    refspec: hardknott
+    refspec: master
 
 repos:
 
@@ -31,10 +31,6 @@ repos:
       meta-networking:
       meta-python:
       meta-perl:
-
-  meta-security:
-    url: https://git.yoctoproject.org/git/meta-security
-    path: layers/meta-security
 
   meta-ewaol:
     layers:

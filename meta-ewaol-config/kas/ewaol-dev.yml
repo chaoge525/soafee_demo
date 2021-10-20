@@ -7,16 +7,13 @@ header:
 
 repos:
   meta-arm:
-    refspec: hardknott
+    refspec: master
 
   meta-openembedded:
-    refspec: hardknott
-
-  meta-security:
-    refspec: hardknott
+    refspec: master
 
   meta-virtualization:
-    refspec: hardknott
+    refspec: master
 
   poky:
-    refspec: hardknott
+    refspec: master
