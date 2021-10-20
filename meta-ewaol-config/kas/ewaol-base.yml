@@ -49,8 +49,8 @@ repos:
 
 local_conf_header:
   ewaol-base: |
-    CONF_VERSION = "1"
-    PACKAGECONFIG_remove_pn-qemu-system-native = "gtk+ sdl"
+    CONF_VERSION = "2"
+    PACKAGECONFIG:remove:pn-qemu-system-native = "gtk+ sdl"
 
   diskmon: |
     BB_DISKMON_DIRS = "\

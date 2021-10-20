@@ -11,4 +11,4 @@ target:
 
 local_conf_header:
   ewaol-sdk: |
-    DISTRO_FEATURES_append = " ewaol-sdk"
+    DISTRO_FEATURES:append = " ewaol-sdk"

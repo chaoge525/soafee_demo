@@ -18,7 +18,7 @@ bb.utils.contains_any('DISTRO_FEATURES', d.getVar('EWAOL_DISTRO_FEATURES'),\
 '', d.getVar('EWAOL_DISTRO_FEATURES_DEFAULT'), d)}"
 
 # Add EWAOL_DISTRO_FEATURES_FALLBACK to DISTRO_FEATURES, could be empty.
-DISTRO_FEATURES_append = " ${EWAOL_DISTRO_FEATURES_FALLBACK}"
+DISTRO_FEATURES:append = " ${EWAOL_DISTRO_FEATURES_FALLBACK}"
 
 # Require inc file for development DISTRO_FEATURE
 require ${@bb.utils.contains(\

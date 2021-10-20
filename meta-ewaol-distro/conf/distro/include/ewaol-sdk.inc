@@ -5,7 +5,7 @@
 # Config specifc to the ewaol-sdk distro feature, enabled using
 # DISTRO_FEATURES
 
-IMAGE_FEATURES_append = " \
+IMAGE_FEATURES:append = " \
  package-management \
  dev-pkgs \
  tools-sdk \
@@ -14,6 +14,6 @@ IMAGE_FEATURES_append = " \
  debug-tweaks \
  ssh-server-openssh"
 
-IMAGE_INSTALL_append = " kernel-base kernel-devsrc kernel-modules"
+IMAGE_INSTALL:append = " kernel-base kernel-devsrc kernel-modules"
 
-IMAGE_INSTALL_append_aarch64 = " gator-daemon"
+IMAGE_INSTALL:append:aarch64 = " gator-daemon"

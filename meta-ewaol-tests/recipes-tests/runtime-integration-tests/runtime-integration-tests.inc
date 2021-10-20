@@ -4,10 +4,10 @@
 
 inherit ptest
 
-RDEPENDS_${PN} += "bats"
+RDEPENDS:${PN} += "bats"
 
 # ptest aborts if it cannot find libgcc for pthread_cancel
-RDEPENDS_${PN}-ptest += "libgcc"
+RDEPENDS:${PN}-ptest += "libgcc"
 
 TEST_DIR ?= "${datadir}/${BPN}"
 

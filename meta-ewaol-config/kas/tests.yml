@@ -12,4 +12,4 @@ repos:
 
 local_conf_header:
   tests: |
-    DISTRO_FEATURES_append = " ewaol-test"
+    DISTRO_FEATURES:append = " ewaol-test"
