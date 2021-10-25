@@ -5,7 +5,7 @@
 header:
   version: 10
   includes:
-    - ewaol-base.yml
-    - arm-machines.yml
+    - meta-ewaol-config/kas/ewaol-base.yml
+    - meta-ewaol-config/kas/arm-machines.yml
 
 machine: n1sdp
