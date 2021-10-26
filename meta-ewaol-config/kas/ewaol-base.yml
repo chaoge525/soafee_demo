@@ -9,7 +9,7 @@ header:
 
 defaults:
   repos:
-    refspec: master
+    refspec: honister
 
 repos:
 

@@ -15,7 +15,7 @@ A number of dependencies are required to build projects with Yocto.
 be installed on the Build Host.
 
 .. _The Yocto Project documentation:
-   https://docs.yoctoproject.org/singleindex.html#required-packages-for-the-build-host
+   https://docs.yoctoproject.org/3.4/singleindex.html#required-packages-for-the-build-host
 
 ``meta-ewaol-config`` contains build configs for kas, a tool for easily setting
 up bitbake based projects. Each build config is a YAML file that specifies
@@ -82,7 +82,7 @@ Checkout the ``meta-ewaol`` repository:
 
    mkdir -p ~/ewaol
    cd ~/ewaol
-   git clone https://git.gitlab.arm.com/ewaol/meta-ewaol.git -b main
+   git clone https://git.gitlab.arm.com/ewaol/meta-ewaol.git -b honister-dev
    cd meta-ewaol
 
 Running kas with the build configurations within ``meta-ewaol-config`` will

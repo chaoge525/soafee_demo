@@ -84,17 +84,17 @@ The ``meta-ewaol-distro`` layer depends on:
 
     URI: git://git.yoctoproject.org/poky
     layers: meta, meta-poky
-    branch: master
+    branch: honister
     revision: HEAD
 
     URI: git://git.openembedded.org/meta-openembedded
     layers: meta-filesystems, meta-networking, meta-oe, meta-perl, meta-python
-    branch: master
+    branch: honister
     revision: HEAD
 
     URI: git://git.yoctoproject.org/meta-virtualization
     layers: meta-virtualization
-    branch: master
+    branch: honister
     revision: HEAD
 
 
@@ -104,7 +104,7 @@ The ``meta-ewaol-tests`` layer depends on:
 
     URI: git://git.yoctoproject.org/poky
     layers: meta
-    branch: master
+    branch: honister
     revision: HEAD
 
 Repository License

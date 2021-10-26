@@ -212,7 +212,7 @@ In order to add an external machine to be built with EWAOL, you need to add a
 
       meta-ewaol:
         url: https://git.gitlab.arm.com/ewaol/meta-ewaol.git
-        refspec: main
+        refspec: honister-dev
 
     machine: my-machine
 

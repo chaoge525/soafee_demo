@@ -7,13 +7,13 @@ header:
 
 repos:
   meta-arm:
-    refspec: master
+    refspec: honister
 
   meta-openembedded:
-    refspec: master
+    refspec: honister
 
   meta-virtualization:
-    refspec: master
+    refspec: honister
 
   poky:
-    refspec: master
+    refspec: honister
