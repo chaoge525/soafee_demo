@@ -12,7 +12,7 @@ header:
 presets:
   container-presets: &container-presets
     network_mode: 'bridge'
-    container_image_version: '2.5'
+    container_image_version: '2.6.1'
     container_image: 'ghcr.io/siemens/kas/kas'
     container_engine: 'docker'
 

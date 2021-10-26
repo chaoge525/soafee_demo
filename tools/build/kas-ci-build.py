@@ -229,9 +229,9 @@ def get_config():
 
     parser.add_argument(
         "--container-image-version",
-        default="2.5",
+        default="2.6.1",
         help="Set the container image version (default: %(default)s). Note: \
-             it is not recommended to use versions 2.4 or lower for kas \
+             it is not recommended to use versions 2.5 or lower for kas \
              containers due to lack of support for KAS_BUILD_DIR.")
 
     parser.add_argument(

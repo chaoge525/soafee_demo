@@ -160,7 +160,7 @@ def get_config():
       "config": None,
       "container_engine": "docker",
       "container_image": "ghcr.io/siemens/kas/kas",
-      "container_image_version": "2.5",
+      "container_image_version": "2.6.1",
       "deploy_artifacts": False,
       "dl_dir": "%(out_dir)s/yocto-cache/downloads",
       "downloads_mirror": None,
@@ -270,7 +270,7 @@ def get_config():
         "--container-image-version",
         help=f"Set the container image version (default: \
              {args_defaults['container_image_version']}). Note: it is not \
-             recommended to use versions 2.4 or lower for kas containers \
+             recommended to use versions 2.5 or lower for kas containers \
              due to lack of support for KAS_BUILD_DIR.")
 
     parser.add_argument(

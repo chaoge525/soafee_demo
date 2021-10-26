@@ -28,7 +28,7 @@ On the Build Host, install the kas setup tool:
 
 .. code-block:: console
 
-    sudo -H pip3 install kas
+    sudo -H pip3 install --upgrade kas==2.6.1
 
 For more details on kas installation, see `kas Dependencies & installation`_.
 
