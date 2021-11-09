@@ -42,6 +42,13 @@ modules:
             - "*.scc"
             - "*.patch"
 
+    layer:
+        kas_configs:
+            - "ewaol-base.yml:tests.yml"
+        test_layers:
+            - "meta-ewaol-distro"
+            - "meta-ewaol-tests"
+
     python:
         file_types:
             - "python script"

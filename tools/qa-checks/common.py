@@ -14,25 +14,32 @@ import re
 import shutil
 
 
-def find_executable(logger, name):
-    """ Function that returns the correct executable for a given name, based on
-        whether or not the calling context is within a Python virtual
+def find_executable(logger, name, directory=None):
+    """ Function that returns the correct executable for a given name. If the
+        optional function argument 'directory' is given, it will be searched
+        first in order to find the executable.
+        If a specific directory is not given or the executable was not found in
+        it then the system paths will be checked, first checking the VENV_BIN
+        directory if the calling context is within a Python virtual
         environment.
 
         Returns None if the executable cannot be found. """
 
-    if "VENV_BIN" in os.environ:
+    script_path = None
 
+    if directory:
+        script_path = shutil.which(name, path=directory)
+
+    if script_path is None and "VENV_BIN" in os.environ:
         script_path = shutil.which(name, path=os.environ["VENV_BIN"])
-        if script_path is None:
-            script_path = shutil.which(name)
-            if script_path:
-                logger.debug((f"Could not find the '{name}' executable in the"
-                              " virtual environment, using the host system's"
-                              " version."))
 
-    else:
+    if script_path is None:
         script_path = shutil.which(name)
+
+        if script_path is not None and "VENV_BIN" in os.environ:
+            logger.debug((f"Could not find the '{name}' executable in the"
+                          " virtual environment, using the host system's"
+                          " version."))
 
     return script_path
 

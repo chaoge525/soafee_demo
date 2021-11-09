@@ -65,6 +65,9 @@ repository state. These are briefly described as follows:
 * License and copyright header validation
     This check validates the inclusion of correctly formatted copyright and
     license headers for relevant project files.
+* Yocto layer compatibility validation
+    This check validates the Yocto layers provided by the meta-ewaol repository
+    using the Yocto Project's yocto-check-layer script.
 * Python code quality validation
     This check ensures that all Python files within the project are compliant
     with the code-style conventions in PEP8 as validated by the pycodestyle

@@ -44,6 +44,7 @@ import venv
 import abstract_check
 import commit_msg_check
 import header_check
+import layer_check
 import python_check
 import shell_check
 import spell_check
@@ -55,6 +56,7 @@ import modules_virtual_env  # noqa: E402
 
 AVAILABLE_CHECKS = [commit_msg_check.CommitMsgCheck,
                     header_check.HeaderCheck,
+                    layer_check.LayerCheck,
                     python_check.PythonCheck,
                     shell_check.ShellCheck,
                     spell_check.SpellCheck
@@ -62,7 +64,7 @@ AVAILABLE_CHECKS = [commit_msg_check.CommitMsgCheck,
 
 # All checks except these will be run by default if specific checkers are not
 # requested.
-DEFAULT_EXCLUDE = []
+DEFAULT_EXCLUDE = [layer_check.LayerCheck]
 
 # The following keywords can be passed as values to the arguments.
 # They will be set to their correct mapped values lazily.
