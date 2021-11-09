@@ -60,6 +60,10 @@ AVAILABLE_CHECKS = [commit_msg_check.CommitMsgCheck,
                     spell_check.SpellCheck
                     ]
 
+# All checks except these will be run by default if specific checkers are not
+# requested.
+DEFAULT_EXCLUDE = []
+
 # The following keywords can be passed as values to the arguments.
 # They will be set to their correct mapped values lazily.
 KEYWORD_MAP = dict()
@@ -150,28 +154,40 @@ def parse_options():
         "debug": logging.DEBUG
     }
 
+    check_names = [check.name for check in AVAILABLE_CHECKS]
+    excluded_check_names = [check.name for check in DEFAULT_EXCLUDE]
+    default_check_names = [name for name in check_names
+                           if name not in excluded_check_names]
+
     desc = ("run-checks.py is used to execute a set of quality-check modules"
             " on the repository. By default, a virtual Python environment is"
             " created to install the Python packages necessary to run the"
             " suite.")
     usage = ("Optional arguments can be found by passing --help to the script")
-    example = ("Example:\n$ ./run-checks.py --check=all\n"
-               "to run all checks in a virtual environment, according to the"
-               " per-check configuration within the default config YAML file")
+    example = ("\nExample:\n$ ./run-checks.py\n"
+               "to run all default checks in a virtual environment, according"
+               " to the per-check configuration within the default config YAML"
+               " file.")
+
+    excluded_str = ""
+    if excluded_check_names:
+        excluded_str = ("\nAdditional non-default checks can be enabled"
+                        f" explicitly: {{{','.join(excluded_check_names)}}}.")
+    sets = (f"The default checks are: {{{','.join(default_check_names)}}}."
+            f"{excluded_str}")
 
     # Parse Arguments and assign to args object
     parser = argparse.ArgumentParser(
         prog=os.path.basename(__file__),
         formatter_class=argparse.RawDescriptionHelpFormatter,
-        description=f"{desc}\n{usage}\n{example}\n\n")
-
-    check_names = [check.name for check in AVAILABLE_CHECKS]
+        description=f"{desc}\n{usage}\n\n{example}\n\n{sets}")
 
     parser.add_argument("--check", action="append", default=[],
-                        choices=check_names + ["all"],
+                        choices=check_names + ["default", "all"],
                         dest="checks",
-                        help=("Add a specific check to run, or 'all'"
-                              " (default: 'all')."))
+                        help=("Add a specific check to run, or the 'default'"
+                              " set, or 'all' checks. If not given, then the"
+                              " default set will be run."))
 
     # Internal usage: a requested check may be skipped using this option (e.g.
     # due to failed dependency-installation in the virtual environment)
@@ -267,7 +283,10 @@ def parse_options():
 
     # Set default here because the append action extends the argparse default
     # rather than replaces the default
-    if len(opts.checks) == 0 or "all" in opts.checks:
+    if len(opts.checks) == 0 or "default" in opts.checks:
+        opts.checks = default_check_names
+
+    if "all" in opts.checks:
         opts.checks = check_names
 
     if opts.config is None:
