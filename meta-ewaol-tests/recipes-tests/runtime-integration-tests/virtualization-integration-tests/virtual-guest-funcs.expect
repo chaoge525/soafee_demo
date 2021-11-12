@@ -1,0 +1,91 @@
+#!/usr/bin/env expect
+#
+# Copyright (c) 2021, Arm Limited.
+#
+# SPDX-License-Identifier: MIT
+
+proc guest_logon {guest} {
+    global expect_out
+    global spawn_id
+    global login_prompt
+    global prompt
+    global clean_console
+    global timeout
+
+    spawn xl console ${guest}
+    send "${clean_console}"
+
+    # Grab console and log on
+    expect {
+        "${login_prompt}" {
+            send "root\r"
+            exp_continue
+        }
+        "${prompt}" {
+            send "${clean_console}"
+        }
+        "Password:" {
+            send "\x03"
+            exp_continue
+        }
+        "Kernel panic" {
+            puts "'${guest}' encountered a kernel panic"
+            return 1
+        }
+        "${guest} is an invalid domain" {
+            puts "'${guest}' is an invalid domain"
+            return 1
+        }
+        timeout {
+            puts "Log-in to '${guest}' timed out"
+            return 1
+        }
+        -re . {
+            exp_continue
+        }
+    }
+    expect "${prompt}"
+    return 0
+}
+
+proc ping {} {
+    global expect_out
+    global spawn_id
+    global prompt
+    global clean_console
+    global timeout
+
+    send "ping -c 5 8.8.8.8\r"
+    expect "${prompt}"
+
+    send "echo Exit status: \$?\r"
+
+    # Set the return code of this process to that of the ping
+    set rc 1
+    expect {
+        {Exit status: 0} {
+            set rc 0
+        }
+        -re {Exit status: [1-9]+} {
+        }
+    }
+
+    expect "${prompt}"
+    return $rc
+}
+
+proc guest_logoff {} {
+    global expect_out
+    global spawn_id
+    global login_prompt
+    global clean_console
+    global timeout
+
+    # Exit the login session
+    send "exit\r"
+    expect "${login_prompt}"
+    # Send ctrl + ] to exit the guest
+    send "\x1b"
+
+    return 0
+}
