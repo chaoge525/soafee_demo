@@ -144,7 +144,7 @@ finish_test_suite() {
 #   TEST_CLEAN_ENV
 #
 # If TEST_CLEAN_ENV is set to 1, the functions will call a test-suite-specific
-# function, provided as the first argument
+# function, if one is provided as the first argument
 
 test_suite_setup() {
 
@@ -159,7 +159,7 @@ test_suite_setup() {
 
     _run begin_test_suite "${TEST_RUN_FILE}"
 
-    if [ "${TEST_CLEAN_ENV}" = "1" ]; then
+    if [ "${TEST_CLEAN_ENV}" = "1" ] && [ -n "${1}" ]; then
         _run "${1}"
     fi
 
@@ -167,7 +167,7 @@ test_suite_setup() {
 
 test_suite_teardown() {
 
-    if [ "${TEST_CLEAN_ENV}" = "1" ]; then
+    if [ "${TEST_CLEAN_ENV}" = "1" ] && [ -n "${1}" ]; then
         _run "${1}"
     fi
 
