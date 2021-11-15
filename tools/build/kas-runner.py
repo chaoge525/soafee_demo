@@ -127,54 +127,39 @@ def kasconfig_format(kasfiles, project_root, kas_dir, mnt_dir):
                             os.path.relpath(os.path.join(kas_dir, kfile),
                                             project_root))
 
-    return ":".join(map(format_path, kasfiles.split(":")))
+    return ":".join(map(format_path, kasfiles[0].split(":")))
 
 
-# Get all "*-build" configs from kas-runner config file
-def get_build_configs(configs):
-    config_list = []
-    for key in configs.keys():
-        if key.endswith("-build"):
-            config_list.append(key)
-    return config_list
-
-
-# self referential dictionary
+# Class to implement a self-referential dictionary, where string-values
+# may reference other key-value pairs within the dictionary, by
+# including a substring with the format: "%(key)s".
+# References are evaluated lazily, each time a key's corresponding value
+# is acquired.
 class ArgumentsDictionary(dict):
     def __getitem__(self, item):
         value = dict.__getitem__(self, item)
         if isinstance(value, str):
-            return value % self
+            try:
+                evaluated_str = value % self
+                return evaluated_str
+            except KeyError:
+                return value
         else:
             return value
 
+    # The is_valid() function checks if all defined string references exist
+    # within the dictionary
+    def is_valid(self):
+        for value in self.values():
+            if isinstance(value, str):
+                try:
+                    evaluated_str = value % self
+                except KeyError:
+                    return False
+        return True
 
-# Define and parse the provided arguments
-def get_config():
 
-    config = ArgumentsDictionary({})
-
-    args_defaults = ArgumentsDictionary({
-      "artifacts_dir": "%(out_dir)s/artifacts",
-      "build_all": False,
-      "config": None,
-      "container_engine": "docker",
-      "container_image": "ghcr.io/siemens/kas/kas",
-      "container_image_version": "2.6.1",
-      "deploy_artifacts": False,
-      "dl_dir": "%(out_dir)s/yocto-cache/downloads",
-      "downloads_mirror": None,
-      "engine_arguments": None,
-      "j": f"{os.cpu_count()}",
-      "kas_arguments": "build",
-      "kas_dir": "%(project_root)s/meta-ewaol-config/kas",
-      "log_file": None,
-      "network_mode": "bridge",
-      "out_dir": "%(project_root)s/build",
-      "project_root": f"{os.path.realpath(os.getcwd())}",
-      "sstate_dir": "%(out_dir)s/yocto-cache/sstate-cache",
-      "sstate_mirror": None
-    })
+def get_command_line_args(args_defaults):
 
     desc = (f"{os.path.basename(__file__)} is used for building yocto based "
             "projects, using the kas image to handle build dependencies.")
@@ -293,6 +278,7 @@ def get_config():
     parser.add_argument(
         "--list-configs",
         action="store_true",
+        dest="list_configs",
         help="List all named configs from the config file specified with a \
              '--config' parameter.")
 
@@ -300,20 +286,91 @@ def get_config():
         "--project-root",
         help=f"Project root path (default: {args_defaults['project_root']}).")
 
-    args = ArgumentsDictionary(vars(parser.parse_args()))
+    return ArgumentsDictionary(vars(parser.parse_args()))
 
-    # load script defaults
-    config.update(args_defaults)
 
-    if "all" in args["kasfile"]:
-        if args.get("project_root") is None:
-            args["project_root"] = config["project_root"]
-        if not args["config"]:
-            # if 'config' is not specified, load ci.yml config
-            args["config"] = \
-                "%(project_root)s/meta-ewaol-config/kas-runner/ci.yml"
-        config['build_all'] = True
-        args.pop("kasfile")
+def merge_configs(base_config, override_config):
+    merged_config = ArgumentsDictionary()
+    for key in base_config:
+        merged_config[key] = base_config[key]
+    merged_config.update(override_config)
+    return merged_config
+
+
+# Separate configs that are including multiple kasfiles in a list of configs
+# so that we instead get a config for each kasfile.
+def duplicate_configs(configs):
+    num_configs = len(configs)
+    new_config_list = configs
+    config_index = 0
+    while config_index < num_configs:
+        config = configs[config_index]
+        if len(config["kasfile"]) > 1:
+
+            # Remove the last kasfile string from this config
+            # A kasfile_string is like "one.yml:two.yml:three.yml"
+            kasfile_string = config["kasfile"].pop()
+
+            # Copy this config and set it to have only the single kasfile
+            # string that was removed
+            new_config = ArgumentsDictionary()
+            for key in config:
+                new_config[key] = config[key]
+            new_config["kasfile"] = [kasfile_string]
+
+            # Add the new config to the end of the config list, and continue to
+            # check this config again
+            new_config_list.append(new_config)
+        else:
+            config_index += 1
+
+    return new_config_list
+
+
+# Get the configuration(s) to run this script with, as a combination
+# of default parameter values, values from a config file, and values
+# given in the command-line, with the below priority:
+#
+# The default config used is 'default_config'
+# If given, values from configs in a config file override the defaults
+#     If no named config is provided, use just the first config in the file
+#     If 'all' is provided, use all configs in the file
+# Command line arguments override values in all loaded configs
+def get_configs():
+    default_config = ArgumentsDictionary({
+      "config": None,
+      "container_engine": "docker",
+      "container_image": "ghcr.io/siemens/kas/kas",
+      "container_image_version": "2.6.1",
+      "engine_arguments": None,
+      "j": f"{os.cpu_count()}",
+      "deploy_artifacts": False,
+      "kas_arguments": "build",
+      "kasfile": [],
+      "sstate_mirror": None,
+      "downloads_mirror": None,
+      "log_file": None,
+      "network_mode": "bridge",
+      "project_root": f"{os.path.realpath(os.getcwd())}",
+
+      # relative to project_root
+      "out_dir": "%(project_root)s/build",
+      "kas_dir": "%(project_root)s",
+
+      # relative to out_dir
+      "sstate_dir": "%(out_dir)s/yocto-cache/sstate",
+      "dl_dir":  "%(out_dir)s/yocto-cache/downloads",
+      "artifacts_dir":  "%(out_dir)s/artifacts"
+    })
+
+    args = get_command_line_args(default_config)
+
+    # The default config used is 'default_config'
+    # If given, values from configs in a config file override the defaults
+    # If no named config is provided, use just the first config in the file
+    # If 'all' is provided, use all configs in the file
+    # Command line arguments override values in all loaded configs
+    configs = list()
 
     if args["config"]:
         # 'config' is a string like "path/to/config_file.yml[:named_config]"
@@ -323,46 +380,65 @@ def get_config():
         named_config = config_input[1] if len(config_input) == 2 else None
 
         with open(config_file, "r") as yaml_file:
-            yaml_content = yaml.safe_load(yaml_file)
-            header = yaml_content["header"]
-            configs = yaml_content["configs"]
             try:
-                # check if header version is supported
+
+                yaml_content = yaml.safe_load(yaml_file)
+                header = yaml_content["header"]
+                yaml_configs = yaml_content["configs"]
+
+                # Check if header version is supported
                 if header["version"] < 1:
-                    print(f"ERROR: incompatible version of config file")
+                    print(f"ERROR: Incompatible version of config file")
                     exit(1)
-                if named_config is None:
-                    named_config = next(iter(configs))
-                if not config['build_all']:
-                    config.update(configs[named_config])
-            except KeyError as e:
-                print(f"ERROR: invalid configs {args['config']}")
+
+                # Check that there are configs in this file
+                if len(yaml_configs) == 0:
+                    print(f"ERROR: No configs defined in config file")
+                    exit(1)
+                selected_names = list()
+
+                if "all" in args["kasfile"]:
+                    for name in yaml_configs.keys():
+                        selected_names.append(name)
+                elif named_config is not None:
+                    selected_names.append(named_config)
+                else:
+                    selected_names.append(next(iter(yaml_configs.keys())))
+                for name in selected_names:
+                    config = yaml_configs[name]
+                    configs.append(merge_configs(default_config, config))
+
+            except KeyError:
+                print(f"ERROR: Invalid configs {args['config']}")
                 exit(1)
 
-    for (key, value) in args.items():
-        # do not pass empty lists into the config
-        if value or isinstance(value, bool):
-            # update config with cmdline parameters
-            config[key] = args[key]
-            # update configs list, by removing keys overwritten via cmdline
-            if 'configs' in locals():
-                for named_config in configs.keys():
-                    if configs[named_config].get(key) is not None:
-                        configs[named_config].pop(key)
-                config["configs"] = configs
+    else:
+        configs.append(default_config)
 
-    if config.get("kasfile") is None and not config["build_all"]:
-        print("ERROR: No kas configs specified!")
-        exit(1)
+    # Overwrite values in all prior configs with command-line arguments
+    # Ignore any None or empty-list arguments from the command-line parser
+    supplied_args = dict(filter(lambda arg: bool(arg[1]) is True or
+                                isinstance(arg[1], bool),
+                                args.items()))
+    configs = [merge_configs(config, supplied_args) for config in configs]
 
-    if config["list_configs"]:
-        if config["config"] is None:
+    configs = duplicate_configs(configs)
+
+    # List the available configs if the list_config flag was selected
+    if args["list_configs"]:
+        if args["config"] is None:
             print("ERROR: No kas-runner configs specified!")
         else:
-            print(f"Build targets: {' '.join(get_build_configs(configs))}")
+            print(f"Build targets: "
+                  f"{' '.join(yaml_configs.keys())}")
         exit(1)
 
-    return config
+    for config in configs:
+        if not config.is_valid():
+            print("ERROR: Invalid config, string couldn't get evaluated")
+            exit(1)
+
+    return configs
 
 
 # Deploy generated artifacts like build configs and logs.
@@ -440,54 +516,35 @@ def deploy_artifacts(build_dir, build_artifacts_dir):
 
 # Entry Point
 def main():
-
-    # Parse commandline arguments. Any extra are passed to kas
-    config = get_config()
-
-    if config["log_file"]:
-        mk_newdir(os.path.dirname(os.path.realpath(config["log_file"])))
-        log_file = open(config["log_file"], "w")
-
-        # By default, if we have a log file then only write to it
-        # But provide a logger to write to both terminal and the log file for
-        # important messages
-        sys.tee = TeeLogger(LogOpt.TO_BOTH, log_file)
-        sys.stdout = TeeLogger(LogOpt.TO_FILE, log_file)
-
-    else:
-        # If we have no log file, write both stdout and tee to only terminal
-        sys.tee = TeeLogger(LogOpt.TO_TERM)
-
     exit_code = 0
 
-    # 'all' will make kas-runner to ignore other kas config files passed via
-    # via commandline and build all *-build named-configs from selected
-    # config file instead.
-    tasklist = get_build_configs(config["configs"]) if config["build_all"] \
-        else config["kasfile"]
+    # Parse command line arguments and split build configs
+    # for different targets into a list
+    for config in get_configs():
 
-    if config["build_all"]:
-        config_backup = config
+        if config["log_file"]:
+            mk_newdir(os.path.dirname(os.path.realpath(config["log_file"])))
+            log_file = open(config["log_file"], "w")
 
-    for build_task in tasklist:
+            # By default, if we have a log file then only write to it
+            # But provide a logger to write to both terminal
+            # and the log file for important messages
+            sys.tee = TeeLogger(LogOpt.TO_BOTH, log_file)
+            sys.stdout = TeeLogger(LogOpt.TO_FILE, log_file)
 
-        print(f"Starting build task: {build_task}", file=sys.tee)
-
-        # load named-config settings into current config
-        if config["build_all"]:
-            # to keep original parameters for other build_tasks,
-            # add build_task customization on a copy of config
-            config = ArgumentsDictionary(config_backup)
-            config.update(config["configs"][build_task])
-            kas_files = config["kasfile"][0]
         else:
-            kas_files = build_task
+            # If we have no log file,
+            # write both stdout and tee to only terminal
+            sys.tee = TeeLogger(LogOpt.TO_TERM)
+
+        kas_files = config["kasfile"]
+        print(f"Starting build task: {kas_files}", file=sys.tee)
 
         # Check that all config files for the target exist
         missing_confs = "\n".join(
             filter(lambda kfile:
                    not os.path.isfile(os.path.join(config["kas_dir"], kfile)),
-                   kas_files.split(":")))
+                   kas_files[0].split(":")))
 
         if missing_confs:
             print((f"Error: The kas config files: \n{missing_confs}\nwere not"
@@ -497,7 +554,7 @@ def main():
 
         # buildname is the kas file names without path or extension
         buildname = "_".join([os.path.basename(os.path.splitext(kfile)[0])
-                             for kfile in kas_files.split(':')])
+                             for kfile in kas_files[0].split(':')])
 
         # Name of build dir specific to this config
         config["build_dir"] = os.path.join(config["out_dir"], buildname)
@@ -521,9 +578,10 @@ def main():
         engine.add_env("KAS_WORK_DIR", work_dir_name)
 
         # Mount and set up build directory
+        build_dir_name = "/kas_build_dir"
         engine.add_volume(config["build_dir"],
-                          "/kas_build_dir",
-                          env_var="KAS_BUILD_DIR")
+                          build_dir_name)
+        engine.add_env("KAS_BUILD_DIR", build_dir_name)
 
         # Configure local caches
         engine.add_volume(config["sstate_dir"],
@@ -580,7 +638,7 @@ def main():
 
             deploy_artifacts(config["build_dir"], build_artifacts_dir)
 
-        print(f"Finished build task: {build_task}\n", file=sys.tee)
+        print(f"Finished build task: {kas_files}\n", file=sys.tee)
 
     exit(exit_code)
 
@@ -616,7 +674,7 @@ class TeeLogger(object):
             self.log_file.flush()
 
     def __del__(self):
-        if not self.log_file.closed:
+        if self.log_file and not self.log_file.closed:
             self.log_file.close()
 
 
