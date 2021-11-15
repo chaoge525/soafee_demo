@@ -33,12 +33,16 @@ configs:
   n1sdp-tests-build:
     <<: *build-presets
     kasfile:
-      - 'n1sdp.yml:tests.yml:ci.yml'
+      - "meta-ewaol-config/kas/n1sdp.yml:\
+         meta-ewaol-config/kas/tests.yml:\
+         meta-ewaol-config/kas/ci.yml"
 
   n1sdp-sdk-build: &n1sdp-sdk
     <<: *build-presets
     kasfile:
-      - 'n1sdp.yml:sdk.yml:ci.yml'
+      - "meta-ewaol-config/kas/n1sdp.yml:\
+         meta-ewaol-config/kas/sdk.yml:\
+         meta-ewaol-config/kas/ci.yml"
 
   n1sdp-sdk-shell:
     <<: *n1sdp-sdk

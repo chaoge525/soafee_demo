@@ -22,7 +22,7 @@ presets:
 
   kas-presets: &kas-presets
     kasfile:
-      - 'n1sdp.yml'
+      - "meta-ewaol-config/kas/n1sdp.yml"
 
   build-presets: &build-presets
     <<: [*kas-presets, *path-presets]
