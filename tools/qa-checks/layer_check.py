@@ -69,8 +69,8 @@ class LayerCheck(abstract_check.AbstractCheck):
             resulting Yocto layers (according to the BBLAYERS variable). """
 
         kas_cmd = "shell --command \\\"bitbake-getvar BBLAYERS\\\""
-        cmd = (f"{self.script} --kas-arguments \"{kas_cmd}\""
-               f" {kas_config}")
+        cmd = (f"{self.script} --project_root=\"{self.project_root}\""
+               f" --kas_arguments \"{kas_cmd}\" {kas_config}")
 
         process = subprocess.Popen(cmd,
                                    stdout=subprocess.PIPE,
@@ -173,8 +173,8 @@ class LayerCheck(abstract_check.AbstractCheck):
 
             kas_cmd = f"shell --command \\\"{shell_cmd}\\\""
 
-            cmd = (f"{self.script} --kas-arguments \"{kas_cmd}\""
-                   f" {kas_config}")
+            cmd = (f"{self.script} --project_root=\"{self.project_root}\""
+                   f" --kas_arguments \"{kas_cmd}\" {kas_config}")
 
             self.logger.debug(f"Running layer check via: {cmd}")
 
