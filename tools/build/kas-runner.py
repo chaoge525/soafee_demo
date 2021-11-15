@@ -120,12 +120,11 @@ def mk_newdir(path):
 
 
 # replaces colon seperated names of kas config files with full paths
-def kasconfig_format(kasfiles, project_root, kas_dir, mnt_dir):
+def kasconfig_format(kasfiles, project_root, mnt_dir):
 
     def format_path(kfile):
         return os.path.join(mnt_dir,
-                            os.path.relpath(os.path.join(kas_dir, kfile),
-                                            project_root))
+                            kfile)
 
     return ":".join(map(format_path, kasfiles[0].split(":")))
 
@@ -159,7 +158,7 @@ class ArgumentsDictionary(dict):
         return True
 
 
-def get_command_line_args(args_defaults):
+def get_command_line_args(default_config):
 
     desc = (f"{os.path.basename(__file__)} is used for building yocto based "
             "projects, using the kas image to handle build dependencies.")
@@ -188,73 +187,73 @@ def get_command_line_args(args_defaults):
         help="Load script parameters from file (default: %(default)s).")
 
     parser.add_argument(
-        "--out-dir",
-        help=f"Path to build directory (default: {args_defaults['out_dir']})")
+        "--out_dir",
+        help=f"Path to build directory (default: {default_config['out_dir']})")
 
     parser.add_argument(
-        "--sstate-dir",
+        "--sstate_dir",
         help=f"Path to local sstate cache for this build \
-             (default: {args_defaults['sstate_dir']})")
+             (default: {default_config['sstate_dir']})")
 
     parser.add_argument(
-        "--dl-dir",
+        "--dl_dir",
         help=f"Path to local downloads cache for this build \
-             (default: {args_defaults['dl_dir']})")
+             (default: {default_config['dl_dir']})")
 
     parser.add_argument(
-        "--sstate-mirror",
+        "--sstate_mirror",
         help="Path to read-only sstate mirror")
 
     parser.add_argument(
-        "--downloads-mirror",
+        "--downloads_mirror",
         help="Path to read-only downloads mirror")
 
     parser.add_argument(
-        "--deploy-artifacts",
+        "--deploy_artifacts",
         dest="deploy_artifacts",
         action="store_const",
         const=True,
         help=f"Generate artifacts for CI, and store in artifacts dir (default:\
-              {args_defaults['deploy_artifacts']})")
+              {default_config['deploy_artifacts']})")
 
     parser.add_argument(
-        "--no-deploy-artifacts",
+        "--no_deploy_artifacts",
         dest="deploy_artifacts",
         action="store_const",
         const=False,
         help="Do not generate artifacts for CI")
 
     parser.add_argument(
-        "--artifacts-dir",
+        "--artifacts_dir",
         help=f"Specify the directory to store the build logs, config and \
              images after the build if --deploy-artifacts is enabled (default:\
-             {args_defaults['artifacts_dir']})")
+             {default_config['artifacts_dir']})")
 
     parser.add_argument(
-        "--network-mode",
+        "--network_mode",
         help=f"Set the network mode of the container (default: \
-             {args_defaults['network_mode']}).")
+             {default_config['network_mode']}).")
 
     parser.add_argument(
-        "--container-engine",
+        "--container_engine",
         help=f"Set the container engine (default: \
-             {args_defaults['container_engine']}).")
+             {default_config['container_engine']}).")
 
     parser.add_argument(
-        "--container-image",
+        "--container_image",
         help=f"Set the container image (default: \
-             {args_defaults['container_image']}).")
+             {default_config['container_image']}).")
 
     parser.add_argument(
-        "--engine-arguments",
+        "--engine_arguments",
         help="Optional string of arguments for running the container, e.g.\
               --engine-arguments '--volume /host/dir:/container/dir \
                                   --env VAR=value'.")
 
     parser.add_argument(
-        "--container-image-version",
+        "--container_image_version",
         help=f"Set the container image version (default: \
-             {args_defaults['container_image_version']}). Note: it is not \
+             {default_config['container_image_version']}). Note: it is not \
              recommended to use versions 2.5 or lower for kas containers \
              due to lack of support for KAS_BUILD_DIR.")
 
@@ -266,25 +265,25 @@ def get_command_line_args(args_defaults):
              in a kas config file used for the build.")
 
     parser.add_argument(
-        "--kas-arguments",
+        "--kas_arguments",
         help=f"Arguments to be passed to kas executable within the container \
-             (default: {args_defaults['kas_arguments']}).")
+             (default: {default_config['kas_arguments']}).")
 
     parser.add_argument(
         "--log-file",
         help=f"Write output to the given log file as well as to stdout \
-             (default: {args_defaults['log_file']}).")
+             (default: {default_config['log_file']}).")
 
     parser.add_argument(
-        "--list-configs",
+        "--list_configs",
         action="store_true",
         dest="list_configs",
         help="List all named configs from the config file specified with a \
              '--config' parameter.")
 
     parser.add_argument(
-        "--project-root",
-        help=f"Project root path (default: {args_defaults['project_root']}).")
+        "--project_root",
+        help=f"Project root path (default: {default_config['project_root']}).")
 
     return ArgumentsDictionary(vars(parser.parse_args()))
 
@@ -355,7 +354,6 @@ def get_configs():
 
       # relative to project_root
       "out_dir": "%(project_root)s/build",
-      "kas_dir": "%(project_root)s",
 
       # relative to out_dir
       "sstate_dir": "%(out_dir)s/yocto-cache/sstate",
@@ -364,7 +362,6 @@ def get_configs():
     })
 
     args = get_command_line_args(default_config)
-
     # The default config used is 'default_config'
     # If given, values from configs in a config file override the defaults
     # If no named config is provided, use just the first config in the file
@@ -517,7 +514,6 @@ def deploy_artifacts(build_dir, build_artifacts_dir):
 # Entry Point
 def main():
     exit_code = 0
-
     # Parse command line arguments and split build configs
     # for different targets into a list
     for config in get_configs():
@@ -543,7 +539,8 @@ def main():
         # Check that all config files for the target exist
         missing_confs = "\n".join(
             filter(lambda kfile:
-                   not os.path.isfile(os.path.join(config["kas_dir"], kfile)),
+                   not os.path.isfile(os.path.join(config["project_root"],
+                                                   kfile)),
                    kas_files[0].split(":")))
 
         if missing_confs:
@@ -616,7 +613,6 @@ def main():
         # kasfiles must be relative to container filesystem
         kas_config = kasconfig_format(kas_files,
                                       config["project_root"],
-                                      config["kas_dir"],
                                       work_dir_name)
 
         if config['engine_arguments']:

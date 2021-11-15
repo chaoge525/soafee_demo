@@ -44,7 +44,8 @@ modules:
 
     layer:
         kas_configs:
-            - "ewaol-base.yml:tests.yml"
+            - "meta-ewaol-config/kas/ewaol-base.yml:\
+               meta-ewaol-config/kas/tests.yml"
         test_layers:
             - "meta-ewaol-distro"
             - "meta-ewaol-tests"
