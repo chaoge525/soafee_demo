@@ -2,9 +2,9 @@
 #
 # SPDX-License-Identifier: MIT
 
-SUMMARY = "EWAOL sdk Image with podman runtime."
+SUMMARY = "EWAOL SDK Image"
 
-require ewaol-image-podman.bb
+require ewaol-image-core.inc
 
 inherit features_check
 

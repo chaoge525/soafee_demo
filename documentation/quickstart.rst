@@ -86,8 +86,8 @@ Checkout the ``meta-ewaol`` repository:
    cd meta-ewaol
 
 Running kas with the build configurations within ``meta-ewaol-config`` will
-build two images by default: one that includes the Docker container engine and
-another one that includes the Podman container engine.
+build an image that includes Docker container engine and K3s for the
+containerized workload orchestration.
 
 N1SDP
 =====
@@ -106,18 +106,9 @@ To build the images via kas for the N1SDP board:
 
    kas build meta-ewaol-config/kas/n1sdp.yml
 
-The resulting images will be produced:
+The resulting image will be produced:
 
- - ``build/tmp/deploy/images/n1sdp/ewaol-image-docker-n1sdp.*``
- - ``build/tmp/deploy/images/n1sdp/ewaol-image-podman-n1sdp.*``
-
-To build only one image corresponding to a particular container engine, specify
-the ``--target`` (either ``ewaol-image-docker`` or ``ewaol-image-podman``) as
-an option to the kas build command, as shown in the following example:
-
-.. code-block:: console
-
-   kas build --target ewaol-image-docker meta-ewaol-config/kas/n1sdp.yml
+ - ``build/tmp/deploy/images/n1sdp/ewaol-image-n1sdp.*``
 
 .. _quickstart_deploy_on_n1sdp:
 
@@ -152,7 +143,7 @@ Identify the USB storage device using ``lsblk`` command:
    In this example, the USB storage device is the ``/dev/sdc`` device. Be extra
    careful when copying and pasting the following commands.
 
-Use ``bmap-tools`` to copy the image to USB disk (docker image in this example):
+Use ``bmap-tools`` to copy the image to USB disk:
 
 .. note::
    All partitions and data on the USB disk will be erased. Please backup before
@@ -162,7 +153,7 @@ Use ``bmap-tools`` to copy the image to USB disk (docker image in this example):
 
    sudo umount /dev/sdc*
    cd build/tmp/deploy/images/n1sdp/
-   sudo bmaptool copy --bmap ewaol-image-docker-n1sdp.wic.bmap ewaol-image-docker-n1sdp.wic.gz /dev/sdc
+   sudo bmaptool copy --bmap ewaol-image-n1sdp.wic.bmap ewaol-image-n1sdp.wic.gz /dev/sdc
 
 Safely eject the USB storage device from the host PC and plug it onto one of
 the USB 3.0 ports in the N1SDP.

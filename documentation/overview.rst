@@ -44,7 +44,7 @@ The EWAOL images include the following major features:
   * Based on ``poky.conf`` distro
   * Systemd as init system
   * RPM as the package management system
-  * Docker or Podman as container engine
+  * Docker as container engine
   * runc-opencontainers as the OCI container runtime
   * Development and Test images flavors
 

@@ -13,7 +13,7 @@ any desired Yocto image build process.
 Currently, run-time integration tests are provided for validating the
 functionality of:
 
-* Container Engine (Docker, Podman)
+* Docker Container Engine
 * K3S Container Orchestration
 
 These integration tests are described later in this document.
@@ -178,9 +178,6 @@ The test suite is built and installed in the image according to the following
 bitbake recipe within
 ``meta-ewaol-tests/recipes-tests/runtime-integration-tests/container-engine-integration-tests.bb``.
 
-The tests execution is identical on both Docker and Podman images, as it makes
-use of Podman provided aliases for Docker commands.
-
 Currently the test suite contains two top-level integration tests, which run
 consecutively in the following order.
 
@@ -248,8 +245,6 @@ in `Running the Tests`_.
 The test suite is built and installed in the image according to the following
 bitbake recipe within
 ``meta-ewaol-tests/recipes-tests/runtime-integration-tests/k3s-integration-tests.bb``.
-
-The tests execution is identical on both Docker and Podman images.
 
 Currently the test suite contains a single top-level integration test which
 validates the deployment and high-availability of a test workload based on the

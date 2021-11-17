@@ -74,5 +74,4 @@ env:
     BB_NUMBER_THREADS: "${@os.cpu_count()}"
 
 target:
-  - ewaol-image-podman
-  - ewaol-image-docker
+  - ewaol-image

@@ -1,26 +1,22 @@
 Image Builds
 ============
 
-The main image build targets are:
+The main image build target is:
 
-* ``ewaol-image-docker``
-* ``ewaol-image-podman``
+* ``ewaol-image``
 
-Each build target implements the EWAOL software stack, differing only on the
-backend containerization technology: Docker or Podman.
-
-To facilitate containerized workload orchestration on the edge, both build
-targets include the K3S orchestration package provided by the
-``meta-virtualization`` Yocto layer and extended in ``meta-ewaol``. This
-package provides a K3S server wrapped as a systemd service which auto-starts on
-image boot. The K3S server may be interacted with via the Kubernetes REST API
-or via the Kubernetes command-line tool ``kubectl``, where the `Kubernetes API
-Overview`_ and `kubectl Overview`_ may be referred to for usage instructions.
-Enabling and disabling the systemd service via ``systemctl [start|stop] k3s``
-will bring-up and shutdown the K3S server running on the image, meaning
-containers may remain running (without orchestration) after stopping the
-systemd service. If desired, containers may be stopped prior to shutting down
-the server via the API or command-line tool, or alternatively they may be
+Which includes Docker container engine and to facilitate containerized workload
+orchestration on the edge, it also includes the K3S orchestration package, both
+provided by the ``meta-virtualization`` Yocto layer. The K3S recipe provides a
+package containing a K3S server wrapped as a systemd service which auto-starts
+on image boot. The K3S server may be interacted with via the Kubernetes REST
+API or via the Kubernetes command-line tool ``kubectl``, where the `Kubernetes
+API Overview`_ and `kubectl Overview`_ may be referred to for usage
+instructions. Enabling and disabling the systemd service via ``systemctl [start
+|stop] k3s`` will bring-up and shutdown the K3S server running on the image,
+meaning containers may remain running (without orchestration) after stopping
+the systemd service. If desired, containers may be stopped prior to shutting
+down the server via the API or command-line tool, or alternatively they may be
 stopped independently from the server status via the provided
 ``k3s-killall.sh`` script.
 
@@ -336,8 +332,8 @@ for example `kernel module compilation`_, `profiling and tracing`_, and
 
 To build SDK image append ``meta-ewaol-config/kas/sdk.yml`` configuration
 file to the kas build command. This ``.yml`` file changes the default build
-targets to ``ewaol-image-[docker|podman]-sdk``. For more details about
-selecting configuration files for kas, see: :ref:`quickstart_build_host_setup`.
+target to ``ewaol-image-sdk``. For more details about selecting configuration
+files for kas, see: :ref:`quickstart_build_host_setup`.
 
 For example, to build the SDK images for the N1SDP via kas:
 
@@ -345,7 +341,7 @@ For example, to build the SDK images for the N1SDP via kas:
 
   kas build meta-ewaol-config/kas/n1sdp.yml:meta-ewaol-config/kas/sdk.yml
 
-In this example, the SDK images produced by the kas build will be found at:
-``build/tmp/deploy/images/n1sdp/ewaol-image-[docker|podman]-sdk-n1sdp.*``.
-To deploy the generated images, please refer to the
+In this example, the SDK produced image by the kas build will be found at:
+``build/tmp/deploy/images/n1sdp/ewaol-image-sdk-n1sdp.*``.
+To deploy the generated image, please refer to the
 :ref:`quickstart_deploy_on_n1sdp` section.
