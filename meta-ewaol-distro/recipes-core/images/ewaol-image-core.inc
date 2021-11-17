@@ -21,5 +21,6 @@ IMAGE_INSTALL += " \
     packagegroup-core-ssh-openssh \
     wget \
     ca-certificates \
+    docker-moby \
     k3s-server \
     "

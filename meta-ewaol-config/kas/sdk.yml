@@ -6,8 +6,7 @@ header:
   version: 10
 
 target:
-  - ewaol-image-podman-sdk
-  - ewaol-image-docker-sdk
+  - ewaol-image-sdk
 
 local_conf_header:
   ewaol-sdk: |

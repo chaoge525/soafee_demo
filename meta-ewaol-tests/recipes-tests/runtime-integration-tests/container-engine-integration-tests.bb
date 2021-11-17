@@ -3,8 +3,8 @@
 # SPDX-License-Identifier: MIT
 
 SUMMARY = "Container engine integration tests."
-DESCRIPTION = "Integration tests for the container engine runtime \
-               (Docker/Podman). Tests may be run standalone via \
+DESCRIPTION = "Integration tests for the Docker container engine. \
+               Tests may be run standalone via \
                run-container-engine-integration-tests, or via the ptest \
                framework using ptest-runner."
 

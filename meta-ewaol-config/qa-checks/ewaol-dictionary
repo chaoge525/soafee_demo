@@ -47,9 +47,6 @@ DL_DIR
 ewaol
 ewaol_arch_overview
 ewaol-devel
-ewaol-image-[docker|podman]-sdk
-ewaol-image-[docker|podman]-sdk-n1sdp
-ewaol-image-podman
 ewaol_layers_deps_diagram
 ewaol_rel_dev_branches
 ewaol_rel_yocto_overview
@@ -124,6 +121,7 @@ runc-opencontainers
 runtime
 runtime-integration-tests
 SCP
+SDK
 sh
 ShellCheck
 shellcheck-py
