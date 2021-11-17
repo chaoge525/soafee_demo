@@ -6,10 +6,10 @@
 
 SCRIPT_DIR=$(dirname "$(readlink -f "${0}")")
 
-if bats "${SCRIPT_DIR}/%TESTNAME%.bats"; then
-    echo "PASS:%TESTNAME%"
+if bats "${SCRIPT_DIR}/TESTNAME.bats"; then
+    echo "PASS:TESTNAME"
     exit 0
 else
-    echo "FAIL:%TESTNAME%"
+    echo "FAIL:TESTNAME"
     exit 1
 fi
