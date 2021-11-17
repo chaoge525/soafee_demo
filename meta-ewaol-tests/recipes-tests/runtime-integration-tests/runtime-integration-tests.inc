@@ -24,7 +24,7 @@ do_install() {
     install -m 755 "${WORKDIR}/run-test-suite" \
         "${D}/${TEST_DIR}/run-${TEST_SUITE_NAME}"
 
-    sed -i "s#%TESTNAME%#${TEST_SUITE_NAME}#g" \
+    sed -i "s#TESTNAME#${TEST_SUITE_NAME}#g" \
         "${D}/${TEST_DIR}/run-${TEST_SUITE_NAME}"
 
 }
@@ -34,8 +34,8 @@ do_install_ptest() {
     # Point the deployed run-ptest script to the test suite install directory
     # Use '#' as delimiter for sed as we are replacing with a path
 
-    sed -i "s#%TESTDIR%#${TEST_DIR}#g" ${D}${PTEST_PATH}/run-ptest
-    sed -i "s#%TESTNAME%#${TEST_SUITE_NAME}#g" ${D}${PTEST_PATH}/run-ptest
-    sed -i "s#%TESTPREFIX%#${TEST_SUITE_PREFIX}#g" ${D}${PTEST_PATH}/run-ptest
+    sed -i "s#TESTDIR#${TEST_DIR}#g" ${D}${PTEST_PATH}/run-ptest
+    sed -i "s#TESTNAME#${TEST_SUITE_NAME}#g" ${D}${PTEST_PATH}/run-ptest
+    sed -i "s#TESTPREFIX#${TEST_SUITE_PREFIX}#g" ${D}${PTEST_PATH}/run-ptest
 
 }

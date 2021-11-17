@@ -4,6 +4,6 @@
 #
 # SPDX-License-Identifier: MIT
 
-export "%TESTPREFIX%_TEST_LOG_DIR="%TESTDIR%/logs
+export "TESTPREFIX_TEST_LOG_DIR="TESTDIR/logs
 
-cd %TESTDIR% && ./run-%TESTNAME%
+cd TESTDIR && ./run-TESTNAME
