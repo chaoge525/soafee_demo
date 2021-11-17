@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Copyright (c) 2021, Arm Limited.
+# Copyright (c) 2021-2022, Arm Limited.
 #
 # SPDX-License-Identifier: MIT
 
@@ -126,8 +126,8 @@ finish_test_suite() {
     file_pgid=$(cat "$1")
 
     if [ "${pgid}" -ne "${file_pgid}" ]; then
-        log "DEBUG" "When finishing test-suite execution, the PGID (${pgid})"
-            " did not match the PGID within the run-file (${file_pgid})"
+        log "DEBUG" "When finishing test-suite execution, the PGID ${pgid}"
+            " did not match the PGID within the run-file ${file_pgid}"
     else
         rm "${1}"
     fi

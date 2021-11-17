@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 #
-# Copyright (c) 2021, Arm Limited.
+# Copyright (c) 2021-2022, Arm Limited.
 #
 # SPDX-License-Identifier: MIT
 
-export "%TESTPREFIX%_TEST_LOG_DIR="%TESTDIR%/logs
+export "TESTPREFIX_TEST_LOG_DIR="TESTDIR/logs
 
-cd %TESTDIR% && ./run-%TESTNAME%
+cd TESTDIR && ./run-TESTNAME
