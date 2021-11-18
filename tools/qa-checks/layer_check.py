@@ -74,6 +74,7 @@ class LayerCheck(abstract_check.AbstractCheck):
 
         process = subprocess.Popen(cmd,
                                    stdout=subprocess.PIPE,
+                                   stderr=subprocess.STDOUT,
                                    shell=True)
         stdout, _ = process.communicate()
         stdout = stdout.decode().strip()
@@ -193,10 +194,18 @@ class LayerCheck(abstract_check.AbstractCheck):
             current_failed_test = None
             current_error = None
 
+            # If the command fails, we want to print the full output.
+            # The process.stdout is a raw stream, non-seekable BufferredReader
+            # Therefore, record the output into a prefixed list of lines, as
+            # they are read
+            output_prefix = f"\t{os.path.basename(self.script)}:"
+            output = list()
+
             for next_line in process.stdout:
                 line = next_line.decode().strip()
 
-                self.logger.debug(f"\t{os.path.basename(self.script)}:{line}")
+                self.logger.debug(line)
+                output.append(line)
 
                 if new_layer_str in line:
                     current_layer = line.split(new_layer_str)[1]
@@ -231,18 +240,21 @@ class LayerCheck(abstract_check.AbstractCheck):
                         # The current line is part of the error description
                         current_error += f"{line}\n"
 
-            stdout, _ = process.communicate()
-            stdout = stdout.decode().strip()
+            process.wait()
 
             if len(errors[kas_config]) == 0 and process.returncode != 0:
 
-                # Indent the output for visibility
-                stdout = stdout.replace("\n", "\n\t")
+                prefixed_output = "\n".join([f"{output_prefix}{line}" for line
+                                             in output])
 
                 errors[kas_config].append(
                     ("yocto-check-layer returned non-zero error code"
-                     f" ({process.returncode}) but no failed test was found."
-                     f" The output was:\n{stdout}"))
+                     f" ({process.returncode}) but no failed test was found."))
+
+                errors[kas_config].append(f"The command was: {cmd}")
+
+                errors[kas_config].append((" The output was:\n"
+                                           f"{prefixed_output}"))
 
         if any(len(errs) > 0 for _, errs in errors.items()):
             self.logger.error("FAIL")
