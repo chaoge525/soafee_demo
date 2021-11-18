@@ -173,12 +173,14 @@ class ArgumentsDictionary(dict):
 def get_command_line_args(default_config):
 
     desc = (f"{os.path.basename(__file__)} is used for building yocto based "
-            "projects, using the kas image to handle build dependencies.")
+            "projects, using the kas container image to handle build "
+            "dependencies.")
     usage = ("A kas config yaml file must be provided, and any optional "
              "arguments.")
-    example = (f"Example:\n$ {os.path.basename(__file__)} all\nto pull the "
-               "required layers and build all images (as output by "
-               "--list_configs) sequentially, with no local cache mirrors.")
+    example = (f"Example:\n$ {os.path.basename(__file__)} "
+               "path/to/kas-config1.yml:path/to/kas-config2.yml\nTo pull the "
+               "required layers and build an image using the 2 provided "
+               "configs.")
 
     formatted_out_dir = prettify_string_vars(
                         dict.__getitem__(default_config, 'out_dir'),
@@ -203,11 +205,11 @@ def get_command_line_args(default_config):
     parser.add_argument(
         "kasfile",
         nargs='*',
-        metavar='[config.yml, all]',
-        help="The names of yaml or json files in meta-ewaol-config/kas \
-             containing the config for the kas build. Can provide multiple \
-             space-separated build configs, where each config can be a colon \
-             (:) seperated list of .yml files to merge, or 'all'.")
+        metavar='config.yml',
+        help="The path to the yaml files containing the config for \
+             the kas build. Can provide multiple space-separated build \
+             configs, where each config can be a colon (:) seperated list of \
+             .yml files to merge.")
 
     parser.add_argument(
         "-c",
@@ -370,8 +372,7 @@ def duplicate_configs(configs):
 #
 # The default config used is 'default_config'
 # If given, values from configs in a config file override the defaults
-#     If no named config is provided, use just the first config in the file
-#     If 'all' is provided, use all configs in the file
+# If no named config is provided, use just the first config in the file
 # Command line arguments override values in all loaded configs
 def get_configs():
     default_config = ArgumentsDictionary({
@@ -432,10 +433,7 @@ def get_configs():
                     exit(1)
                 selected_names = list()
 
-                if "all" in args["kasfile"]:
-                    for name in yaml_configs.keys():
-                        selected_names.append(name)
-                elif named_config is not None:
+                if named_config is not None:
                     selected_names.append(named_config)
                 else:
                     selected_names.append(next(iter(yaml_configs.keys())))
