@@ -58,6 +58,7 @@ modules:
         file_types:
             - "shell script"
             - "bats script"
+            - "bash script"
 
     spell:
         paths:
