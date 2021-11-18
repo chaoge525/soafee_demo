@@ -129,6 +129,18 @@ def kasconfig_format(kasfiles, project_root, mnt_dir):
     return ":".join(map(format_path, kasfiles[0].split(":")))
 
 
+# Function formatting a string to display it on this tool's help. When the
+# argument's default value contains a another argument as a prefix, this
+# prefix shouldn't be replaced with its value to make the dependencies clear
+# to the user.
+def prettify_string_vars(string, prefix_name):
+    var_length = len(prefix_name)
+    printed_string = string[4 + var_length:]
+    printed_string = f"{{{prefix_name}}}{printed_string}"
+
+    return printed_string
+
+
 # Class to implement a self-referential dictionary, where string-values
 # may reference other key-value pairs within the dictionary, by
 # including a substring with the format: "%(key)s".
@@ -162,12 +174,27 @@ def get_command_line_args(default_config):
 
     desc = (f"{os.path.basename(__file__)} is used for building yocto based "
             "projects, using the kas image to handle build dependencies.")
-    usage = ("A kas config yaml file from meta-ewaol-config/kas must be "
-             "provided, and any optional arguments.")
+    usage = ("A kas config yaml file must be provided, and any optional "
+             "arguments.")
     example = (f"Example:\n$ {os.path.basename(__file__)} all\nto pull the "
                "required layers and build all images (as output by "
-               "--list-configs) sequentially, with no local cache mirrors.")
+               "--list_configs) sequentially, with no local cache mirrors.")
 
+    formatted_out_dir = prettify_string_vars(
+                        dict.__getitem__(default_config, 'out_dir'),
+                        'project_root')
+
+    formatted_sstate_dir = prettify_string_vars(
+                        dict.__getitem__(default_config, 'sstate_dir'),
+                        'out_dir')
+
+    formatted_dl_dir = prettify_string_vars(
+                        dict.__getitem__(default_config, 'dl_dir'),
+                        'out_dir')
+
+    formatted_artifacts_dir = prettify_string_vars(
+                        dict.__getitem__(default_config, 'artifacts_dir'),
+                        'out_dir')
     # Parse Arguments and assign to args object
     parser = argparse.ArgumentParser(
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -183,32 +210,39 @@ def get_command_line_args(default_config):
              (:) seperated list of .yml files to merge, or 'all'.")
 
     parser.add_argument(
+        "-c",
         "--config",
         help="Load script parameters from file (default: %(default)s).")
 
     parser.add_argument(
+        "-o",
         "--out_dir",
-        help=f"Path to build directory (default: {default_config['out_dir']})")
+        help=f"Path to build directory (default: {formatted_out_dir})")
 
     parser.add_argument(
+        "-sd",
         "--sstate_dir",
         help=f"Path to local sstate cache for this build \
-             (default: {default_config['sstate_dir']})")
+             (default: {formatted_sstate_dir})")
 
     parser.add_argument(
+        "-dd",
         "--dl_dir",
         help=f"Path to local downloads cache for this build \
-             (default: {default_config['dl_dir']})")
+             (default: {formatted_dl_dir})")
 
     parser.add_argument(
+        "-sm",
         "--sstate_mirror",
         help="Path to read-only sstate mirror")
 
     parser.add_argument(
+        "-dm",
         "--downloads_mirror",
         help="Path to read-only downloads mirror")
 
     parser.add_argument(
+        "-d",
         "--deploy_artifacts",
         dest="deploy_artifacts",
         action="store_const",
@@ -217,40 +251,39 @@ def get_command_line_args(default_config):
               {default_config['deploy_artifacts']})")
 
     parser.add_argument(
-        "--no_deploy_artifacts",
-        dest="deploy_artifacts",
-        action="store_const",
-        const=False,
-        help="Do not generate artifacts for CI")
-
-    parser.add_argument(
+        "-a",
         "--artifacts_dir",
         help=f"Specify the directory to store the build logs, config and \
-             images after the build if --deploy-artifacts is enabled (default:\
-             {default_config['artifacts_dir']})")
+             images after the build if --deploy_artifacts is enabled \
+             (default: {formatted_artifacts_dir})")
 
     parser.add_argument(
+        "-n",
         "--network_mode",
         help=f"Set the network mode of the container (default: \
              {default_config['network_mode']}).")
 
     parser.add_argument(
+        "-e",
         "--container_engine",
         help=f"Set the container engine (default: \
              {default_config['container_engine']}).")
 
     parser.add_argument(
+        "-i",
         "--container_image",
         help=f"Set the container image (default: \
              {default_config['container_image']}).")
 
     parser.add_argument(
+        "-ea",
         "--engine_arguments",
         help="Optional string of arguments for running the container, e.g.\
-              --engine-arguments '--volume /host/dir:/container/dir \
+              --engine_arguments '--volume /host/dir:/container/dir \
                                   --env VAR=value'.")
 
     parser.add_argument(
+        "-v",
         "--container_image_version",
         help=f"Set the container image version (default: \
              {default_config['container_image_version']}). Note: it is not \
@@ -259,22 +292,26 @@ def get_command_line_args(default_config):
 
     parser.add_argument(
         "-j",
+        "--number_threads",
         help=f"Sets number of threads used by bitbake, by exporting \
              environment variable BB_NUMBER_THREADS = J. Usually it is set to \
              ({os.cpu_count()}), unless a different number of threads is set \
              in a kas config file used for the build.")
 
     parser.add_argument(
+        "-k",
         "--kas_arguments",
         help=f"Arguments to be passed to kas executable within the container \
              (default: {default_config['kas_arguments']}).")
 
     parser.add_argument(
-        "--log-file",
+        "-log",
+        "--log_file",
         help=f"Write output to the given log file as well as to stdout \
              (default: {default_config['log_file']}).")
 
     parser.add_argument(
+        "-l",
         "--list_configs",
         action="store_true",
         dest="list_configs",
@@ -282,6 +319,7 @@ def get_command_line_args(default_config):
              '--config' parameter.")
 
     parser.add_argument(
+        "-r",
         "--project_root",
         help=f"Project root path (default: {default_config['project_root']}).")
 
@@ -342,7 +380,7 @@ def get_configs():
       "container_image": "ghcr.io/siemens/kas/kas",
       "container_image_version": "2.6.1",
       "engine_arguments": None,
-      "j": f"{os.cpu_count()}",
+      "number_threads": f"{os.cpu_count()}",
       "deploy_artifacts": False,
       "kas_arguments": "build",
       "kasfile": [],
@@ -619,8 +657,8 @@ def main():
         if config['engine_arguments']:
             engine.add_arg(config['engine_arguments'])
 
-        if config['j']:
-            engine.add_env('BB_NUMBER_THREADS', config['j'])
+        if config['number_threads']:
+            engine.add_env('BB_NUMBER_THREADS', config['number_threads'])
 
         # Execute the command
         exit_code |= engine.run(kas_config, config['kas_arguments'])
