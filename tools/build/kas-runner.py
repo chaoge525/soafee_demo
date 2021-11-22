@@ -236,12 +236,14 @@ def get_command_line_args(default_config):
     parser.add_argument(
         "-sm",
         "--sstate_mirror",
-        help="Path to read-only sstate mirror")
+        help="Path to read-only sstate mirror on local machine or the URL \
+             of a server to be used as a sstate mirror")
 
     parser.add_argument(
         "-dm",
         "--downloads_mirror",
-        help="Path to read-only downloads mirror")
+        help="Path to read-only downloads mirror on local machine or the URL \
+             of a server to be used as a downloads mirror")
 
     parser.add_argument(
         "-d",
@@ -665,18 +667,28 @@ def main():
 
         # Configure cache mirrors
         if config["sstate_mirror"]:
-            path = "/sstate_mirrors"
-            mk_newdir(config["sstate_mirror"])
-            engine.add_volume(config["sstate_mirror"], path, "ro")
-            engine.add_env(
-                "SSTATE_MIRRORS",
-                f"file://.* file://{path}/PATH;downloadfilename=PATH")
+            if config["sstate_mirror"].startswith("http"):
+                SSTATE_MIRRORS = (f"file://.* {config['sstate_mirror']}/PATH;"
+                                  "downloadfilename=PATH")
+            else:
+                path = "/sstate_mirrors"
+                mk_newdir(config["sstate_mirror"])
+                engine.add_volume(config["sstate_mirror"], path, "ro")
+                SSTATE_MIRRORS = (f"file://.* file://{path}/PATH;"
+                                  "downloadfilename=PATH")
+
+            engine.add_env("SSTATE_MIRRORS", SSTATE_MIRRORS)
 
         if config["downloads_mirror"]:
-            path = "/source_mirror_url"
-            mk_newdir(config["downloads_mirror"])
-            engine.add_volume(config["downloads_mirror"], path, "ro")
-            engine.add_env("SOURCE_MIRROR_URL", f"file://{path}")
+            if config["downloads_mirror"].startswith("http"):
+                SOURCE_MIRROR_URL = config['downloads_mirror']
+            else:
+                path = "/source_mirror_url"
+                mk_newdir(config["downloads_mirror"])
+                engine.add_volume(config["downloads_mirror"], path, "ro")
+                SOURCE_MIRROR_URL = f"file://{path}"
+
+            engine.add_env("SOURCE_MIRROR_URL", SOURCE_MIRROR_URL)
             engine.add_env('INHERIT', "own-mirrors")
             engine.add_env('BB_GENERATE_MIRROR_TARBALLS', "1")
 
