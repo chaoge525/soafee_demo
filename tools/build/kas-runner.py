@@ -425,10 +425,11 @@ def get_configs():
     if args["list_configs"]:
         if args["config"] is None:
             print("ERROR: No kas-runner configs specified!")
+            exit(1)
         else:
             print(f"Build targets: "
                   f"{' '.join(yaml_configs.keys())}")
-        exit(1)
+            exit(0)
 
     for config in configs:
         if not config.is_valid():
