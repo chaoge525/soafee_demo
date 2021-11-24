@@ -20,170 +20,61 @@ export TEST_RUN_FILE="${TEST_LOG_DIR}/k3s-test-pgid"
 
 # Set test-suite specific configuration
 
-if [ -z "${K3S_TEST_CLEAN_ENV}" ]; then
-    K3S_TEST_CLEAN_ENV=1
-fi
+export TEST_CLEAN_ENV="${K3S_TEST_CLEAN_ENV:=1}"
 
-load k3s-funcs.sh
 load integration-tests-common-funcs.sh
+load k3s-funcs.sh
 
 # Ensure that the state of the orchestration service is reset to its
 # out-of-the-box state, not polluted by a previous test suite execution
 clean_test_environment() {
 
+    # Use the BATS_TEST_NAME env var to categorise all logging messages relating
+    # to the clean-up activities.
     export BATS_TEST_NAME="clean_test_environment"
 
-    # Delete the service that wraps the test deployment if it exists
-    _run query_kubectl "service" "k3s-test-service" "{.spec}"
-    if [ "${status}" -eq 0 ]; then
-        log "DEBUG" "Deleting service..."
-        _run kubectl_delete "service" "k3s-test-service"
-        if [ "${status}" -ne 0 ]; then
-            log "FAIL" "Failed to delete the k3s-test-service Service"
-            return 1
-        fi
-    fi
-
-    # Get the names of the pods corresponding to the test deployment
-    _run query_kubectl "pod" \
-        "--selector=app=k3s-test" "{range .items[*]}{@.metadata.name}:{end}"
-    if [ -n "${output}" ]; then
-        mapfile -t pod_names < <(echo "${output}" | tr ':' '\n')
-        # Delete the deployment
-        log "DEBUG" "Deleting deployment..."
-        _run kubectl_delete "deployment" "k3s-test-deployment"
-        if [ "${status}" -ne 0 ]; then
-            log "FAIL" "Failed to delete the k3s-test-deployment Deployment"
-            return 1
-        fi
-        # Query the pods until they have been terminated (kubectl returns
-        # failure)
-        for pod_name in "${pod_names[@]}"; do
-            if [ -z "${pod_name}" ]; then
-                continue
-            fi
-            # shellcheck disable=SC2034
-            for i in {1..60..10}; do
-                log "DEBUG" "Checking ${pod_name} was stopped..."
-                _run kubectl_query "pod" "${pod_name}" "{.status.phase}"
-                if [ "${status}" -eq 0 ]; then
-                    sleep 10
-                else
-                    break
-                fi
-            done
-        done
-    fi
-
-    # Return the k3s service to its original state, if we created an override
-    if [ -f "/lib/systemd/system/k3s.service.d/test-override.conf" ]; then
-        log "DEBUG" "Deleting systemd override..."
-        rm -rf /lib/systemd/system/k3s.service.d/test-override.conf
-        systemctl daemon-reload
-        systemctl restart k3s
-    fi
-}
-
-ensure_k3s_is_running() {
-
-    # If the service is inactive, start it
-    _run systemd_service "is-active"
-    if [ "${output}" != "active" ] && [ "${output}" != "activating" ]; then
-        log "DEBUG" "Starting K3S systemd service..."
-        _run systemd_service "start"
-    fi
-
-    # shellcheck disable=SC2034
-    for i in {1..300..10}; do
-
-        log "DEBUG" "Ensure systemd service has finished activating..."
-
-        _run systemd_service "is-active"
-        if [ "${status}" -ne 0 ]; then
-            log "DEBUG" "Service state is: '${output}'"
-            sleep 10
-            continue
-        fi
-
-        log "DEBUG" "Ensure all system pods are running..."
-
-        _run query_kubectl "pods" "--namespace=kube-system" \
-            "{range .items[*]}{@.status.phase}:{end}"
-        if [ "${status}" -ne 0 ]; then
-            break
-        elif [ -z "${output}" ]; then
-            status=1
-            sleep 10
-        else
-            # Check the system-pods are either Running or Succeeded
-            mapfile -t pod_phases < <(echo "${output}" | tr ':' '\n')
-            for phase in "${pod_phases[@]}"; do
-                if [ -z "${phase}" ]; then
-                    continue
-                fi
-                if [ "${phase}" != "Running" ] && \
-                   [ "${phase}" != "Succeeded" ]; then
-                    log "DEBUG" "Found system pod in state: ${phase}"
-                    status=1
-                    sleep 10
-                    break
-                fi
-            done
-            if [ "${status}" -eq 0 ]; then
-                # All system-pods have been initialized
-                break
-            fi
-        fi
-    done
-
-    subtest="Ensure k3s is running"
+    _run wait_for_k3s_to_be_running
     if [ "${status}" -ne 0 ]; then
-        log "FAIL" "${subtest}"
-        return 1
-    else
-        log "PASS" "${subtest}"
+        log "FAIL"
+        exit 1
     fi
+
+    _run remove_k3s_test_service
+    if [ "${status}" -ne 0 ]; then
+        log "FAIL"
+        exit 1
+    fi
+
+    _run remove_k3s_test_deployment
+    if [ "${status}" -ne 0 ]; then
+        log "FAIL"
+        exit 1
+    fi
+
+    _run remove_k3s_override
+    if [ "${status}" -ne 0 ]; then
+        log "FAIL"
+        exit 1
+    fi
+
 }
 
 # Runs once before the first test
 setup_file() {
+    _run test_suite_setup clean_test_environment
 
-    # The logging function uses the current test name to categorise any log
-    # messages specific to the test. Here, define this variable manually in
-    # order to similarly categorise all messages relating to the set-up
-    # activities.
-    export BATS_TEST_NAME="Test suite setup"
-
-    # Clear and rebuild the logs
-    rm -rf "${TEST_LOG_FILE}" "${TEST_STDERR_FILE}"
-    mkdir -p "${TEST_LOG_DIR}"
-
-    _run check_running_test_suite "${TEST_RUN_FILE}"
+    # If the environment clean option is disabled, we should still wait for k3s
+    # to be fully initialized (e.g. after booting) before running the tests
+    _run wait_for_k3s_to_be_running
     if [ "${status}" -ne 0 ]; then
+        log "FAIL"
         exit 1
-    fi
-
-    _run begin_test_suite "${TEST_RUN_FILE}"
-
-    _run ensure_k3s_is_running
-
-    if [ "${K3S_TEST_CLEAN_ENV}" = "1" ]; then
-        _run clean_test_environment
     fi
 }
 
 # Runs after the final test
 teardown_file() {
-
-    export BATS_TEST_NAME="Test suite shutdown"
-
-    if [ "${K3S_TEST_CLEAN_ENV}" = "1" ]; then
-        _run clean_test_environment
-    fi
-
-    _run ensure_k3s_is_running
-
-    _run finish_test_suite "${TEST_RUN_FILE}"
+    _run test_suite_teardown clean_test_environment
 }
 
 @test 'K3S orchestration of containerized web service' {
@@ -198,7 +89,7 @@ teardown_file() {
     fi
 
     subtest="Check deployment is ready with pod replicas"
-    _run kubectl_wait "deployment" "k3s-test-deployment" "Available"
+    _run wait_for_deployment_to_be_running "k3s-test-deployment"
     if [ "${status}" -ne 0 ]; then
         log "FAIL" "${subtest}"
         return 1
@@ -207,8 +98,7 @@ teardown_file() {
     fi
 
     subtest="Expose deployed workload as a service"
-    _run kubectl_expose_deployment "k3s-test-deployment" \
-        "k3s-test-service"
+    _run kubectl_expose_deployment "k3s-test-deployment" "k3s-test-service"
     if [ "${status}" -ne 0 ]; then
         log "FAIL" "${subtest}"
         return 1
@@ -217,7 +107,7 @@ teardown_file() {
     fi
 
     subtest="Get IP of service"
-    _run query_kubectl "service" "k3s-test-service" "{.spec.clusterIP}"
+    _run get_service_ip "k3s-test-service"
     if [ "${status}" -ne 0 ]; then
         log "FAIL" "${subtest}"
         return 1
@@ -227,15 +117,7 @@ teardown_file() {
     ip="${output}"
 
     subtest="Check service is accessible on network"
-    # shellcheck disable=SC2034
-    for i in {1..60..10}; do
-        _run get_from_url "http://${ip}" "80"
-        if [ "${status}" -eq 0 ]; then
-            break
-        else
-            sleep 10
-        fi
-    done
+    _run check_service_is_accessible "${ip}"
     if [ "${status}" -ne 0 ]; then
         log "FAIL" "${subtest}"
         return 1
@@ -244,9 +126,7 @@ teardown_file() {
     fi
 
     subtest="Get name of a running pod"
-    pod_index="$((RANDOM % 3))"
-    _run query_kubectl "pod" "--selector=app=k3s-test" \
-        "{.items[${pod_index}].metadata.name}"
+    _run get_random_pod_name_from_application "k3s-test"
     if [ "${status}" -ne 0 ]; then
         log "FAIL" "${subtest}"
         return 1
@@ -265,15 +145,7 @@ teardown_file() {
     fi
 
     subtest="Check service remains accessible with failed pod"
-    # shellcheck disable=SC2034
-    for i in {1..60..10}; do
-        _run get_from_url "http://${ip}" "80"
-        if [ "${status}" -eq 0 ]; then
-            break
-        else
-            sleep 10
-        fi
-    done
+    _run check_service_is_accessible "${ip}"
     if [ "${status}" -ne 0 ]; then
         log "FAIL" "${subtest}"
         return 1
@@ -282,9 +154,8 @@ teardown_file() {
     fi
 
     subtest="Get image version of a running pod"
-    _run query_kubectl "pod" "--selector=app=k3s-test" \
-        "{.items[${pod_index}].spec.containers[0].image}"
-    if [ "${status}" -ne 0 ] || [ "${output}" != "nginx:1.20" ]; then
+    _run confirm_image_of_application_pods "k3s-test" "nginx:1.20"
+    if [ "${status}" -ne 0 ]; then
         log "FAIL" "${subtest}"
         return 1
     else
@@ -292,26 +163,16 @@ teardown_file() {
     fi
 
     subtest="Upgrade deployed container images"
-    _run kubectl_set "image" "deployment/k3s-test-deployment" \
-        "nginx=nginx:1.21"
+    _run upgrade_image_of_deployment "k3s-test-deployment" "nginx=nginx:1.21"
     if [ "${status}" -ne 0 ]; then
         log "FAIL" "${subtest}"
         return 1
     else
         log "PASS" "${subtest}"
     fi
-    pod_name="${output}"
 
     subtest="Check service remains accessible after image upgrade"
-    # shellcheck disable=SC2034
-    for i in {1..60..10}; do
-        _run get_from_url "http://${ip}" "80"
-        if [ "${status}" -eq 0 ]; then
-            break
-        else
-            sleep 10
-        fi
-    done
+    _run check_service_is_accessible "${ip}"
     if [ "${status}" -ne 0 ]; then
         log "FAIL" "${subtest}"
         return 1
@@ -320,19 +181,8 @@ teardown_file() {
     fi
 
     subtest="Check upgraded image version of a running pod"
-    # shellcheck disable=SC2034
-    for i in {1..60..10}; do
-        _run query_kubectl "pod" "--selector=app=k3s-test" \
-            "{.items[${pod_index}].spec.containers[0].image}"
-        if [ "${status}" -ne 0 ]; then
-            break
-        elif [ "${output}" != "nginx:1.21" ]; then
-            sleep 10
-        else
-            break
-        fi
-    done
-    if [ "${status}" -ne 0 ] || [ "${output}" != "nginx:1.21" ]; then
+    _run confirm_image_of_application_pods "k3s-test" "nginx:1.21"
+    if [ "${status}" -ne 0 ]; then
         log "FAIL" "${subtest}"
         return 1
     else
@@ -340,7 +190,7 @@ teardown_file() {
     fi
 
     subtest="Stop K3S server"
-    _run systemd_service "stop"
+    _run stop_k3s_service
     if [ "${status}" -ne 0 ]; then
         log "FAIL" "${subtest}"
         return 1
@@ -349,15 +199,7 @@ teardown_file() {
     fi
 
     subtest="Check service remains accessible with failed K3S server"
-    # shellcheck disable=SC2034
-    for i in {1..60..10}; do
-        _run get_from_url "http://${ip}" "80"
-        if [ "${status}" -eq 0 ]; then
-            break
-        else
-            sleep 10
-        fi
-    done
+    _run check_service_is_accessible "${ip}"
     if [ "${status}" -ne 0 ]; then
         log "FAIL" "${subtest}"
         return 1
@@ -366,24 +208,7 @@ teardown_file() {
     fi
 
     subtest="Restart K3S server after simulated failure"
-    _run systemd_service "start"
-    if [ "${status}" -ne 0 ]; then
-        log "FAIL" "${subtest}"
-        return 1
-    else
-        log "PASS" "${subtest}"
-    fi
-
-    subtest="Check service is running"
-    # shellcheck disable=SC2034
-    for i in {1..60..10}; do
-        _run systemd_service "is-active"
-        if [ "${status}" -eq 0 ]; then
-            break
-        else
-            sleep 10
-        fi
-    done
+    _run start_k3s_service
     if [ "${status}" -ne 0 ]; then
         log "FAIL" "${subtest}"
         return 1
@@ -392,16 +217,7 @@ teardown_file() {
     fi
 
     subtest="Check K3S server is responsive to kubectl"
-    # shellcheck disable=SC2034
-    for i in {1..60..10}; do
-        _run query_kubectl "pod" "--selector=app=k3s-test" \
-            "{.items[${pod_index}].metadata.name}"
-        if [ "${status}" -eq 0 ]; then
-            break
-        else
-            sleep 10
-        fi
-    done
+    _run get_random_pod_name_from_application "k3s-test"
     if [ "${status}" -ne 0 ]; then
         log "FAIL" "${subtest}"
         return 1
@@ -419,15 +235,7 @@ teardown_file() {
     fi
 
     subtest="Check K3S server is running after configuration change"
-    # shellcheck disable=SC2034
-    for i in {1..60..10}; do
-        _run systemd_service "is-active"
-        if [ "${status}" -eq 0 ]; then
-            break
-        else
-            sleep 10
-        fi
-    done
+    _run wait_for_k3s_to_be_running
     if [ "${status}" -ne 0 ]; then
         log "FAIL" "${subtest}"
         return 1
@@ -454,8 +262,8 @@ teardown_file() {
     fi
 
     subtest="Check deployment has no running replicas"
-    _run kubectl_wait "deployment" "k3s-test-deployment" "Available"
-    if [ "${status}" -eq 0 ]; then
+    _run confirm_deployment_pods_are_not_running "k3s-test-deployment"
+    if [ "${status}" -ne 0 ]; then
         log "FAIL" "${subtest}"
         return 1
     else
