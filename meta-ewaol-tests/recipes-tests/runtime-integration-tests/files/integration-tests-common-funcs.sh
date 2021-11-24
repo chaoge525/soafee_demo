@@ -174,3 +174,50 @@ test_suite_teardown() {
     _run finish_test_suite "${TEST_RUN_FILE}"
 
 }
+
+# Helper function to wait for some condition until a given timeout, probing the
+# condition according to a given interval
+# Accuracy of the timeout (in seconds) assumes a zero-cost condition evaluation
+#
+# Arg1: Timeout in seconds
+# Arg2: Re-evaluation interval in seconds
+# Arg3-*: Function with arguments that evaluates success (it returns 0) or
+# continue to wait (it returns 1) or stop waiting and abort (it returns 2).
+wait_for_success() {
+
+    cmd="${*:3}"
+
+    log "DEBUG" "Waiting for '${cmd}' to return success (timeout=${1}s)"
+
+    num_iters=$(("(${1}/${2})"))
+    if [ $((${1}%${2})) -gt 0 ]; then
+        num_iters=$((num_iters + 1))
+    fi
+
+    i=1
+    while ((i<num_iters)); do
+
+        ${cmd}
+        result=${?}
+
+        if [ ${result} -eq 2 ]; then
+            return 1
+        elif [ ${result} -ne 0 ]; then
+            sleep "${2}"
+        else
+            return 0
+        fi
+        i=$((i + 1))
+
+    done
+
+    ${cmd}
+    result=${?}
+    if [ ${result} -ne 0 ]; then
+        log "DEBUG" "Timeout for '${cmd}' reached"
+        return 1
+    else
+        return 0
+    fi
+
+}
