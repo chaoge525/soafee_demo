@@ -65,6 +65,26 @@ check_container_state() {
 }
 
 # Arg1: Container ID
+# Returns 0 if running, 1 if not running
+check_container_is_running() {
+
+    _run check_container_state "${1}"
+    if [ "${status}" -ne 0 ] || [ "${output}" != "running" ]; then
+        return 1
+    else
+        return 0
+    fi
+
+}
+
+# Arg1: Container ID
+# Returns 1 if running, 0 if not running
+check_container_is_not_running() {
+    ! check_container_is_running "${1}"
+}
+
+
+# Arg1: Container ID
 # Returns exit code of the container stop command
 container_stop() {
 
@@ -89,4 +109,44 @@ get_running_containers() {
     image_name="${1}"
 
     docker ps -q --filter ancestor="${image_name}" 2>"${TEST_STDERR_FILE}"
+}
+
+# Arg1: Image name
+clean_and_remove_image() {
+
+    image=$(basename "${1}")
+    rc=0
+
+    _run get_running_containers "${image}"
+    if [ "${status}" -ne 0 ]; then
+        echo "Failed getting running containers of image '${image}'"
+        rc="${status}"
+    fi
+
+    if [ -n "${output}" ]; then
+        for container_id in ${output}; do
+
+            _run container_stop "${container_id}"
+            if [ "${status}" -ne 0 ]; then
+                echo "Failed to stop a running container '${container_id}' of \
+image '${image}'"
+                rc="${status}"
+            fi
+
+        done
+    fi
+
+    # Remove the image if it exists
+    _run does_image_exist "${image}"
+    if [ "${status}" ]; then
+
+        _run image_remove "${image}"
+        if [ "${status}" -ne 0 ]; then
+            echo "Failed to remove image '${image}'"
+            rc="${status}"
+        fi
+
+    fi
+
+    return "${rc}"
 }

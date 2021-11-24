@@ -24,87 +24,38 @@ if [ -z "${CE_TEST_IMAGE}" ]; then
     CE_TEST_IMAGE="docker.io/library/alpine"
 fi
 
-if [ -z "${CE_TEST_CLEAN_ENV}" ]; then
-    CE_TEST_CLEAN_ENV=1
-fi
+export TEST_CLEAN_ENV="${CE_TEST_CLEAN_ENV:=1}"
 
-load container-engine-funcs.sh
 load integration-tests-common-funcs.sh
+load container-engine-funcs.sh
 
 # Ensure that the state of the container environment is ready for the test
 # suite
 clean_test_environment() {
 
-    # The logging function uses the current test name to categorise any log
-    # messages specific to the test. Here, define this variable manually in
-    # order to similarly categorise all messages relating to the clean-up
-    # activities.
+    # Use the BATS_TEST_NAME env var to categorise all logging messages relating
+    # to the clean-up activities.
     export BATS_TEST_NAME="clean_test_environment"
 
     # Remove any dangling containers based on the image
-    _run get_running_containers "$(basename ${CE_TEST_IMAGE})"
+    _run clean_and_remove_image "${CE_TEST_IMAGE}"
     if [ "${status}" -ne 0 ]; then
-        log "FAIL" "Cleaning test environment - failed getting running \
-containers of image '$(basename ${CE_TEST_IMAGE})'"
+        log "FAIL" "Remove test image and dangling containers"
+        exit 1
+    else
+        log "PASS" "Remove test image and dangling containers"
     fi
 
-    if [ -n "${output}" ]; then
-        for container_id in ${output}; do
-
-            _run container_stop "${container_id}"
-            if [ "${status}" -eq 0 ]; then
-                log "INFO" "Stopped a running \
-container '${container_id}' of image '$(basename ${CE_TEST_IMAGE})'"
-            else
-                log "FAIL" "Unable to stop a running container \
-'${container_id}' of image '$(basename ${CE_TEST_IMAGE})'"
-            fi
-
-        done
-    fi
-
-    # Remove the image if it exists
-    _run does_image_exist "$(basename ${CE_TEST_IMAGE})"
-    if [ "${status}" -eq 0 ]; then
-
-        _run image_remove "$(basename ${CE_TEST_IMAGE})"
-        if [ "${status}" -eq 0 ]; then
-            log "INFO" "Cleaned test environment - removed image \
-'$(basename ${CE_TEST_IMAGE})'"
-        else
-            log "FAIL" "Unable to rm image '$(basename ${CE_TEST_IMAGE})'"
-        fi
-
-    fi
 }
 
 # Runs once before the first test
 setup_file() {
-
-    # Clear and rebuild the logs
-    rm -rf "${TEST_LOG_FILE}" "${TEST_STDERR_FILE}"
-    mkdir -p "${TEST_LOG_DIR}"
-
-    _run check_running_test_suite "${TEST_RUN_FILE}"
-    if [ "${status}" -ne 0 ]; then
-        exit 1
-    fi
-
-    _run begin_test_suite "${TEST_RUN_FILE}"
-
-    if [ "${CE_TEST_CLEAN_ENV}" = "1" ]; then
-        _run clean_test_environment
-    fi
+    _run test_suite_setup clean_test_environment
 }
 
 # Runs after the final test
 teardown_file() {
-
-    if [ "${CE_TEST_CLEAN_ENV}" = "1" ]; then
-        _run clean_test_environment
-    fi
-
-    _run finish_test_suite "${TEST_RUN_FILE}"
+    _run test_suite_teardown clean_test_environment
 }
 
 @test 'run container' {
@@ -128,8 +79,8 @@ teardown_file() {
     container_id="${output}"
 
     subtest="Check that the container is running"
-    _run check_container_state "${container_id}"
-    if [ "${status}" -ne 0 ] || [ "${output}" != "running" ]; then
+    _run check_container_is_running "${container_id}"
+    if [ "${status}" -ne 0 ]; then
         log "FAIL" "${subtest}"
         return 1
     else
@@ -145,9 +96,9 @@ teardown_file() {
         log "PASS" "${subtest}"
     fi
 
-    subtest="Check the container status is no longer available"
-    _run check_container_state "${container_id}"
-    if [ "${status}" -eq 0 ]; then
+    subtest="Check the container is not running"
+    _run check_container_is_not_running "${container_id}"
+    if [ "${status}" -ne 0 ]; then
         log "FAIL" "${subtest}"
         return 1
     else
