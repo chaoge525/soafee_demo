@@ -134,4 +134,43 @@ finish_test_suite() {
 
 }
 
+# The test_suite_setup and test_suite_teardown functions carry out the standard
+# pre- and post-test-suite activities common across suites.
+#
+# The functions make use of expected environment variables:
+#   TEST_LOG_FILE
+#   TEST_STDERR_FILE
+#   TEST_RUN_FILE
+#   TEST_CLEAN_ENV
+#
+# If TEST_CLEAN_ENV is set to 1, the functions will call a test-suite-specific
+# function, provided as the first argument
 
+test_suite_setup() {
+
+    # Clear and rebuild the logs
+    rm -f "${TEST_LOG_FILE}" "${TEST_STDERR_FILE}"
+    mkdir -p "${TEST_LOG_DIR}"
+
+    _run check_running_test_suite "${TEST_RUN_FILE}"
+    if [ "${status}" -ne 0 ]; then
+        exit 1
+    fi
+
+    _run begin_test_suite "${TEST_RUN_FILE}"
+
+    if [ "${TEST_CLEAN_ENV}" = "1" ]; then
+        _run "${1}"
+    fi
+
+}
+
+test_suite_teardown() {
+
+    if [ "${TEST_CLEAN_ENV}" = "1" ]; then
+        _run "${1}"
+    fi
+
+    _run finish_test_suite "${TEST_RUN_FILE}"
+
+}
