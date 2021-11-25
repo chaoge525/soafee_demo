@@ -8,4 +8,9 @@ header:
     - meta-ewaol-config/kas/ewaol-base.yml
     - meta-ewaol-config/kas/arm-machines.yml
 
+repos:
+  meta-ewaol:
+    layers:
+      meta-ewaol-bsp:
+
 machine: n1sdp
