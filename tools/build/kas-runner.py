@@ -374,39 +374,10 @@ def duplicate_configs(configs):
 # If given, values from configs in a config file override the defaults
 # If no named config is provided, use just the first config in the file
 # Command line arguments override values in all loaded configs
-def get_configs():
-    default_config = ArgumentsDictionary({
-      "config": None,
-      "container_engine": "docker",
-      "container_image": "ghcr.io/siemens/kas/kas",
-      "container_image_version": "2.6.1",
-      "engine_arguments": None,
-      "number_threads": f"{os.cpu_count()}",
-      "deploy_artifacts": False,
-      "kas_arguments": "build",
-      "kasfile": [],
-      "sstate_mirror": None,
-      "downloads_mirror": None,
-      "log_file": None,
-      "network_mode": "bridge",
-      "project_root": f"{os.path.realpath(os.getcwd())}",
-
-      # relative to project_root
-      "out_dir": "%(project_root)s/build",
-
-      # relative to out_dir
-      "sstate_dir": "%(out_dir)s/yocto-cache/sstate",
-      "dl_dir":  "%(out_dir)s/yocto-cache/downloads",
-      "artifacts_dir":  "%(out_dir)s/artifacts"
-    })
-
-    args = get_command_line_args(default_config)
-    # The default config used is 'default_config'
-    # If given, values from configs in a config file override the defaults
-    # If no named config is provided, use just the first config in the file
-    # If 'all' is provided, use all configs in the file
-    # Command line arguments override values in all loaded configs
+def get_configs(default_config, args):
     configs = list()
+    config = default_config
+    config_names = dict()
 
     if args["config"]:
         # 'config' is a string like "path/to/config_file.yml[:named_config]"
@@ -421,6 +392,7 @@ def get_configs():
                 yaml_content = yaml.safe_load(yaml_file)
                 header = yaml_content["header"]
                 yaml_configs = yaml_content["configs"]
+                config_names = yaml_configs.keys()
 
                 # Check if header version is supported
                 if header["version"] < 1:
@@ -447,6 +419,7 @@ def get_configs():
 
     else:
         configs.append(default_config)
+    config = merge_configs(default_config, config)
 
     # Overwrite values in all prior configs with command-line arguments
     # Ignore any None or empty-list arguments from the command-line parser
@@ -457,22 +430,12 @@ def get_configs():
 
     configs = duplicate_configs(configs)
 
-    # List the available configs if the list_config flag was selected
-    if args["list_configs"]:
-        if args["config"] is None:
-            print("ERROR: No kas-runner configs specified!")
-            exit(1)
-        else:
-            print(f"Build targets: "
-                  f"{' '.join(yaml_configs.keys())}")
-            exit(0)
-
     for config in configs:
         if not config.is_valid():
             print("ERROR: Invalid config, string couldn't get evaluated")
             exit(1)
 
-    return configs
+    return (configs, config_names)
 
 
 # Deploy generated artifacts like build configs and logs.
@@ -551,10 +514,47 @@ def deploy_artifacts(build_dir, build_artifacts_dir):
 # Entry Point
 def main():
     exit_code = 0
+    default_config = ArgumentsDictionary({
+      "config": None,
+      "container_engine": "docker",
+      "container_image": "ghcr.io/siemens/kas/kas",
+      "container_image_version": "2.6.1",
+      "engine_arguments": None,
+      "number_threads": f"{os.cpu_count()}",
+      "deploy_artifacts": False,
+      "kas_arguments": "build",
+      "kasfile": [],
+      "sstate_mirror": None,
+      "downloads_mirror": None,
+      "log_file": None,
+      "network_mode": "bridge",
+      "project_root": f"{os.path.realpath(os.getcwd())}",
+
+      # relative to project_root
+      "out_dir": "%(project_root)s/build",
+
+      # relative to out_dir
+      "sstate_dir": "%(out_dir)s/yocto-cache/sstate",
+      "dl_dir":  "%(out_dir)s/yocto-cache/downloads",
+      "artifacts_dir":  "%(out_dir)s/artifacts"
+    })
     # Parse command line arguments and split build configs
     # for different targets into a list
-    for config in get_configs():
+    args = get_command_line_args(default_config)
 
+    configs, config_names = get_configs(default_config, args)
+
+    # List the available configs if the list_config flag was selected
+    if args["list_configs"]:
+        if args["config"] is None:
+            print("ERROR: No kas-runner configs specified!")
+            exit(1)
+        else:
+            print(f"Build targets: "
+                  f"{' '.join(elem for elem in config_names)}")
+            exit(0)
+
+    for config in configs:
         if config["log_file"]:
             mk_newdir(os.path.dirname(os.path.realpath(config["log_file"])))
             log_file = open(config["log_file"], "w")
