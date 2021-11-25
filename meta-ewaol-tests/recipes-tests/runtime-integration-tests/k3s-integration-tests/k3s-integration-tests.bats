@@ -51,6 +51,12 @@ clean_test_environment() {
         exit 1
     fi
 
+    _run extra_cleanup
+    if [ "${status}" -ne 0 ]; then
+        log "FAIL"
+        exit 1
+    fi
+
 }
 
 # Runs once before the first test
@@ -64,6 +70,13 @@ setup_file() {
         log "FAIL"
         exit 1
     fi
+
+    _run extra_setup
+    if [ "${status}" -ne 0 ]; then
+        log "FAIL"
+        exit 1
+    fi
+
 }
 
 # Runs after the final test
@@ -92,7 +105,7 @@ teardown_file() {
     fi
 
     subtest="Expose deployed workload as a service"
-    _run kubectl_expose_deployment "k3s-test-deployment" "k3s-test-service"
+    _run kubectl_expose_deployment "k3s-test-deployment" "k3s-test-service" "80"
     if [ "${status}" -ne 0 ]; then
         log "FAIL" "${subtest}"
         return 1
@@ -100,7 +113,7 @@ teardown_file() {
         log "PASS" "${subtest}"
     fi
 
-    subtest="Get IP of service"
+    subtest="Get ClusterIP of service"
     _run get_service_ip "k3s-test-service"
     if [ "${status}" -ne 0 ]; then
         log "FAIL" "${subtest}"
@@ -111,7 +124,7 @@ teardown_file() {
     ip="${output}"
 
     subtest="Check service is accessible on network"
-    _run check_service_is_accessible "${ip}"
+    _run check_service_is_accessible_via_server_routing_rules "80"
     if [ "${status}" -ne 0 ]; then
         log "FAIL" "${subtest}"
         return 1
@@ -139,7 +152,7 @@ teardown_file() {
     fi
 
     subtest="Check service remains accessible with failed pod"
-    _run check_service_is_accessible "${ip}"
+    _run check_service_is_accessible_via_server_routing_rules "80"
     if [ "${status}" -ne 0 ]; then
         log "FAIL" "${subtest}"
         return 1
@@ -166,7 +179,7 @@ teardown_file() {
     fi
 
     subtest="Check service remains accessible after image upgrade"
-    _run check_service_is_accessible "${ip}"
+    _run check_service_is_accessible_via_server_routing_rules "80"
     if [ "${status}" -ne 0 ]; then
         log "FAIL" "${subtest}"
         return 1
@@ -192,8 +205,8 @@ teardown_file() {
         log "PASS" "${subtest}"
     fi
 
-    subtest="Check service remains accessible with failed K3S server"
-    _run check_service_is_accessible "${ip}"
+    subtest="Check service remains directly accessible with failed K3S server"
+    _run check_service_is_accessible_directly "${ip}" "80"
     if [ "${status}" -ne 0 ]; then
         log "FAIL" "${subtest}"
         return 1

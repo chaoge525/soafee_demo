@@ -1,14 +1,15 @@
 #!/usr/bin/env expect
 #
-# Copyright (c) 2021, Arm Limited.
+# Copyright (c) 2021-2022, Arm Limited.
 #
 # SPDX-License-Identifier: MIT
 
 set guest_name [lindex "${argv}" 0]
+set cmd [lindex "${argv}" 1]
 set login_prompt "${guest_name} login:"
 set prompt "root@${guest_name}:~#"
 set clean_console "\025\010\r"
-set timeout 10
+set timeout 30
 
 source "virtual-guest-funcs.expect"
 
@@ -18,13 +19,11 @@ if { $rc != 0 } {
     exit 1
 }
 
-set rc [ping]
+set rc [run_cmd "${cmd}"]
 if { $rc != 0 } {
-    puts "Failed to access external network from '${guest_name}'"
+    puts "Failed to run '${cmd}' on '${guest_name}'"
     exit 1
 }
-
-expect "${prompt}"
 
 set rc [guest_logoff]
 if { $rc != 0 } {

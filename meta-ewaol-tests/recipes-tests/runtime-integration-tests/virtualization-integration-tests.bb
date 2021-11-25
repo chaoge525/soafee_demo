@@ -1,4 +1,4 @@
-# Copyright (c) 2021, Arm Limited.
+# Copyright (c) 2021-2022, Arm Limited.
 #
 # SPDX-License-Identifier: MIT
 
@@ -19,8 +19,8 @@ TEST_SUITE_PREFIX = "VIRT"
 
 TEST_FILES = "file://virtualization-integration-tests.bats \
               file://virtualization-funcs.sh \
-              file://guest-runtime-validation.expect \
               file://virtual-guest-funcs.expect \
+              file://guest-run-command.expect \
               file://integration-tests-common-funcs.sh"
 
 SRC_URI = "${TEST_FILES} \
