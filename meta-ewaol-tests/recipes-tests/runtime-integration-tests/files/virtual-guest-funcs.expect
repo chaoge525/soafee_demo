@@ -1,6 +1,6 @@
 #!/usr/bin/env expect
 #
-# Copyright (c) 2021, Arm Limited.
+# Copyright (c) 2021-2022, Arm Limited.
 #
 # SPDX-License-Identifier: MIT
 
@@ -14,18 +14,22 @@ proc guest_logon {guest} {
 
     spawn xl console ${guest}
     send "${clean_console}"
+    sleep 0.5
 
     # Grab console and log on
     expect {
         "${login_prompt}" {
             send "root\r"
+            sleep 0.5
             exp_continue
         }
         "${prompt}" {
             send "${clean_console}"
+            sleep 0.5
         }
         "Password:" {
             send "\x03"
+            sleep 0.5
             exp_continue
         }
         "Kernel panic" {
@@ -40,27 +44,25 @@ proc guest_logon {guest} {
             puts "Log-in to '${guest}' timed out"
             return 1
         }
-        -re . {
-            exp_continue
-        }
     }
-    expect "${prompt}"
     return 0
 }
 
-proc ping {} {
+proc run_cmd {cmd} {
     global expect_out
     global spawn_id
     global prompt
     global clean_console
     global timeout
 
-    send "ping -c 5 8.8.8.8\r"
+    send "${cmd}\r"
+    sleep 0.5
     expect "${prompt}"
 
     send "echo Exit status: \$?\r"
+    sleep 0.5
 
-    # Set the return code of this process to that of the ping
+    # Set the return code of this process to that of the command
     set rc 1
     expect {
         {Exit status: 0} {
@@ -83,6 +85,8 @@ proc guest_logoff {} {
 
     # Exit the login session
     send "exit\r"
+    sleep 0.5
+
     expect "${login_prompt}"
     # Send ctrl + ] to exit the guest
     send "\x1b"

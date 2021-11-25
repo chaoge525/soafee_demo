@@ -1,0 +1,27 @@
+# Copyright (c) 2022, Arm Limited.
+#
+# SPDX-License-Identifier: MIT
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: k3s-test-deployment
+  labels:
+    app: k3s-test
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: k3s-test
+  template:
+    metadata:
+      labels:
+        app: k3s-test
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:1.20
+        ports:
+        - containerPort: 80
+      nodeSelector:
+        ewaol.node-type: guest

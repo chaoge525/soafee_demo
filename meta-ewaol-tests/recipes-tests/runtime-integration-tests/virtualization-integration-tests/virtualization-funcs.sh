@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Copyright (c) 2021, Arm Limited.
+# Copyright (c) 2021-2022, Arm Limited.
 #
 # SPDX-License-Identifier: MIT
 
@@ -27,10 +27,11 @@ get_guest_status() {
 
 guest_is_running() {
 
-    guest_status=$(get_guest_status "${1}")
-    exitcode="${?}"
+    status=0
+    output=""
 
-    if [ "${exitcode}" != 0 ] && [ "${guest_status}" != "running" ]; then
+    _run get_guest_status "${1}"
+    if [ "${status}" -ne 0 ] && [ "${output}" != "running" ]; then
         return 1
     else
         return 0
@@ -54,7 +55,10 @@ guest_is_not_running() {
 }
 
 test_guest_login_and_network_access() {
-    expect guest-runtime-validation.expect "${1}" 2>"${TEST_STDERR_FILE}"
+    expect guest-run-command.expect \
+        "${1}" \
+        "ping -c 5 8.8.8.8" \
+        2>"${TEST_STDERR_FILE}"
 }
 
 shutdown_guest() {
