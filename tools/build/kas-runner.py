@@ -321,6 +321,13 @@ def get_command_line_args(default_config):
              '--config' parameter.")
 
     parser.add_argument(
+        "-p",
+        "--print",
+        dest="print",
+        help="Print a parameter of the config being built. For this argument \
+             to work, a config must be selected")
+
+    parser.add_argument(
         "-r",
         "--project_root",
         help=f"Project root path (default: {default_config['project_root']}).")
@@ -364,6 +371,14 @@ def duplicate_configs(configs):
             config_index += 1
 
     return new_config_list
+
+
+# Function returning the build name from a config
+def get_build_name(config):
+    name = "_".join([os.path.basename(os.path.splitext(kfile)[0])
+                    for kfile in config['kasfile'][0].split(':')])
+
+    return name
 
 
 # Get the configuration(s) to run this script with, as a combination
@@ -434,6 +449,15 @@ def get_configs(default_config, args):
         if not config.is_valid():
             print("ERROR: Invalid config, string couldn't get evaluated")
             exit(1)
+
+    for config in configs:
+
+        if config['kasfile'] != []:
+            # buildname is the kas file names without path or extension
+            buildname = get_build_name(config)
+            # Name of build dir specific to this config
+            config["build_dir_name"] = buildname
+            config["build_dir"] = os.path.join(config["out_dir"], buildname)
 
     return (configs, config_names)
 
@@ -541,7 +565,6 @@ def main():
     # Parse command line arguments and split build configs
     # for different targets into a list
     args = get_command_line_args(default_config)
-
     configs, config_names = get_configs(default_config, args)
 
     # List the available configs if the list_config flag was selected
@@ -555,6 +578,10 @@ def main():
             exit(0)
 
     for config in configs:
+        if config['kasfile'] == []:
+            print("ERROR: No config was provided")
+            exit(1)
+
         if config["log_file"]:
             mk_newdir(os.path.dirname(os.path.realpath(config["log_file"])))
             log_file = open(config["log_file"], "w")
@@ -571,8 +598,6 @@ def main():
             sys.tee = TeeLogger(LogOpt.TO_TERM)
 
         kas_files = config["kasfile"]
-        print(f"Starting build task: {kas_files}", file=sys.tee)
-
         # Check that all config files for the target exist
         missing_confs = "\n".join(
             filter(lambda kfile:
@@ -586,12 +611,20 @@ def main():
             exit_code = 1
             continue
 
-        # buildname is the kas file names without path or extension
-        buildname = "_".join([os.path.basename(os.path.splitext(kfile)[0])
-                             for kfile in kas_files[0].split(':')])
+        # Print the argument
+        if args["print"]:
+            if args['print'] in config:
+                if len(configs) == 1:
+                    print(f"{args['print']}: {config[args['print']]}")
+                else:
+                    print(f"kasfile: {config['kasfile'][0]}\n"
+                          f"{args['print']}: {config[args['print']]}")
+            else:
+                print(f"ERROR: parameter {args['print']} cannot be found")
+                exit(1)
+            continue
 
-        # Name of build dir specific to this config
-        config["build_dir"] = os.path.join(config["out_dir"], buildname)
+        print(f"Starting build task: {kas_files}", file=sys.tee)
 
         # Create directories if they don't exist
         mk_newdir(config["out_dir"])
@@ -612,10 +645,10 @@ def main():
         engine.add_env("KAS_WORK_DIR", work_dir_name)
 
         # Mount and set up build directory
-        build_dir_name = "/kas_build_dir"
+        kas_build_dir_name = "/kas_build_dir"
         engine.add_volume(config["build_dir"],
-                          build_dir_name)
-        engine.add_env("KAS_BUILD_DIR", build_dir_name)
+                          kas_build_dir_name)
+        engine.add_env("KAS_BUILD_DIR", kas_build_dir_name)
 
         # Configure local caches
         engine.add_volume(config["sstate_dir"],
@@ -666,7 +699,7 @@ def main():
             mk_newdir(config["artifacts_dir"])
 
             build_artifacts_dir = os.path.join(config["artifacts_dir"],
-                                               buildname)
+                                               config["build_dir_name"])
             mk_newdir(build_artifacts_dir)
 
             deploy_artifacts(config["build_dir"], build_artifacts_dir)
