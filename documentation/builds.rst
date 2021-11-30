@@ -220,31 +220,35 @@ following kas command:
 
     kas build meta-my-bsp-layer/my-machine.yml
 
+.. _Kas documentation: https://kas.readthedocs.io/en/latest/userguide.html#including-configuration-files-from-other-repos
+
 Build Validation
 ----------------
 
-Container Runtime Kernel Configuration Check
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Kernel Configuration Check
+^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 After the kernel configuration has been produced, it is checked to validate the
-presence of the kernel config necessary for the resulting image to run
-container instances. This is done using the kernel check bbclass available at
-``meta-ewaol-distro/classes/containers_kernelcfg_check.bbclass``:
+presence of the kernel config, e.g: necessary for the resulting image to run
+container instances.
 
-1. The kernel check function ensures that the ``docker.cfg`` config file is the
-   same as the reference `Yocto docker config file`_.
+The list of required kernel configs is compared against the list of available
+configs in the kernel. They all need to be present either as module (=m) or
+built-in (=y). A bitbake warning is produced if the kernel is not configured
+correctly.
 
-2. If the hash comparison was a success, the list of kernel configs required
-   for docker to run is retrieved. If the ``docker.cfg`` file is not identical
-   to the reference file, a bitbake warning is displayed.
+The following kernel configs checks are performed:
 
-3. The list of required kernel configs is compared against the list of
-   available configs in the kernel. They all need to be present either as module
-   (=m) or built-in (=y). A bitbake warning is produced if the kernel is not
-   configured correctly.
+* For container engine support it is done via:
+  ``meta-ewaol-distro/classes/containers_kernelcfg_check.bbclass``. By default
+  `Yocto docker config`_ is used as the reference.
 
-.. _Yocto docker config file: http://git.yoctoproject.org/cgit/cgit.cgi/yocto-kernel-cache/tree/features/docker/docker.cfg
-.. _Kas documentation: https://kas.readthedocs.io/en/latest/userguide.html#including-configuration-files-from-other-repos
+* For EWAOL images with virtualization support, the Xen related configs is
+  done via: ``meta-ewaol-distro/classes/xen_kernelcfg_check.bbclass``.
+  By default `Yocto xen config`_ is used as the reference.
+
+.. _Yocto docker config: http://git.yoctoproject.org/cgit/cgit.cgi/yocto-kernel-cache/tree/features/docker/docker.cfg
+.. _Yocto xen config: http://git.yoctoproject.org/cgit/cgit.cgi/yocto-kernel-cache/tree/features/xen/xen.cfg
 
 Manual Bitbake Build Preparation
 --------------------------------

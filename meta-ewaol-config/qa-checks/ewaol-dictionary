@@ -151,6 +151,7 @@ webserver
 wget
 Workloads
 x86_64-linux
+xen_kernelcfg_check
 YAML
 yml
 Yocto
