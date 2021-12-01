@@ -170,7 +170,7 @@ class LayerCheck(abstract_check.AbstractCheck):
                          " BUILDDIR=/work/build/layer_check BB_NO_NETWORK=1"
                          f" yocto-check-layer-wrapper {test_layers_str}"
                          f" {dependencies} --no-auto-dependency"
-                         " --machines qemuarm64")
+                         " --machines qemuarm64 n1sdp")
 
             kas_cmd = f"shell --command \\\"{shell_cmd}\\\""
 

@@ -44,12 +44,13 @@ modules:
 
     layer:
         kas_configs:
-            - "meta-ewaol-config/kas/ewaol-base.yml:\
+            - "meta-ewaol-config/kas/n1sdp.yml:\
                meta-ewaol-config/kas/tests.yml:\
                meta-ewaol-config/kas/virtualization.yml"
         test_layers:
             - "meta-ewaol-distro"
             - "meta-ewaol-tests"
+            - "meta-ewaol-bsp"
 
     python:
         file_types:
