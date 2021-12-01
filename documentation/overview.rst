@@ -88,7 +88,7 @@ The ``meta-ewaol-distro`` layer depends on:
     revision: HEAD
 
     URI: git://git.openembedded.org/meta-openembedded
-    layers: meta-filesystems, meta-networking, meta-oe, meta-perl, meta-python
+    layers: meta-filesystems, meta-networking, meta-oe, meta-python
     branch: master
     revision: HEAD
 

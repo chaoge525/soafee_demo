@@ -265,9 +265,7 @@ bitbake, it is necessary to prepare a bitbake project as follows:
         * meta-openembedded/meta-filesystems
         * meta-openembedded/meta-networking
         * meta-openembedded/meta-oe
-        * meta-openembedded/meta-perl
         * meta-openembedded/meta-python
-        * meta-security
         * meta-virtualization
         * poky/meta
         * poky/meta-poky

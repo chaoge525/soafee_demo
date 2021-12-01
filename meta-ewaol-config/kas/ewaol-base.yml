@@ -34,7 +34,6 @@ repos:
       meta-filesystems:
       meta-networking:
       meta-python:
-      meta-perl:
 
   meta-virtualization:
     url: https://git.yoctoproject.org/git/meta-virtualization
