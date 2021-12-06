@@ -9,5 +9,12 @@ local_conf_header:
   virtualization: |
     DISTRO_FEATURES:append = " ewaol-virtualization"
 
+env:
+  EWAOL_VM_MEMORY_SIZE: "6144"
+  EWAOL_VM_NUMBER_OF_CPUS: "4"
+  EWAOL_VM_ROOTFS_EXTRA_SPACE: " + 5000000"
+  EWAOL_HOST_ROOTFS_EXTRA_SPACE: " + 5000000"
+  EWAOL_HOST_MEMORY_SIZE: "2048"
+
 target:
   - ewaol-host-image
