@@ -65,6 +65,10 @@ The high-level structure of the ``meta-ewaol`` repository is as follows:
   Yocto layer that provides the top-level image recipes and general policies
   available to be implemented as a EWAOL project distribution.
 
+**meta-ewaol-bsp**:
+  Directory that contains machine specific configurations files necessary for
+  some of the EWAOL images.
+
 **meta-ewaol-config**:
   Directory that contains kas configurations files for building EWAOL images.
 
@@ -105,6 +109,19 @@ The ``meta-ewaol-distro`` layer depends on:
     branch: master
     revision: HEAD
 
+The ``meta-ewaol-bsp`` layer depends on:
+
+.. code-block:: yaml
+
+    URI: git://git.yoctoproject.org/poky
+    layers: meta
+    branch: honister
+    revision: HEAD
+
+    URI: https://gitlab.arm.com/ewaol/meta-ewaol
+    layers: meta-ewaol-distro
+    branch: honister-dev
+    revision: HEAD
 
 The ``meta-ewaol-tests`` layer depends on:
 

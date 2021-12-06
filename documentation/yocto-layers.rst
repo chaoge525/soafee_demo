@@ -29,11 +29,24 @@ meta-ewaol
 
   * ``meta-ewaol``
 
+    * ``meta-ewaol-bsp``
     * ``meta-ewaol-config``
     * ``meta-ewaol-distro``
     * ``meta-ewaol-tests``
     * ``documentation``
     * ``tools``
+
+meta-ewaol-bsp
+^^^^^^^^^^^^^^
+
+Yocto layer with machine specific extensions for particular EWAOL images.
+Currently this layer extends ``n1sdp`` machine definition from ``meta-arm-bsp``
+layer for EWAOL images with virtualization support. The ``meta-ewaol-bsp``
+layer contains an additional grub configuration file with Xen boot entry and a
+custom kickstart ``ewaol-n1sdp-host-efidisk.wks.in`` file. There is also a
+``xen-devicetree.bb`` recipe, to generate a devicetree with extra modules nodes
+required by Xen to start Dom0. In addition, the Xen devicetree together with a
+Xen efi binary are included into the final wic image in the ``boot`` partition.
 
 meta-ewaol-config
 ^^^^^^^^^^^^^^^^^

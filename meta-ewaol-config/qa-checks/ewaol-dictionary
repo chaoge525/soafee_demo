@@ -39,6 +39,7 @@ ctrl+
 ctrl+c
 customizations
 DBG
+devicetree
 directory's
 DISTRO_FEATURE
 DISTRO_FEATURES
@@ -47,10 +48,12 @@ dl-dir
 DL_DIR
 Dom0
 DomU
+efi
 ewaol
 ewaol_arch_overview
 ewaol-devel
 ewaol_layers_deps_diagram
+ewaol-n1sdp-host-efidisk
 ewaol_rel_dev_branches
 ewaol_rel_yocto_overview
 EWAOL's
@@ -157,6 +160,8 @@ validations
 VM
 webserver
 wget
+wic
+wks
 Workloads
 x86_64-linux
 Xen
