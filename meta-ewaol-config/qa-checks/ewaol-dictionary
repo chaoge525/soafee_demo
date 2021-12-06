@@ -9,6 +9,7 @@ appends
 ARGS
 Armv8-A
 Armv-A
+baremetal
 Baud
 bb
 bbclass
@@ -44,6 +45,8 @@ DISTRO_FEATURES
 DISTRO_FEATURES_append
 dl-dir
 DL_DIR
+Dom0
+DomU
 ewaol
 ewaol_arch_overview
 ewaol-devel
@@ -67,6 +70,8 @@ hardknott
 html
 http
 https
+hypervisor
+IMAGE_ROOTFS_EXTRA_SPACE
 initializes
 k3s
 k3s-killall
@@ -109,6 +114,7 @@ pycodestyle
 pyspellchecker
 python3
 PyYAML
+qcow2
 Quickstart
 rc1
 README
@@ -148,10 +154,13 @@ v
 v0
 v1
 validations
+VM
 webserver
 wget
 Workloads
 x86_64-linux
+Xen
+xenbr0
 xen_kernelcfg_check
 YAML
 yml
