@@ -17,12 +17,13 @@ be installed on the Build Host.
 .. _The Yocto Project documentation:
    https://docs.yoctoproject.org/singleindex.html#required-packages-for-the-build-host
 
-``meta-ewaol-config`` contains build configs for kas, a tool for easily setting
-up bitbake based projects. Each build config is a YAML file that specifies
-sources and parameter definitions which, when passed to kas, will be
-automatically downloaded and configured in preparation for a subsequent build.
-kas can also invoke the bitbake build process to condense everything necessary
-to produce an image from the build config files into a single step.
+The ``meta-ewaol-config/kas`` directory contains build configs for ``kas``, a
+tool for easily setting up bitbake based projects. Each build config is a YAML
+file that specifies sources and parameter definitions which, when passed to
+``kas``, will be automatically downloaded and configured in preparation for a
+subsequent build. ``kas`` can also invoke the bitbake build process to condense
+everything necessary to produce an image from the build config files into a
+single step.
 
 On the Build Host, install the kas setup tool:
 
@@ -62,21 +63,23 @@ The build configurations and the distribution features available for EWAOL
 project builds within ``meta-ewaol`` repository are described in:
 :ref:`builds:Image Builds`.
 
-.. _quickstart_minimal_image_build_via_kas:
+.. _quickstart_ewaol_image_build_via_kas:
 
-Minimal Image Build via kas
-***************************
+EWAOL Image Build via kas
+*************************
 
-This section describes how to build images for the EWAOL project for the
-following machine:
+This section describes how to build the following images for the EWAOL project:
 
-- The Neoverse N1 System Development Platform (N1SDP), corresponding to the
-  ``n1sdp`` ``MACHINE`` implemented in `meta-arm-bsp`_.
+  A. 'Baremetal' image.
+  B. 'Virtualization'-enabled image.
 
-.. _meta-arm-bsp:
-   https://git.yoctoproject.org/cgit/cgit.cgi/meta-arm/tree/meta-arm-bsp/documentation
+For the description of the above images please see :ref:`builds:Image Builds`.
+Instructions are provided for building these images on the following machine:
 
-Checkout the ``meta-ewaol`` repository:
+  * The Neoverse N1 System Development Platform (N1SDP), corresponding to the
+    ``n1sdp`` ``MACHINE`` implemented in `meta-arm-bsp`_.
+
+First, the ``meta-ewaol`` repository must be checked out via:
 
 .. code-block:: console
 
@@ -85,9 +88,14 @@ Checkout the ``meta-ewaol`` repository:
    git clone https://git.gitlab.arm.com/ewaol/meta-ewaol.git -b main
    cd meta-ewaol
 
-Running kas with the build configurations within ``meta-ewaol-config`` will
-build an image that includes Docker container engine and K3s for the
-containerized workload orchestration.
+The build configurations within ``meta-ewaol-config/kas/`` can be passed to kas
+to build images with support for various features. By default, images will
+include the Docker container engine and K3S containerized workload
+orchestration. Other features like tests or software development kit packages
+are also available, see :ref:`builds:Image Builds` for more details.
+
+.. _meta-arm-bsp:
+   https://git.yoctoproject.org/cgit/cgit.cgi/meta-arm/tree/meta-arm-bsp/documentation
 
 N1SDP
 =====
@@ -100,22 +108,34 @@ To read documentation about the N1SDP board, check the
 Build for N1SDP
 ---------------
 
-To build the images via kas for the N1SDP board:
+To build an image for the selected architecture:
 
-.. code-block:: console
+  A. Baremetal:
 
-   kas build meta-ewaol-config/kas/n1sdp.yml
+     .. code-block:: console
 
-The resulting image will be produced:
+        kas build meta-ewaol-config/kas/n1sdp.yml
 
- - ``build/tmp/deploy/images/n1sdp/ewaol-image-n1sdp.*``
+     The resulting baremetal image will be produced:
+
+     ``build/tmp/deploy/images/n1sdp/ewaol-image-n1sdp.*``
+
+  B. Virtualization:
+
+     .. code-block:: console
+
+        kas build meta-ewaol-config/kas/n1sdp.yml:meta-ewaol-config/kas/virtualization.yml
+
+     The resulting image with virtualization support will be produced:
+
+     ``build/tmp/deploy/images/n1sdp/ewaol-host-image-n1sdp.*``
 
 .. _quickstart_deploy_on_n1sdp:
 
 Deploy on N1SDP
 ---------------
 
-To deploy the image on N1SDP you will need a tool to copy an image using its
+To deploy an image on N1SDP you will need a tool to copy the image using its
 block map. In this tutorial, we will use ``bmap-tools`` which can be installed
 on your host via the following command (example on Ubuntu based host):
 
@@ -126,34 +146,50 @@ on your host via the following command (example on Ubuntu based host):
 USB Storage Device
 ^^^^^^^^^^^^^^^^^^
 
-The image is produced as files with the ``.wic.bmap`` and ``.wic.gz``
-extensions. They are produced by building the default build target.
+The images are produced as files with the ``.wic.bmap`` and ``.wic.gz``
+extensions.
 
-Prepare a USB disk (min size of 64 GB).
-Identify the USB storage device using ``lsblk`` command:
+1. Prepare a USB disk (min size of 64 GB).
 
-.. code-block:: console
+   Identify the USB storage device using ``lsblk`` command:
 
-   lsblk
-   NAME   MAJ:MIN RM   SIZE RO TYPE MOUNTPOINT
-   sdc      8:0    0    64G  0 disk
-   ...
+  .. code-block:: console
 
-.. note::
+     lsblk
+     NAME   MAJ:MIN RM   SIZE RO TYPE MOUNTPOINT
+     sdc      8:0    0    64G  0 disk
+     ...
+
+.. warning::
    In this example, the USB storage device is the ``/dev/sdc`` device. Be extra
    careful when copying and pasting the following commands.
 
-Use ``bmap-tools`` to copy the image to USB disk:
+Use ``bmap-tools`` to copy the target image to USB disk:
 
-.. note::
+.. warning::
    All partitions and data on the USB disk will be erased. Please backup before
    continuing.
 
-.. code-block:: console
+2. Prepare for the image copy:
 
-   sudo umount /dev/sdc*
-   cd build/tmp/deploy/images/n1sdp/
-   sudo bmaptool copy --bmap ewaol-image-n1sdp.wic.bmap ewaol-image-n1sdp.wic.gz /dev/sdc
+  .. code-block:: console
+
+     sudo umount /dev/sdc*
+     cd build/tmp/deploy/images/n1sdp/
+
+3. Flash the image for the selected architecture:
+
+  A. Baremetal:
+
+    .. code-block:: console
+
+       sudo bmaptool copy --bmap ewaol-image-n1sdp.wic.bmap ewaol-image-n1sdp.wic.gz /dev/sdc
+
+  B. Virtualization:
+
+     .. code-block:: console
+
+        sudo bmaptool copy --bmap ewaol-host-image-n1sdp.wic.bmap ewaol-host-image-n1sdp.wic.gz /dev/sdc
 
 Safely eject the USB storage device from the host PC and plug it onto one of
 the USB 3.0 ports in the N1SDP.
@@ -207,8 +243,8 @@ The ports are configured with the following settings:
    sudo screen /dev/ttyUSB0 115200
 
 4. Turn the main power switch on the power supply of the N1SDP tower. The MCC
-window will be shown. Type ``?`` to see MCC firmware version and a list of
-commands:
+   window will be shown. Type ``?`` to see MCC firmware version and a list of
+   commands:
 
 .. code-block:: console
 
@@ -255,7 +291,7 @@ Enable USB:
    Cmd> USB_ON
 
 5. Mount the N1SDP's internal microSD card over the DBG USB connection to your
-host PC and copy the required files.
+   host PC and copy the required files.
 
 The microSD card is visible on your host PC as a disk device after issuing the
 ``USB_ON`` command in the MCC console, as performed in the previous step.
@@ -281,8 +317,8 @@ This can be found using the ``lsblk`` command:
    config.txt   ee0316a.txt   LICENSES   LOG.TXT   MB   SOFTWARE
 
 6. Wipe and extract the contents of
-``build/tmp/deploy/images/n1sdp/n1sdp-board-firmware_primary.tar.gz``
-onto the mounted microSD card:
+   ``build/tmp/deploy/images/n1sdp/n1sdp-board-firmware_primary.tar.gz``
+   onto the mounted microSD card:
 
 .. code-block:: console
 
@@ -321,7 +357,7 @@ onto the mounted microSD card:
 Run on N1SDP
 ------------
 
-To run the image, connect to the AP console by running the following command
+To run an image, connect to the AP console by running the following command
 from a terminal in your host PC:
 
 .. code-block:: console

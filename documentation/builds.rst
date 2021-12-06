@@ -1,24 +1,26 @@
 Image Builds
 ============
 
-The main image build target is:
+The ``meta-ewaol`` repository provides build targets for both architectures
+(see :ref:`overview_high-level_architecture`):
 
-* ``ewaol-image``
+  * ``ewaol-image`` for baremetal architecture.
+  * ``ewaol-host-image`` for virtualization architecture, available only if
+    ``ewaol-virtualization`` is defined in ``DISTRO_FEATURES``.
 
-Which includes Docker container engine and to facilitate containerized workload
-orchestration on the edge, it also includes the K3S orchestration package, both
-provided by the ``meta-virtualization`` Yocto layer. The K3S recipe provides a
-package containing a K3S server wrapped as a systemd service which auto-starts
-on image boot. The K3S server may be interacted with via the Kubernetes REST
-API or via the Kubernetes command-line tool ``kubectl``, where the `Kubernetes
-API Overview`_ and `kubectl Overview`_ may be referred to for usage
-instructions. Enabling and disabling the systemd service via ``systemctl [start
-|stop] k3s`` will bring-up and shutdown the K3S server running on the image,
-meaning containers may remain running (without orchestration) after stopping
-the systemd service. If desired, containers may be stopped prior to shutting
-down the server via the API or command-line tool, or alternatively they may be
-stopped independently from the server status via the provided
-``k3s-killall.sh`` script.
+Both images include the Docker container engine to facilitate containerized
+workload orchestration on the edge and the K3S orchestration package, provided
+by the ``meta-virtualization`` Yocto layer. The K3S recipe provides a package
+containing a K3S server wrapped as a systemd service which auto-starts on image
+boot. The K3S server may be interacted with via the Kubernetes REST API or via
+the Kubernetes command-line tool ``kubectl``, where the `Kubernetes API
+Overview`_ and `kubectl Overview`_ may be referred to for usage instructions.
+Enabling and disabling the systemd service via ``systemctl [start|stop] k3s``
+will bring up or shut down the K3S server running on the image, meaning
+containers may remain running (without orchestration) after stopping the
+systemd service. If desired, containers may be stopped before shutting down the
+server via the API or command-line tool, or they may be stopped independently
+from the server status via the provided ``k3s-killall.sh`` script.
 
 .. note::
     Example usage of the K3S orchestration package is provided in the form of
@@ -27,6 +29,18 @@ stopped independently from the server status via the provided
 
 .. _Kubernetes API Overview: https://kubernetes.io/docs/reference/using-api/
 .. _kubectl Overview: https://kubernetes.io/docs/reference/kubectl/overview/
+
+EWAOL images with virtualization support include the Xen hypervisor into the
+software stack, to form a Host image (Dom0) that contains a single bundled
+Virtual Machine (VM) image (DomU / Guest). Virtualization support also includes
+Xen-related configuration for the kernel image and all necessary packages for
+the Host and VM rootfs. Both the Host and VM include the Docker container
+engine, K3S container orchestration, and share the same kernel image. A systemd
+service that runs a k3s server is included on the Host rootfs, and a systemd
+service that runs a k3s agent is included on the VM rootfs. The Host also
+includes the ``xen-tools`` package along with a network configuration for
+``xenbr0`` bridge, to allow the VM external network access. More details are
+provided in `Building EWAOL Image with Virtualization Support`_.
 
 To prepare an EWAOL image build, it is necessary to define the target machine
 for the build via the bitbake ``MACHINE`` parameter. The image build can then be
@@ -55,6 +69,7 @@ The currently supported ``DISTRO_FEATURES`` are:
 * ``ewaol-devel``
 * ``ewaol-test``
 * ``ewaol-sdk``
+* ``ewaol-virtualization``
 
 In addition to kas build config files that enable the above build options, an
 image build via kas may be further customized with extra optional config
@@ -91,6 +106,16 @@ configure the image are as follows:
       For more details on the SDK, see
       `Building EWAOL Software Development Kit (SDK) Image`_
 
+* ``ewaol-virtualization``
+
+    * Adds the Xen hypervisor into the software stack.
+    * Provides a build target ``ewaol-host-image`` which defines a Host image
+      (Dom0) that contains a single bundled Virtual Machine (VM) image (DomU /
+      Guest) implemented by an ``ewaol-vm-image`` package.
+    * Enables Xen specific configs required by kernel.
+    * Includes all necessary packages and adjustments to the Host root file
+      system to support Xen virtualization.
+
 Provided their Yocto layer sources can be found by bitbake via
 ``conf/bblayers.conf``, these features can be enabled by passing them as a
 space-separated list into ``DISTRO_FEATURES`` within ``conf/local.conf``. This
@@ -108,7 +133,7 @@ kas Build Configurations
 
 The EWAOL quickstart guide illustrates how to build an EWAOL software image by
 supplying build configuration YAML files to the kas build tool:
-:ref:`quickstart_minimal_image_build_via_kas`.
+:ref:`quickstart_ewaol_image_build_via_kas`.
 
 The ``meta-ewaol-config/kas`` directory contains build configs to support
 building images via kas for the EWAOL project.
@@ -179,10 +204,17 @@ These are the current build modifier YAML files:
     the EWAOL SDK is given in
     `Building EWAOL Software Development Kit (SDK) Image`_.
 
+* ``virtualization.yml``
+
+    Appends ``ewaol-virtualization`` to the ``DISTRO_FEATURES`` and selects
+    ``ewaol-host-image`` as the build target. The Host and VM images can be
+    customized, see `Building EWAOL Image with Virtualization Support`_ for
+    details.
+
 .. note::
   If a kas build config does not set a build parameter, the parameter will
   take the default value. For example, if ``tests.yml`` is not included then
-  the value of ``DISTRO_FEATURE`` will take its default value as specified
+  the value of ``DISTRO_FEATURES`` will take its default value as specified
   earlier in this document.
 
 Adding External Machines and BSP Layers
@@ -249,11 +281,11 @@ The following kernel configs checks are performed:
 
 * For EWAOL images with virtualization support, the Xen related configs is
   done via: ``meta-ewaol-distro/classes/xen_kernelcfg_check.bbclass``.
-  By default `Yocto xen config`_ is used as the reference.
+  By default `Yocto Xen config`_ is used as the reference.
 
 .. _Yocto docker config: http://git.yoctoproject.org/cgit/cgit.cgi/yocto-kernel-cache/tree/features/docker/docker.cfg
 .. _Yocto k3s config: http://git.yoctoproject.org/cgit/cgit.cgi/meta-virtualization/tree/recipes-kernel/linux/linux-yocto/kubernetes.cfg
-.. _Yocto xen config: http://git.yoctoproject.org/cgit/cgit.cgi/yocto-kernel-cache/tree/features/xen/xen.cfg
+.. _Yocto Xen config: http://git.yoctoproject.org/cgit/cgit.cgi/yocto-kernel-cache/tree/features/xen/xen.cfg
 
 Manual Bitbake Build Preparation
 --------------------------------
@@ -293,7 +325,7 @@ bitbake, it is necessary to prepare a bitbake project as follows:
     EWAOL image validation tests may simply be added to the build by appending
     the following to ``conf/local.conf``:
 
-        ``DISTRO_FEATURES_append = " ewaol-test"``
+        ``DISTRO_FEATURES:append = " ewaol-test"``
 
 .. note::
   The kas build configuration YAML files within the ``meta-ewaol-config/kas/``
@@ -352,3 +384,47 @@ In this example, the SDK produced image by the kas build will be found at:
 ``build/tmp/deploy/images/n1sdp/ewaol-image-sdk-n1sdp.*``.
 To deploy the generated image, please refer to the
 :ref:`quickstart_deploy_on_n1sdp` section.
+
+Building EWAOL Image with Virtualization Support
+------------------------------------------------
+
+.. note::
+  Please note that an ``ewaol-host-image`` requires at least 100 GBytes of free
+  disk space to build!
+
+An ewaol virtualization image includes the Xen hypervisor in its software
+stack.
+
+The VM is included into the Host rootfs via the ``ewaol-vm-package`` recipe,
+with the rootfs stored as a raw image file in ``*.qcow2`` format. In addition,
+this package includes a sample Xen domain configuration file, which holds the
+customizable VM settings as detailed in `xl domain configuration`_.
+
+The Host and VM images are able to be customized via a set of environment
+variables. The ``EWAOL*_ROOTFS_EXTRA_SPACE`` variables apply their values to
+the relevant ``IMAGE_ROOTFS_EXTRA_SPACE`` bitbake variable.
+
+The available environment variables and their default values are as follows:
+
+.. code-block:: yaml
+
+   EWAOL_VM_NUMBER_OF_CPUS: "4"                # Number of VM CPUs
+   EWAOL_VM_MEMORY_SIZE: "6144"                # Memory size for VM (MB)
+   EWAOL_VM_ROOTFS_EXTRA_SPACE: ""             # Extra storage space for VM (KB)
+   EWAOL_HOST_MEMORY_SIZE: "2048"              # Memory size for Host (MB)
+   EWAOL_HOST_ROOTFS_EXTRA_SPACE: "1000000"    # Extra storage space for Host (KB)
+   EWAOL_ROOTFS_EXTRA_SPACE: "2000000"         # Extra storage space for both Host and VM (KB)
+
+These variables may be set either within an included kas configuration file
+(see ``meta-ewaol-config/kas/virtualization.yml`` for example usage), or
+directly in the build environment.
+
+To build the virtualization enabled image, pass
+``meta-ewaol-config/kas/virtualization.yml`` to the kas build command:
+
+.. code-block:: shell
+
+  kas meta-ewaol-config/kas/n1sdp.yml:meta-ewaol-config/kas/virtualization.yml
+
+.. _xl domain configuration:
+  https://xenbits.xen.org/docs/4.16-testing/man/xl.cfg.5.html
