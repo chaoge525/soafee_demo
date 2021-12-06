@@ -44,6 +44,22 @@ configs:
          meta-ewaol-config/kas/sdk.yml:\
          meta-ewaol-config/kas/ci.yml"
 
+  n1sdp-virtualization-tests-build:
+    <<: *build-presets
+    kasfile:
+      - "meta-ewaol-config/kas/n1sdp.yml:\
+         meta-ewaol-config/kas/virtualization.yml:\
+         meta-ewaol-config/kas/tests.yml:\
+         meta-ewaol-config/kas/ci.yml"
+
+  n1sdp-sdk-virtualization-build:
+    <<: *build-presets
+    kasfile:
+      - "meta-ewaol-config/kas/n1sdp.yml:\
+         meta-ewaol-config/kas/sdk.yml:\
+         meta-ewaol-config/kas/virtualization.yml:\
+         meta-ewaol-config/kas/ci.yml"
+
   n1sdp-sdk-shell:
     <<: *n1sdp-sdk
     kas_arguments: 'shell --keep-config-unchanged'
