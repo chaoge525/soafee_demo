@@ -19,7 +19,7 @@ XEN_DEVICETREE_DEPEND ?= "virtual/trusted-firmware-a:do_deploy"
 XEN_DEVICETREE_DTBS ?= "n1sdp-single-chip.dtb"
 XEN_DEVICETREE_XEN_BOOTARGS ?= "noreboot dom0_mem=${XEN_DEVICETREE_DOM0_MEM}\
  console=dtuart dtuart=serial0 bootscrub=0"
-XEN_DEVICETREE_DOM0_MEM ?= "2048M,max:2048M"
+XEN_DEVICETREE_DOM0_MEM ?= "${EWAOL_HOST_MEMORY_SIZE}M"
 XEN_DEVICETREE_DOM0_BOOTARGS ?= "console=hvc0 earlycon=xen rootwait \
     root=PARTUUID=6a60524d-061d-454a-bfd1-38989910eccd"
 XEN_DEVICETREE_DTSI = "xen.dtsi"
