@@ -13,5 +13,6 @@ IMAGE_FEATURES:append = " debug-tweaks"
 
 EWAOL_VM_HOSTNAME ?= "ewaol-vm"
 EWAOL_VM_IMAGE_RECIPE ?= "ewaol-vm-image"
+EWAOL_HOST_MEMORY_SIZE ?= "2048"
 
 KERNEL_CLASSES:append = " xen_kernelcfg_check"
