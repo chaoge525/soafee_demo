@@ -14,9 +14,10 @@ IMAGE_INSTALL += "k3s-agent"
 
 IMAGE_FSTYPES = "wic.qcow2"
 
-# Lets add 5GB by default
-EWAOL_VM_ROOTFS_EXTRA_SPACE ?= " + 5000000"
-IMAGE_ROOTFS_EXTRA_SPACE:append ?= "${EWAOL_VM_ROOTFS_EXTRA_SPACE}"
+EWAOL_VM_ROOTFS_EXTRA_SPACE ?= ""
+IMAGE_ROOTFS_EXTRA_SPACE:append = "${@ ' + ${EWAOL_VM_ROOTFS_EXTRA_SPACE}' \
+                                      if '${EWAOL_VM_ROOTFS_EXTRA_SPACE}' \
+                                      else ''}"
 
 WKS_FILE = "ewaol-vm.wks"
 vm_hostname ?= "${EWAOL_VM_HOSTNAME}"

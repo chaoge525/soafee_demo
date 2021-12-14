@@ -71,6 +71,7 @@ env:
     INHERIT: ""
     BB_GENERATE_MIRROR_TARBALLS: ""
     BB_NUMBER_THREADS: "${@os.cpu_count()}"
+    EWAOL_ROOTFS_EXTRA_SPACE: "2000000"
 
 target:
   - ewaol-image

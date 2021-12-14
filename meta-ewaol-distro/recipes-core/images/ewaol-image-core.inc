@@ -13,8 +13,12 @@ LICENSE = "MIT"
 inherit core-image
 
 # meta-virtualization/recipes-containers/k3s/README.md states that K3S requires
-# 2GB of space in the rootfs to ensure containers can start, lets add 5GB
-IMAGE_ROOTFS_EXTRA_SPACE ?= "5000000"
+# 2GB of space in the rootfs to ensure containers can start
+EWAOL_ROOTFS_EXTRA_SPACE ?= "2000000"
+
+IMAGE_ROOTFS_EXTRA_SPACE:append = "${@ ' + ${EWAOL_ROOTFS_EXTRA_SPACE}' \
+                                      if '${EWAOL_ROOTFS_EXTRA_SPACE}' \
+                                      else ''}"
 
 IMAGE_INSTALL += " \
     ca-certificates \
