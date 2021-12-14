@@ -11,9 +11,12 @@ REQUIRED_DISTRO_FEATURES += "ewaol-virtualization"
 
 EXTRA_IMAGEDEPENDS:append = " xen"
 
-# Lets add 5GB by default
-EWAOL_HOST_ROOTFS_EXTRA_SPACE ?= " + 5000000"
-IMAGE_ROOTFS_EXTRA_SPACE:append ?= "${EWAOL_HOST_ROOTFS_EXTRA_SPACE}"
+# Increase storage size by 2GB to not run out of free space
+EWAOL_HOST_ROOTFS_EXTRA_SPACE ?= "2000000"
+
+IMAGE_ROOTFS_EXTRA_SPACE:append = "${@ ' + ${EWAOL_HOST_ROOTFS_EXTRA_SPACE}' \
+                                      if '${EWAOL_HOST_ROOTFS_EXTRA_SPACE}' \
+                                      else ''}"
 
 IMAGE_INSTALL:append = " \
     ewaol-vm-package \
