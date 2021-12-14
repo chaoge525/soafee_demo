@@ -6,11 +6,12 @@
 # .config file after do_configure
 
 # Validate that the required kernel config is present
+# 'd' is the bitbake datastore
 # 'required_cfg' is a file containing configs
 # 'md5sum' is a checksum of the required_cfg file
-# 'ignore_cfg' is an optional string containing configs to ignore during
-# the check
-def kernelcfg_check(required_cfg, md5sum, d, ignore_cfg=None):
+# 'ignore_cfg' is an optional string containing space-separated configs to
+# ignore during the check
+def kernelcfg_check(d, required_cfg, md5sum, ignore_cfg=None):
     import hashlib
     import re
     import subprocess

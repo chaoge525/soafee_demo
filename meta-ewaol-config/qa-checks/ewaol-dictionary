@@ -70,6 +70,7 @@ https
 initializes
 k3s
 k3s-killall
+k3s_kernelcfg_check
 K3S_TEST_CLEAN_ENV
 K3S_TEST_LOG_DIR
 kubectl
