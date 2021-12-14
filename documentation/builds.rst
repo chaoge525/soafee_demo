@@ -243,11 +243,16 @@ The following kernel configs checks are performed:
   ``meta-ewaol-distro/classes/containers_kernelcfg_check.bbclass``. By default
   `Yocto docker config`_ is used as the reference.
 
+* For k3s container orchestration support, it is done via:
+  ``meta-ewaol-distro/classes/k3s_kernelcfg_check.bbclass``.
+  By default `Yocto k3s config`_ is used as the reference.
+
 * For EWAOL images with virtualization support, the Xen related configs is
   done via: ``meta-ewaol-distro/classes/xen_kernelcfg_check.bbclass``.
   By default `Yocto xen config`_ is used as the reference.
 
 .. _Yocto docker config: http://git.yoctoproject.org/cgit/cgit.cgi/yocto-kernel-cache/tree/features/docker/docker.cfg
+.. _Yocto k3s config: http://git.yoctoproject.org/cgit/cgit.cgi/meta-virtualization/tree/recipes-kernel/linux/linux-yocto/kubernetes.cfg
 .. _Yocto xen config: http://git.yoctoproject.org/cgit/cgit.cgi/yocto-kernel-cache/tree/features/xen/xen.cfg
 
 Manual Bitbake Build Preparation
