@@ -143,21 +143,26 @@ encountered.
 
 Each top-level result is formatted as:
 
-    ``RESULT:[top_level_test_name]``
+    ``TIMESTAMP RESULT:[top_level_test_name]``
 
 Each sub-test result is formatted as:
 
-    ``RESULT:[top_level_test_name]:[sub_test_name]``
+    ``TIMESTAMP RESULT:[top_level_test_name]:[sub_test_name]``
 
-Where ``RESULT`` is either ``PASS`` or ``FAIL``.
+Where ``TIMESTAMP`` is of the format ``%Y-%m-%d %H:%M:%S`` (see
+`Python Datetime Format Codes`_), and ``RESULT`` is
+either ``PASS`` or ``FAIL``.
 
-On a test failure, a debugging message with prefix ``DEBUG`` will be written to
+.. _Python Datetime Format Codes: https://docs.python.org/3/library/datetime.html#strftime-and-strptime-format-codes
+
+On a test failure, a debugging message of type ``DEBUG`` will be written to
 the log. The format of a debugging message is:
 
-    ``DEBUG:[top_level_test_name]:[return_code]:[stdout]:[stderr]``
+    ``TIMESTAMP DEBUG:[top_level_test_name]:[return_code]:[stdout]:[stderr]``
 
 Additional informational messages may appear in the log file with ``INFO`` or
-``DEBUG`` prefixes, e.g. to log that an environment clean-up action occurred.
+``DEBUG`` message types, e.g. to log that an environment clean-up action
+occurred.
 
 The test suites are detailed below.
 

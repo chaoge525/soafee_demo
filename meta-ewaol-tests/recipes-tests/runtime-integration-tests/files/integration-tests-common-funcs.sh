@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Copyright (c) 2021, Arm Limited.
+# Copyright (c) 2021-2022, Arm Limited.
 #
 # SPDX-License-Identifier: MIT
 
@@ -19,8 +19,11 @@ log() {
     local log_msg
     local debug_msg
     local stderr
+    local timestamp
 
-    log_msg="${1}:${BATS_TEST_NAME}"
+    timestamp=$(date "+%Y-%m-%d %H:%M:%S")
+
+    log_msg="${timestamp} ${1}:${BATS_TEST_NAME}"
     if [ -n "${2}" ]; then
         log_msg="${log_msg}:${*:2}"
     fi
@@ -33,7 +36,7 @@ log() {
 
         stderr="$(cat "${TEST_STDERR_FILE}")"
 
-        debug_msg="DEBUG:${BATS_TEST_NAME}:${status:-}:${output:-}:${stderr}"
+        debug_msg="${timestamp} DEBUG:${BATS_TEST_NAME}:${status:-}:${output:-}:${stderr}"
 
         echo "${debug_msg}" >> "${TEST_LOG_FILE}"
         echo "${debug_msg}"
