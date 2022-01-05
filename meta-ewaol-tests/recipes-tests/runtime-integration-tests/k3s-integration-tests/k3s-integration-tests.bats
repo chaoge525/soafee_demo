@@ -4,7 +4,7 @@
 #
 # SPDX-License-Identifier: MIT
 
-# Run-time validation tests for the K3S container orchestration platform.
+# Run-time validation tests for the K3s container orchestration platform.
 
 # Set generic configuration
 
@@ -63,7 +63,7 @@ clean_test_environment() {
 setup_file() {
     _run test_suite_setup clean_test_environment
 
-    # If the environment clean option is disabled, we should still wait for k3s
+    # If the environment clean option is disabled, we should still wait for K3s
     # to be fully initialized (e.g. after booting) before running the tests
     _run wait_for_k3s_to_be_running
     if [ "${status}" -ne 0 ]; then
@@ -84,7 +84,7 @@ teardown_file() {
     _run test_suite_teardown clean_test_environment
 }
 
-@test 'K3S orchestration of containerized web service' {
+@test 'K3s orchestration of containerized web service' {
 
     subtest="Deploy workload"
     _run apply_workload "k3s-test-deployment.yaml"
@@ -196,7 +196,7 @@ teardown_file() {
         log "PASS" "${subtest}"
     fi
 
-    subtest="Stop K3S server"
+    subtest="Stop K3s server"
     _run stop_k3s_service
     if [ "${status}" -ne 0 ]; then
         log "FAIL" "${subtest}"
@@ -205,7 +205,7 @@ teardown_file() {
         log "PASS" "${subtest}"
     fi
 
-    subtest="Check service remains directly accessible with failed K3S server"
+    subtest="Check service remains directly accessible with failed K3s server"
     _run check_service_is_accessible_directly "${ip}" "80"
     if [ "${status}" -ne 0 ]; then
         log "FAIL" "${subtest}"
@@ -214,7 +214,7 @@ teardown_file() {
         log "PASS" "${subtest}"
     fi
 
-    subtest="Restart K3S server after simulated failure"
+    subtest="Restart K3s server after simulated failure"
     _run start_k3s_service
     if [ "${status}" -ne 0 ]; then
         log "FAIL" "${subtest}"
@@ -223,7 +223,7 @@ teardown_file() {
         log "PASS" "${subtest}"
     fi
 
-    subtest="Check K3S server is responsive to kubectl"
+    subtest="Check K3s server is responsive to kubectl"
     _run get_random_pod_name_from_application "k3s-test"
     if [ "${status}" -ne 0 ]; then
         log "FAIL" "${subtest}"
@@ -231,4 +231,5 @@ teardown_file() {
     else
         log "PASS" "${subtest}"
     fi
+
 }

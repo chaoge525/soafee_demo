@@ -1,4 +1,4 @@
-# Copyright (c) 2021, Arm Limited.
+# Copyright (c) 2021-2022, Arm Limited.
 #
 # SPDX-License-Identifier: MIT
 
@@ -12,7 +12,7 @@ LICENSE = "MIT"
 
 inherit core-image
 
-# meta-virtualization/recipes-containers/k3s/README.md states that K3S requires
+# meta-virtualization/recipes-containers/k3s/README.md states that K3s requires
 # 2GB of space in the rootfs to ensure containers can start
 EWAOL_ROOTFS_EXTRA_SPACE ?= "2000000"
 

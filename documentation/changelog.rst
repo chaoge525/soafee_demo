@@ -7,7 +7,7 @@ v0.2
 New Features
 ============
 
-* Introduced K3S container orchestration support, as well as its integration
+* Introduced K3s container orchestration support, as well as its integration
   tests
 * Removed support for the FVP Base-A reference platform
 * Introduced EWAOL Software Development Kit (SDK) distro image type which
@@ -48,7 +48,7 @@ Third-party Yocto layers used to build the software stack:
 Main software components versions:
 
   * Systemd (version: ``247.6``) as init system
-  * K3S container orchestration engine (version: ``v1.20.11+k3s2``)
+  * K3s container orchestration engine (version: ``v1.20.11+k3s2``)
   * Docker (version: ``20.10.3+git11ecfe8a81b7040738333f777681e55e2a867160``)
     or Podman (version: ``3.2.1+git0+ab4d0cf908``) as container engines
   * runc-opencontainers (version: ``1.0.0+rc93+git0+249bca0a13``) as the OCI
@@ -61,7 +61,7 @@ Configs:
 Distro:
 
   * Introduced EWAOL Software Development Kit (SDK) distro image type
-  * Introduced K3S container orchestration support
+  * Introduced K3s container orchestration support
 
 Documentation:
 
@@ -81,7 +81,7 @@ Tools:
 
 Tests:
 
-  * Introduced K3S container orchestration integration tests
+  * Introduced K3s container orchestration integration tests
   * Improved tests logging and cleanup tasks
   * Multiple tests suites share the same base directory structure and common
     files

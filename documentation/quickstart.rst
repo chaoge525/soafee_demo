@@ -90,7 +90,7 @@ First, the ``meta-ewaol`` repository must be checked out via:
 
 The build configurations within ``meta-ewaol-config/kas/`` can be passed to kas
 to build images with support for various features. By default, images will
-include the Docker container engine and K3S containerized workload
+include the Docker container engine and K3s containerized workload
 orchestration. Other features like tests or software development kit packages
 are also available, see :ref:`builds:Image Builds` for more details.
 

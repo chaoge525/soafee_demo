@@ -9,22 +9,25 @@ The ``meta-ewaol`` repository provides build targets for both architectures
     ``ewaol-virtualization`` is defined in ``DISTRO_FEATURES``.
 
 Both images include the Docker container engine to facilitate containerized
-workload orchestration on the edge and the K3S orchestration package, provided
-by the ``meta-virtualization`` Yocto layer. The K3S recipe provides a package
-containing a K3S server wrapped as a systemd service which auto-starts on image
-boot. The K3S server may be interacted with via the Kubernetes REST API or via
-the Kubernetes command-line tool ``kubectl``, where the `Kubernetes API
-Overview`_ and `kubectl Overview`_ may be referred to for usage instructions.
-Enabling and disabling the systemd service via ``systemctl [start|stop] k3s``
-will bring up or shut down the K3S server running on the image, meaning
-containers may remain running (without orchestration) after stopping the
-systemd service. If desired, containers may be stopped before shutting down the
-server via the API or command-line tool, or they may be stopped independently
-from the server status via the provided ``k3s-killall.sh`` script.
+workload orchestration on the edge and the K3s orchestration package, provided
+by the ``meta-virtualization`` Yocto layer.
+
+On baremetal images, the K3s package is provided with a systemd service that
+auto-starts on image boot and runs the K3s server. This K3s server may be
+interacted with via the Kubernetes REST API or via the Kubernetes command-line
+tool ``kubectl`` (see `Kubernetes API Overview`_ and `kubectl Overview`_ for
+usage instructions). Enabling and disabling the systemd service via ``systemctl
+[start|stop] k3s`` will bring up or shut down the K3s server running on the
+image, meaning K3s-deployed containers may remain running (without
+orchestration) after stopping the systemd service. To avoid containers running
+after stopping the server, they should be disabled prior to stopping the server
+via the Kubernetes API or command-line tool. Alternatively, the provided
+``k3s-killall.sh`` script may be used to stop all running containers even after
+the K3s server has been disabled.
 
 .. note::
-    Example usage of the K3S orchestration package is provided in the form of
-    the K3S integration test suite implementation, documented in
+    Example usage of the K3s orchestration package is provided in the form of
+    the K3s integration test suite implementation, documented in
     :ref:`validations:Image Validation`.
 
 .. _Kubernetes API Overview: https://kubernetes.io/docs/reference/using-api/
@@ -35,12 +38,16 @@ software stack, to form a Host image (Dom0) that contains a single bundled
 Virtual Machine (VM) image (DomU / Guest). Virtualization support also includes
 Xen-related configuration for the kernel image and all necessary packages for
 the Host and VM rootfs. Both the Host and VM include the Docker container
-engine, K3S container orchestration, and share the same kernel image. A systemd
-service that runs a k3s server is included on the Host rootfs, and a systemd
-service that runs a k3s agent is included on the VM rootfs. The Host also
-includes the ``xen-tools`` package along with a network configuration for
-``xenbr0`` bridge, to allow the VM external network access. More details are
-provided in `Building EWAOL Image with Virtualization Support`_.
+engine, K3s container orchestration, and share the same kernel image. On a
+virtualization image, while the same systemd service that is provided on a
+baremetal EWAOL image is deployed to the Host (``k3s-server.service``), a
+different systemd service which runs a K3s agent is included on the VM rootfs
+(``k3s-agent.service``). Additional run-time configuration is required to
+connect the agent to the server, see :ref:`validations:Image Validation` for
+details. The Host also includes the ``xen-tools`` package along with a network
+configuration for ``xenbr0`` bridge, to allow the VM external network access.
+More details are provided in `Building EWAOL Image with Virtualization
+Support`_.
 
 To prepare an EWAOL image build, it is necessary to define the target machine
 for the build via the bitbake ``MACHINE`` parameter. The image build can then be
@@ -275,16 +282,16 @@ The following kernel configs checks are performed:
   ``meta-ewaol-distro/classes/containers_kernelcfg_check.bbclass``. By default
   `Yocto docker config`_ is used as the reference.
 
-* For k3s container orchestration support, it is done via:
+* For K3s container orchestration support, it is done via:
   ``meta-ewaol-distro/classes/k3s_kernelcfg_check.bbclass``.
-  By default `Yocto k3s config`_ is used as the reference.
+  By default `Yocto K3s config`_ is used as the reference.
 
 * For EWAOL images with virtualization support, the Xen related configs is
   done via: ``meta-ewaol-distro/classes/xen_kernelcfg_check.bbclass``.
   By default `Yocto Xen config`_ is used as the reference.
 
 .. _Yocto docker config: http://git.yoctoproject.org/cgit/cgit.cgi/yocto-kernel-cache/tree/features/docker/docker.cfg
-.. _Yocto k3s config: http://git.yoctoproject.org/cgit/cgit.cgi/meta-virtualization/tree/recipes-kernel/linux/linux-yocto/kubernetes.cfg
+.. _Yocto K3s config: http://git.yoctoproject.org/cgit/cgit.cgi/meta-virtualization/tree/recipes-kernel/linux/linux-yocto/kubernetes.cfg
 .. _Yocto Xen config: http://git.yoctoproject.org/cgit/cgit.cgi/yocto-kernel-cache/tree/features/xen/xen.cfg
 
 Manual Bitbake Build Preparation
