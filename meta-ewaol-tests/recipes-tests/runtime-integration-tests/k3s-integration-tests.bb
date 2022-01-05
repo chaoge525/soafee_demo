@@ -2,8 +2,8 @@
 #
 # SPDX-License-Identifier: MIT
 
-SUMMARY = "K3S container orchestration integration tests."
-DESCRIPTION = "Integration tests for the K3S container orchestration system. \
+SUMMARY = "K3s container orchestration integration tests."
+DESCRIPTION = "Integration tests for the K3s container orchestration system. \
                Tests may be run standalone via \
                run-k3s-integration-tests, or via the ptest \
                framework using ptest-runner."
@@ -38,7 +38,7 @@ RDEPENDS:${PN}:ewaol-virtualization += "expect"
 
 do_install:append:ewaol-virtualization() {
 
-    # Load virtualization-specific overrides to the k3s functions
+    # Load virtualization-specific overrides to the K3s functions
     sed -i "s#load k3s-funcs.sh#load k3s-funcs.sh\nload k3s-virtualization-funcs.sh#g" \
         "${D}/${TEST_DIR}/k3s-integration-tests.bats"
 

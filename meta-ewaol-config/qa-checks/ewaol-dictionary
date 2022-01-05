@@ -77,9 +77,10 @@ hypervisor
 IMAGE_ROOTFS_EXTRA_SPACE
 initializes
 k3s
-k3s-killall
 k3s_kernelcfg_check
+k3s-killall
 K3S_TEST_CLEAN_ENV
+K3S_TEST_GUEST_NAME
 K3S_TEST_LOG_DIR
 kubectl
 kube-system
@@ -130,6 +131,7 @@ rst
 runc-opencontainers
 runtime
 runtime-integration-tests
+schedulable
 SCP
 SDK
 sh
@@ -157,6 +159,8 @@ v
 v0
 v1
 validations
+VIRT_TEST_GUEST_NAME
+VIRT_TEST_LOG_DIR
 VM
 webserver
 wget
@@ -166,6 +170,7 @@ Workloads
 x86_64-linux
 Xen
 xenbr0
+xendomains
 xen_kernelcfg_check
 YAML
 yml
