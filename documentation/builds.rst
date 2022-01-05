@@ -38,16 +38,16 @@ software stack, to form a Host image (Dom0) that contains a single bundled
 Virtual Machine (VM) image (DomU / Guest). Virtualization support also includes
 Xen-related configuration for the kernel image and all necessary packages for
 the Host and VM rootfs. Both the Host and VM include the Docker container
-engine, K3s container orchestration, and share the same kernel image. On a
-virtualization image, while the same systemd service that is provided on a
-baremetal EWAOL image is deployed to the Host (``k3s-server.service``), a
-different systemd service which runs a K3s agent is included on the VM rootfs
-(``k3s-agent.service``). Additional run-time configuration is required to
-connect the agent to the server, see :ref:`validations:Image Validation` for
-details. The Host also includes the ``xen-tools`` package along with a network
-configuration for ``xenbr0`` bridge, to allow the VM external network access.
-More details are provided in `Building EWAOL Image with Virtualization
-Support`_.
+engine and K3s container orchestration. On a virtualization image, while the
+same systemd service that is provided on a baremetal EWAOL image is deployed to
+the Host (``k3s-server.service``), a different systemd service which runs a K3s
+agent is included on the VM rootfs (``k3s-agent.service``). Additional run-time
+configuration is required to connect the agent to the server, see
+:ref:`validations:Image Validation` for details. The Guest image is based on
+``generic-arm64`` ``MACHINE``. The Host also includes the ``xen-tools`` package
+along with a network configuration for ``xenbr0`` bridge, to allow the VM
+external network access. More details are provided in `Building EWAOL Image
+with Virtualization Support`_.
 
 To prepare an EWAOL image build, it is necessary to define the target machine
 for the build via the bitbake ``MACHINE`` parameter. The image build can then be
@@ -400,7 +400,11 @@ Building EWAOL Image with Virtualization Support
   disk space to build!
 
 An ewaol virtualization image includes the Xen hypervisor in its software
-stack.
+stack. To build the Host image using ``n1sdp`` machine and the Guest image
+using ``generic-arm64`` machine, `Multiple Configuration Build`_ is used. The
+Guest build time variables that are different from the Host ones, like the
+``MACHINE``, are set inside
+``meta-ewaol-distro/conf/multiconfig/ewaol-vm.conf`` file.
 
 The VM is included into the Host rootfs via the ``ewaol-vm-package`` recipe,
 with the rootfs stored as a raw image file in ``*.qcow2`` format. In addition,
@@ -415,6 +419,7 @@ The available environment variables and their default values are as follows:
 
 .. code-block:: yaml
 
+   EWAOL_VM_MACHINE: "generic-arm64"           # Yocto machine configuration used for the VM
    EWAOL_VM_NUMBER_OF_CPUS: "4"                # Number of VM CPUs
    EWAOL_VM_MEMORY_SIZE: "6144"                # Memory size for VM (MB)
    EWAOL_VM_ROOTFS_EXTRA_SPACE: ""             # Extra storage space for VM (KB)
@@ -435,3 +440,6 @@ To build the virtualization enabled image, pass
 
 .. _xl domain configuration:
   https://xenbits.xen.org/docs/4.16-testing/man/xl.cfg.5.html
+
+.. _Multiple Configuration Build:
+  https://docs.yoctoproject.org/3.3.2/dev-manual/common-tasks.html#building-images-for-multiple-targets-using-multiple-configurations

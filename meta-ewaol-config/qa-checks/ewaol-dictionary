@@ -102,6 +102,7 @@ meta-perl
 meta-virtualization
 microSD
 minicom
+multiconfig
 N1SDP
 N1SDP's
 n1sdp_tests
