@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-# Copyright (c) 2021, Arm Limited.
+# Copyright (c) 2021-2022, Arm Limited.
 #
 # SPDX-License-Identifier: MIT
 
@@ -33,7 +33,11 @@ License headers are validated to be one of the following two formats:
     SPDX-License-Identifier: <License name>
 
 For each file with such a header, the final copyright year of the modifications
-must match or be later than the year of the last modification date of the file.
+must match or be later than the latest year that the file was modified in the
+git commit tree. If the file is not yet tracked in the git repository or has
+local changes pending, then the final copyright year must instead be equal to
+or later than the year of the last modification date of the file on the
+filesystem.
 
 On failure, the check will log any files that failed validation along with the
 reason for the error.
@@ -103,6 +107,51 @@ class HeaderCheck(abstract_check.AbstractCheck):
         """ There are no non-standard Python package dependencies required to
             run the executable """
         return []
+
+    def get_latest_modification_time(self, path):
+        """ If the file is not tracked by git or it is tracked but has local
+            changes, then consider the latest modification date to be the
+            file's mtime on the filesystem. Otherwise, consider the latest
+            modification date to be the date of the latest git commit that
+            modified it. """
+
+        dirname = os.path.dirname(path)
+
+        try:
+            file_is_tracked_cmd = (f"git -C {dirname} ls-files --error-unmatch"
+                                   f" {path}")
+            proc = subprocess.run(file_is_tracked_cmd.split(),
+                                  stdout=subprocess.DEVNULL,
+                                  stderr=subprocess.DEVNULL,
+                                  check=True)
+
+            local_changes_cmd = (f"git -C {dirname} diff --exit-code --cached"
+                                 f" -s {path}")
+            subprocess.run(local_changes_cmd.split(),
+                           stdout=subprocess.DEVNULL,
+                           stderr=subprocess.DEVNULL,
+                           check=True)
+
+            local_changes_cached_cmd = (f"git -C {dirname} diff --exit-code -s"
+                                        f" {path}")
+            subprocess.run(local_changes_cached_cmd.split(),
+                           stdout=subprocess.DEVNULL,
+                           stderr=subprocess.DEVNULL,
+                           check=True)
+
+            git_commit_time_cmd = (f"git -C {dirname} log -1 --pretty=%cs"
+                                   f" {path}")
+            proc = subprocess.run(git_commit_time_cmd.split(" "),
+                                  check=True,
+                                  capture_output=True)
+
+            date_str = proc.stdout.decode().strip()
+
+            return time.strptime(date_str, "%Y-%m-%d")
+
+        except subprocess.CalledProcessError as e:
+
+            return time.gmtime(os.path.getmtime(path))
 
     def validate_copyright_years(self, years_str, last_modification_year=None):
         """ Validate that copyright is correctly stated as YYYY or YYYY-YYYY
@@ -227,7 +276,7 @@ class HeaderCheck(abstract_check.AbstractCheck):
                 years_str = match[0][0]
                 last_change = None
                 if line_idx == len(copyright_lines)-1:
-                    last_change = time.gmtime(os.path.getmtime(path))
+                    last_change = self.get_latest_modification_time(path)
 
                 error = self.validate_copyright_years(years_str,
                                                       last_change)
