@@ -1,4 +1,4 @@
-# Copyright (c) 2021, Arm Limited.
+# Copyright (c) 2021-2022, Arm Limited.
 #
 # SPDX-License-Identifier: MIT
 
@@ -15,7 +15,7 @@ S = "${WORKDIR}"
 DESCRIPTION = "Add entries in DTB for Xen and Dom0"
 COMPATIBLE_MACHINE = "n1sdp"
 
-XEN_DEVICETREE_DEPEND ?= "virtual/trusted-firmware-a:do_deploy"
+XEN_DEVICETREE_DEPEND ?= "trusted-firmware-a:do_deploy"
 XEN_DEVICETREE_DTBS ?= "n1sdp-single-chip.dtb"
 XEN_DEVICETREE_XEN_BOOTARGS ?= "noreboot dom0_mem=${XEN_DEVICETREE_DOM0_MEM}\
  console=dtuart dtuart=serial0 bootscrub=0"
