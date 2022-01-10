@@ -1,6 +1,6 @@
 #!/usr/bin/env bats
 #
-# Copyright (c) 2021, Arm Limited.
+# Copyright (c) 2021-2022, Arm Limited.
 #
 # SPDX-License-Identifier: MIT
 
@@ -46,12 +46,6 @@ clean_test_environment() {
     fi
 
     _run remove_k3s_test_deployment
-    if [ "${status}" -ne 0 ]; then
-        log "FAIL"
-        exit 1
-    fi
-
-    _run remove_k3s_override
     if [ "${status}" -ne 0 ]; then
         log "FAIL"
         exit 1
@@ -224,51 +218,4 @@ teardown_file() {
     else
         log "PASS" "${subtest}"
     fi
-
-    subtest="Change server configuration"
-    _run update_server_arguments_and_restart "--disable-agent"
-    if [ "${status}" -ne 0 ]; then
-        log "FAIL" "${subtest}"
-        return 1
-    else
-        log "PASS" "${subtest}"
-    fi
-
-    subtest="Check K3S server is running after configuration change"
-    _run wait_for_k3s_to_be_running
-    if [ "${status}" -ne 0 ]; then
-        log "FAIL" "${subtest}"
-        return 1
-    else
-        log "PASS" "${subtest}"
-    fi
-
-    subtest="Delete test workload deployment"
-    _run kubectl_delete "deployment" "k3s-test-deployment"
-    if [ "${status}" -ne 0 ]; then
-        log "FAIL" "${subtest}"
-        return 1
-    else
-        log "PASS" "${subtest}"
-    fi
-
-    subtest="Deploy new workload to agent-less server"
-    _run apply_workload "k3s-test-deployment.yaml"
-    if [ "${status}" -ne 0 ]; then
-        log "FAIL" "${subtest}"
-        return 1
-    else
-        log "PASS" "${subtest}"
-    fi
-
-    subtest="Check deployment has no running replicas"
-    _run confirm_deployment_pods_are_not_running "k3s-test-deployment"
-    if [ "${status}" -ne 0 ]; then
-        log "FAIL" "${subtest}"
-        return 1
-    else
-        log "PASS" "${subtest}"
-    fi
-
-    log "PASS"
 }

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Copyright (c) 2021, Arm Limited.
+# Copyright (c) 2021-2022, Arm Limited.
 #
 # SPDX-License-Identifier: MIT
 
@@ -30,17 +30,6 @@ kubectl_expose_deployment() {
 
 systemd_service() {
     systemctl "${1}" k3s 2>"${TEST_STDERR_FILE}"
-}
-
-update_server_arguments_and_restart() {
-    mkdir -p /lib/systemd/system/k3s.service.d
-    cat << EOF > /lib/systemd/system/k3s.service.d/test-override.conf
-[Service]
-ExecStart=
-ExecStart=/usr/local/bin/k3s server ${1}
-EOF
-    systemctl daemon-reload 2>"${TEST_STDERR_FILE}"
-    systemctl restart k3s 2>>"${TEST_STDERR_FILE}"
 }
 
 get_from_url() {
@@ -102,17 +91,6 @@ confirm_image_of_application_pods() {
 
 upgrade_image_of_deployment() {
     kubectl_set "image" "deployment/${1}" "${2}"
-}
-
-confirm_deployment_pods_are_not_running() {
-
-    # Return success if cannot find any Available pods
-    _run kubectl_wait "deployment" "${1}" "Available"
-    if [ "${status}" -ne 0 ]; then
-        return 0
-    else
-        return 1
-    fi
 }
 
 start_k3s_service() {
@@ -222,17 +200,3 @@ remove_k3s_test_deployment() {
 
     return 0
 }
-
-remove_k3s_override() {
-
-    # Return the k3s service to its original state, if we created an override
-    if [ -f "/lib/systemd/system/k3s.service.d/test-override.conf" ]; then
-        rm -rf /lib/systemd/system/k3s.service.d/test-override.conf
-        systemctl daemon-reload
-        systemctl restart k3s
-        return ${?}
-    fi
-
-    return 0
-}
-
