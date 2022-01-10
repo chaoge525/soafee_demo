@@ -283,17 +283,7 @@ completed their workload.
 |    1.13. Stop K3S server systemd service
 |    1.14. Ensure web service remains accessible via ``wget``
 |    1.15. Restart the systemd service
-|    1.16. Ensure server is running via systemd service
-|    1.17. Check K3S server is again responding to ``kubectl get``
-|    **Server Configuration Change:**
-|    1.18. Add systemd override to change server's command-line arguments
-|         - Configuration change to run the server without built-in worker
-|         - Reload and restart the systemd service
-|    1.19. Check systemd service is running after configuration change
-|    1.20. Delete test Nginx workload via ``kubectl delete``
-|    1.21. Deploy test Nginx workload from YAML file via ``kubectl apply``
-|    1.22. Ensure Pod replicas are not initialized (as no worker available) via
-           ``kubectl get``
+|    1.16. Check K3S server is again responding to ``kubectl get``
 
 The tests can be customized via environment variables passed to the execution,
 each prefixed by ``K3S_`` to identify the variable as associated to the
@@ -325,7 +315,6 @@ The environment clean operation involves:
     * Deleting any previous K3S test Service
     * Deleting any previous K3S test Deployment, ensuring corresponding Pods
       are also deleted
-    * Deleting any previous K3S systemd service test override
 
 If enabled then the environment clean operations will always be run, regardless
 of test-suite success or failure.
