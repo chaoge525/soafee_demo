@@ -1,4 +1,4 @@
-# Copyright (c) 2021, Arm Limited.
+# Copyright (c) 2021-2022, Arm Limited.
 #
 # SPDX-License-Identifier: MIT
 
@@ -33,10 +33,14 @@ def kernelcfg_check(d, required_cfg, md5sum, ignore_cfg=None):
 
     # Find path of all config files with name 'file'
     required_cfg_paths = [root + "/" + required_cfg
-                          for root, _, files in os.walk(d.getVar('WORKDIR'))
+                          for root, _, files in os.walk(
+                              d.getVar('STAGING_KERNEL_DIR'))
                           if required_cfg in files]
 
     bb.note("Kernel Config Files:" + list_format(required_cfg_paths))
+
+    if not required_cfg_paths:
+        bb.fatal(f"No paths found for required config: '{required_cfg}'!")
 
     required_config = []
 
