@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-# Copyright (c) 2021, Arm Limited.
+# Copyright (c) 2021-2022, Arm Limited.
 #
 # SPDX-License-Identifier: MIT
 
@@ -547,8 +547,8 @@ def generate_venv_script_args_from_opts(opts):
 
 
 def main():
-    if sys.version_info < (3, 6):
-        raise ValueError("This script requires Python 3.6 or later")
+    if sys.version_info < (3, 8):
+        raise ValueError("This script requires Python 3.8 or later")
 
     exit_code = 0
 

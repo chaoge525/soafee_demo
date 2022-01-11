@@ -8,7 +8,7 @@ The following tooling is provided as part of the ``meta-ewaol`` repository:
 * `CI Build Tool`_
 
 The tools are validated on the Ubuntu 18.04.6 LTS Linux distribution running
-Python 3.6. Any particular dependencies required to run the tools are detailed
+Python 3.8. Any particular dependencies required to run the tools are detailed
 in their relevant sections, below.
 
 .. _tools_documentation_build:
@@ -19,7 +19,7 @@ Documentation Build
 A script automating the documentation build process is available under
 ``tools/build/doc-build.py``. It will generate an HTML version of the
 documentation under ``public/``. To use this script and generate the
-documentation, you should use Python 3.6 or higher:
+documentation, you should use Python 3.8 or higher:
 
 .. code-block:: console
 
@@ -52,9 +52,14 @@ Detailed usage instructions can be found by passing ``--help`` to the script:
 
     ``python3 ./tools/qa-checks/run-checks.py --help``
 
-In order to run the tool, the system must have installed Python 3 (version 3.6
+In order to run the tool, the system must have installed Python 3 (version 3.8
 or greater), the PyYAML Python package available via pip (5.4.1 is the
-project's currently supported version), and Git.
+project's currently supported version), and Git version 2.25 or greater.
+
+.. note::
+   Git version 2.25 may not be available via the default PPAs included with
+   Ubuntu 18.04. On this distribution, it can be made available via the
+   Git stable releases PPA: ``add-apt-repository ppa:git-core/ppa``
 
 The tooling runs a set of modular checks to validate different aspects of the
 repository state. These are briefly described as follows:
@@ -107,10 +112,10 @@ with relevant build artifacts for use by later CI pipeline stages.
 Dependencies
 ^^^^^^^^^^^^
 
-The ``kas-ci-build.py`` script requires `Python 3`_ and the `Docker container
-engine`_.
+The ``kas-ci-build.py`` script requires Python version 3.8 or greater, and the
+`Docker container engine`_ where version 20.10.6 is the currently supported
+Docker version).
 
-.. _Python 3: https://docs.python.org/3/using/unix.html
 .. _Docker container engine: https://docs.docker.com/engine/install
 
 All other dependencies of bitbake and kas will be handled by the docker
