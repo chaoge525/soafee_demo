@@ -108,6 +108,34 @@ class HeaderCheck(abstract_check.AbstractCheck):
             run the executable """
         return []
 
+    def validate_system_dependencies(self):
+        """ This check requires git version 2.25 or greater. """
+
+        try:
+            from distutils.version import StrictVersion
+
+            cmd = "git --version"
+            proc = subprocess.run(cmd.split(),
+                                  capture_output=True,
+                                  check=True)
+
+            version_str = proc.stdout.decode().strip()
+
+            cur_version = version_str.split(" ")[-1]
+            req_version = "2.25"
+
+            if StrictVersion(cur_version) < StrictVersion(req_version):
+                self.logger.error(f"Detected git version ${cur_version} but"
+                                  f" this check requires git {req_version}.")
+                return False
+
+        except subprocess.CalledProcessError as e:
+            self.logger.error(f"Failed to run {cmd} when validating"
+                              " dependencies.")
+            return False
+
+        return True
+
     def get_latest_modification_time(self, path):
         """ If the file is not tracked by git or it is tracked but has local
             changes, then consider the latest modification date to be the
@@ -510,6 +538,10 @@ class HeaderCheck(abstract_check.AbstractCheck):
     def run(self):
 
         self.logger.debug(f"Running {self.name} check.")
+
+        if not self.validate_system_dependencies():
+            self.logger.error("FAIL")
+            return 1
 
         file_errors = dict()
         for path in self.paths:
