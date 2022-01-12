@@ -32,10 +32,13 @@ def kernelcfg_check(d, required_cfg, md5sum, ignore_cfg=None):
         return md5_hash.hexdigest()
 
     # Find path of all config files with name 'file'
-    required_cfg_paths = [root + "/" + required_cfg
-                          for root, _, files in os.walk(
-                              d.getVar('STAGING_KERNEL_DIR'))
-                          if required_cfg in files]
+    for path in ['WORKDIR', 'STAGING_KERNEL_DIR']:
+        search_path = d.getVar(path)
+        required_cfg_paths = [root + "/" + required_cfg
+                              for root, _, files in os.walk(search_path)
+                              if required_cfg in files]
+        if required_cfg_paths:
+            break
 
     bb.note("Kernel Config Files:" + list_format(required_cfg_paths))
 
@@ -64,9 +67,7 @@ def kernelcfg_check(d, required_cfg, md5sum, ignore_cfg=None):
     if ignore_cfg:
         for cfg in ignore_cfg.split():
             bb.debug(1, "Ignoring Config: %s" % cfg)
-            matched = [i for i in required_config if i.startswith(cfg)]
-            if matched:
-                required_config.remove(matched[0])
+            required_config.remove(cfg) if cfg in required_config else ""
 
     bb.note("Required Config:" + list_format(required_config))
 
