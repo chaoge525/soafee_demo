@@ -444,7 +444,7 @@ class HeaderCheck(abstract_check.AbstractCheck):
                 years_str = match[0][0]
                 last_change = None
                 if line_idx == len(mods_copyright)-1:
-                    last_change = time.gmtime(os.path.getmtime(path))
+                    last_change = self.get_latest_modification_time(path)
 
                 error = self.validate_copyright_years(years_str,
                                                       last_change)
