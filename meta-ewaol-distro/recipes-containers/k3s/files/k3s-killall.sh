@@ -4,7 +4,7 @@
 # In open-source project: https://github.com/k3s-io/k3s
 #
 # Original file: Copyright (c) 2021 Rancher Labs and Contributors.
-# Modifications: Copyright (c) 2021 Arm Limited and Contributors. All rights reserved.
+# Modifications: Copyright (c) 2021-2022 Arm Limited and Contributors. All rights reserved.
 #
 # Modifications:
 # - Change systemd service directory location
@@ -18,6 +18,7 @@
 [ "$(id -u)" -eq 0 ] || exec sudo "$0" "$@"
 
 for bin in /var/lib/rancher/k3s/data/**/bin/; do
+# shellcheck disable=SC2086
     [ -d "$bin" ] && export PATH=$PATH:$bin:$bin/aux
 done
 
