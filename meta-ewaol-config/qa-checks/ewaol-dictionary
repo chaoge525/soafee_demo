@@ -66,6 +66,7 @@ GBytes
 ghcr
 Gitlab
 gitlab-ci
+go-fsnotify
 hardknott
 html
 http
@@ -123,6 +124,8 @@ rst
 runc-opencontainers
 runtime
 runtime-integration-tests
+SC2086
+SC2288
 SCP
 sh
 ShellCheck
