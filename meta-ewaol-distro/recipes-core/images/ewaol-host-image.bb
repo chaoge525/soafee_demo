@@ -20,6 +20,7 @@ IMAGE_ROOTFS_EXTRA_SPACE:append = "${@ ' + ${EWAOL_HOST_ROOTFS_EXTRA_SPACE}' \
 
 IMAGE_INSTALL:append = " \
     ${@ 'ewaol-vm-package' if d.getVar('BUILD_EWAOL_VM') == 'True' else ''} \
+    ${@ 'prebuilt-vm-package' if d.getVar('INCLUDE_PREBUILT_VM') == 'True' else ''} \
     kernel-module-xen-blkback \
     kernel-module-xen-gntalloc \
     kernel-module-xen-gntdev \
