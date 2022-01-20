@@ -25,3 +25,9 @@ EWAOL_VM_INSTANCES ?= "1"
 BUILD_EWAOL_VM = "${@ 'False' if (not d.getVar('EWAOL_VM_INSTANCES') \
                                 or int(d.getVar('EWAOL_VM_INSTANCES')) < 1) \
                               else 'True'}"
+
+PREBUILT_VM_INSTANCES ?= "0"
+
+INCLUDE_PREBUILT_VM = "${@ 'False' if (not d.getVar('PREBUILT_VM_INSTANCES') \
+                                or int(d.getVar('PREBUILT_VM_INSTANCES')) < 1) \
+                              else 'True'}"
