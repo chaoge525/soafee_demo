@@ -7,7 +7,7 @@
 load integration-tests-common-virtual-funcs.sh
 
 if [ -z "${K3S_TEST_GUEST_NAME}" ]; then
-    K3S_TEST_GUEST_NAME="ewaol-vm"
+    K3S_TEST_GUEST_NAME="ewaol-vm1"
 fi
 
 K3S_AGENT_OVERRIDE_FILENAME="/lib/systemd/system/k3s-agent.service.d/01-test-connect.conf"
