@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 #
-# Copyright (c) 2021, Arm Limited.
+# Copyright (c) 2021-2022, Arm Limited.
 #
 # SPDX-License-Identifier: MIT
 
 import argparse
 import enum
+import glob
 import os
 import signal
 import subprocess
@@ -471,27 +472,26 @@ def deploy_artifacts(build_dir, build_artifacts_dir):
     build_conf_dir = os.path.join(build_dir, "conf")
 
     if os.path.exists(build_conf_dir):
-        tar_filename = os.path.join(build_artifacts_dir, "conf.tgz")
-        with tarfile.open(tar_filename, "w:gz") as conf_tar:
+        tar_conf_filename = os.path.join(build_artifacts_dir, "conf.tgz")
+        with tarfile.open(tar_conf_filename, "w:gz") as conf_tar:
             conf_tar.add(build_conf_dir,
                          arcname=os.path.basename(build_conf_dir))
 
-        print(f"Deployed build configuration artifacts into {tar_filename}")
+        print("Deployed build configuration artifacts into "
+              f"{tar_conf_filename}")
     else:
         print("No build configuration files to archive")
 
     # Collect logs
-    tar_filename = os.path.join(build_artifacts_dir, "logs.tgz")
-    with tarfile.open(tar_filename, "w:gz") as log_tar:
+    tar_logs_filename = os.path.join(build_artifacts_dir, "logs.tgz")
+    with tarfile.open(tar_logs_filename, "w:gz") as log_tar:
 
         cooker_log = os.path.join(build_dir, "bitbake-cookerdaemon.log")
         if os.path.exists(cooker_log):
             arcname = os.path.join("logs", os.path.basename(cooker_log))
             log_tar.add(cooker_log, arcname=arcname)
 
-        tmp_dir = os.path.join(build_dir, "tmp")
-        if os.path.exists(tmp_dir):
-
+        for tmp_dir in glob.glob(f"{build_dir}/tmp*"):
             console_dir = os.path.join(tmp_dir, "log/cooker")
             for path, dirs, files in os.walk(console_dir):
                 if "console-latest.log" in files:
@@ -518,23 +518,23 @@ def deploy_artifacts(build_dir, build_artifacts_dir):
                     arcname = os.path.join("logs", arcname)
                     log_tar.add(pseudo_log, arcname=arcname)
 
-            print(f"Deployed build logs into {tar_filename}")
+            print(f"Deployed build logs from {tmp_dir} into "
+                  f"{tar_logs_filename}")
 
             # Collect images
             base_image_dir = os.path.join(tmp_dir, "deploy/images")
             if os.path.exists(base_image_dir):
 
-                tar_filename = os.path.join(build_artifacts_dir, "images.tgz")
-                with tarfile.open(tar_filename, "w:gz") as image_tar:
+                tar_image_filename = os.path.join(build_artifacts_dir,
+                                                  "images.tgz")
+                with tarfile.open(tar_image_filename, "w:gz") as image_tar:
                     image_tar.add(base_image_dir,
                                   arcname=os.path.basename(base_image_dir))
 
-                print(f"Deployed images into {tar_filename}")
+                print(f"Deployed images from {tmp_dir} into "
+                      f"{tar_image_filename}")
             else:
                 print("No image directory found, did not archive images")
-
-        else:
-            print("No tmp directory found, did not archive build artifacts")
 
 
 # Entry Point
