@@ -57,6 +57,9 @@ ewaol_layers_deps_diagram
 ewaol-n1sdp-host-efidisk
 ewaol_rel_dev_branches
 ewaol_rel_yocto_overview
+ewaol-vm1
+ewaol-vm2
+EWAOL_VM2
 EWAOL's
 filepaths
 Filesystem
@@ -176,6 +179,7 @@ validations
 VIRT_TEST_GUEST_NAME
 VIRT_TEST_LOG_DIR
 VM
+VMs
 webserver
 wget
 wic

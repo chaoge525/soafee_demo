@@ -4,6 +4,8 @@
 
 header:
   version: 11
+  includes:
+    - meta-ewaol-config/kas/second-vm-parameters.yml
 
 # Since we use generic-arm64 as the MACHINE for the EWAOL VM we need to
 # include meta-arm layer which holds its definition.
@@ -22,9 +24,10 @@ local_conf_header:
     BBMULTICONFIG += "${EWAOL_VM_MC}"
 
 env:
-  EWAOL_VM_MEMORY_SIZE: "6144"
-  EWAOL_VM_NUMBER_OF_CPUS: "4"
-  EWAOL_VM_ROOTFS_EXTRA_SPACE: ""
+  EWAOL_VM_INSTANCES: "1"
+  EWAOL_VM1_MEMORY_SIZE: "6144"
+  EWAOL_VM1_NUMBER_OF_CPUS: "4"
+  EWAOL_VM1_ROOTFS_EXTRA_SPACE: ""
   EWAOL_HOST_ROOTFS_EXTRA_SPACE: "2000000"
   EWAOL_HOST_MEMORY_SIZE: "2048"
 

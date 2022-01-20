@@ -7,6 +7,6 @@ memory = ${EWAOL_VM_MEMORY_SIZE}
 vcpus = ${EWAOL_VM_NUMBER_OF_CPUS}
 extra = " earlyprintk=xenboot console=hvc0 rw"
 root = "/dev/xvda1"
-kernel = "${EWAOL_VM_KERNEL_PATH}"
-disk = ['format=qcow2, vdev=xvda, access=rw, backendtype=qdisk, target=${EWAOL_VM_DISK_PATH}']
+kernel = "${EWAOL_VM_KERNEL_DST}"
+disk = ['format=qcow2, vdev=xvda, access=rw, backendtype=qdisk, target=${EWAOL_VM_DISK_DST}']
 vif = ['script=vif-bridge,bridge=xenbr0']

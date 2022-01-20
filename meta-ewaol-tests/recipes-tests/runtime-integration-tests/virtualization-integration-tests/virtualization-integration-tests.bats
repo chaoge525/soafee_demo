@@ -22,7 +22,7 @@ export TEST_RUN_FILE="${TEST_LOG_DIR}/virt-test-pgid"
 # Set test-suite specific configuration
 
 if [ -z "${VIRT_TEST_GUEST_NAME}" ]; then
-    VIRT_TEST_GUEST_NAME="ewaol-vm"
+    VIRT_TEST_GUEST_NAME="ewaol-vm1"
 fi
 
 load integration-tests-common-funcs.sh

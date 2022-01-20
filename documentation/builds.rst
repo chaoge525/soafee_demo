@@ -406,25 +406,37 @@ Guest build time variables that are different from the Host ones, like the
 ``MACHINE``, are set inside
 ``meta-ewaol-distro/conf/multiconfig/ewaol-vm.conf`` file.
 
-The VM is included into the Host rootfs via the ``ewaol-vm-package`` recipe,
+A VM is included into the Host rootfs via the ``ewaol-vm-package`` recipe,
 with the rootfs stored as a raw image file in ``*.qcow2`` format. In addition,
 this package includes a sample Xen domain configuration file, which holds the
-customizable VM settings as detailed in `xl domain configuration`_.
+customizable VM settings as detailed in `xl domain configuration`_. By default
+one VM (with hostname ``ewaol-vm1``) is built and included on the Host rootfs,
+but this number can be customized, as described in `Multiple EWAOL VM
+Instances`_.
 
 The Host and VM images are able to be customized via a set of environment
 variables. The ``EWAOL*_ROOTFS_EXTRA_SPACE`` variables apply their values to
 the relevant ``IMAGE_ROOTFS_EXTRA_SPACE`` bitbake variable.
 
-The available environment variables and their default values are as follows:
+The following list shows the available environment variables and their default
+values, configuring one VM instance:
+
+.. _vm-vars:
 
 .. code-block:: yaml
 
-   EWAOL_VM_NUMBER_OF_CPUS: "4"                # Number of VM CPUs
-   EWAOL_VM_MEMORY_SIZE: "6144"                # Memory size for VM (MB)
-   EWAOL_VM_ROOTFS_EXTRA_SPACE: ""             # Extra storage space for VM (KB)
+   EWAOL_VM_INSTANCES: "1"                     # Number of VM instances
+   EWAOL_VM1_NUMBER_OF_CPUS: "4"               # Number of VM1 CPUs
+   EWAOL_VM1_MEMORY_SIZE: "6144"               # Memory size for VM1 (MB)
+   EWAOL_VM1_ROOTFS_EXTRA_SPACE: ""            # Extra storage space for VM1 (KB)
    EWAOL_HOST_MEMORY_SIZE: "2048"              # Memory size for Host (MB)
    EWAOL_HOST_ROOTFS_EXTRA_SPACE: "1000000"    # Extra storage space for Host (KB)
-   EWAOL_ROOTFS_EXTRA_SPACE: "2000000"         # Extra storage space for both Host and VM (KB)
+   EWAOL_ROOTFS_EXTRA_SPACE: "2000000"         # Extra storage space for Host and each VM (KB)
+
+.. note::
+  VM instances may be independently customized, where the above list only shows
+  the variables for the default case of a single VM. See `Multiple EWAOL VM
+  Instances`_ for configuring additional VMs.
 
 These variables may be set either within an included kas configuration file
 (see ``meta-ewaol-config/kas/virtualization.yml`` for example usage), or
@@ -442,3 +454,23 @@ To build the virtualization enabled image, pass
 
 .. _Multiple Configuration Build:
   https://docs.yoctoproject.org/3.3.2/dev-manual/common-tasks.html#building-images-for-multiple-targets-using-multiple-configurations
+
+
+Multiple EWAOL VM Instances
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Multiple EWAOL VM instances can be included on the virtualization image, each
+one based on the same kernel and image recipes.
+
+The number of VM instances built for and included on the virtualization image
+can be customized via the ``EWAOL_VM_INSTANCES`` variable, as listed
+:ref:`here<vm-vars>` along with its default value.
+
+VM instances can be independently configured via Bitbake variables which
+reference the VM instance index. For example, variables with a prefix
+``EWAOL_VM1_`` apply to the first VM, variables with a prefix ``EWAOL_VM2_``
+apply to the second VM, and so on. All VM instances use the same default
+configuration, apart from the hostname, which is based on its index:
+``ewaol-vm1`` for the first, ``ewaol-vm2`` for the second, etc. An example of
+configuring a second VM instance is given in
+``meta-ewaol-config/kas/second-vm-parameters.yml``.

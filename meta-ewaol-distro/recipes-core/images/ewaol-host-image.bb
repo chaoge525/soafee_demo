@@ -1,4 +1,4 @@
-# Copyright (c) 2021, Arm Limited.
+# Copyright (c) 2021-2022, Arm Limited.
 #
 # SPDX-License-Identifier: MIT
 
@@ -19,7 +19,7 @@ IMAGE_ROOTFS_EXTRA_SPACE:append = "${@ ' + ${EWAOL_HOST_ROOTFS_EXTRA_SPACE}' \
                                       else ''}"
 
 IMAGE_INSTALL:append = " \
-    ewaol-vm-package \
+    ${@ 'ewaol-vm-package' if d.getVar('BUILD_EWAOL_VM') == 'True' else ''} \
     kernel-module-xen-blkback \
     kernel-module-xen-gntalloc \
     kernel-module-xen-gntdev \

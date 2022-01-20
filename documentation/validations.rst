@@ -260,7 +260,7 @@ container engine tests:
 |  ``CE_TEST_GUEST_NAME``: defines the Xen domain name and Hostname of the VM
 |    Only available when running the tests on an EWAOL virtualization image
 |    Represents the target VM to test when executing the suite on the Host
-|    Default: ``ewaol-vm``
+|    Default: ``ewaol-vm1``
 
 Container Engine Environment Clean-Up
 """""""""""""""""""""""""""""""""""""
@@ -366,7 +366,7 @@ K3s orchestration tests:
 |    See `K3s Environment Clean-Up`_
 |  ``K3S_TEST_GUEST_NAME``: defines the name of the VM to use for the tests
 |    Only available when running the tests on a virtualization image
-|    Default: ``ewaol-vm``
+|    Default: ``ewaol-vm1``
 
 K3s Environment Clean-Up
 """"""""""""""""""""""""
@@ -437,7 +437,7 @@ virtualization integration tests:
 |    Directory will be created if it does not exist
 |    See `Test Logging`_
 |  ``VIRT_TEST_GUEST_NAME``: defines the name of the VM to use for the tests
-|    Default: ``ewaol-vm``
+|    Default: ``ewaol-vm1``
 
 Prior to execution, the Xen Virtualization test suite expects the
 ``xendomains.service`` systemd service to be running or in the process of
