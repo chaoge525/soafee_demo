@@ -66,6 +66,7 @@ fvp-base
 FVP_Base_RevC-2xAEMvA_11
 GB
 GBytes
+generic-arm64
 ghcr
 Gitlab
 gitlab-ci

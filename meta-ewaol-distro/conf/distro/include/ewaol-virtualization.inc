@@ -11,13 +11,8 @@ DISTRO_FEATURES:append = " xen"
 
 IMAGE_FEATURES:append = " debug-tweaks"
 
-EWAOL_VM_HOSTNAME ?= "ewaol-vm"
-EWAOL_VM_IMAGE_RECIPE ?= "ewaol-vm-image"
-EWAOL_VM_MACHINE ??= "generic-arm64"
-
-# Guest multiconfig build configuration file basename without the ".conf"
-# suffix.
-EWAOL_VM_MC ??= "ewaol-vm"
+EWAOL_VM_INC = "conf/distro/include/ewaol-vm.inc"
+require ${@ '${EWAOL_VM_INC}' if '${BB_CURRENT_MC}' == 'default' else ''}
 
 EWAOL_HOST_MEMORY_SIZE ?= "2048"
 

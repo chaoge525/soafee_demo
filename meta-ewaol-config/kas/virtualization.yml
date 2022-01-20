@@ -9,8 +9,6 @@ local_conf_header:
   virtualization: |
     DISTRO_FEATURES:append = " ewaol-virtualization"
   ewaol_vm: |
-    EWAOL_VM_MACHINE ?= "generic-arm64"
-    EWAOL_VM_MC ?= "ewaol-vm"
     BBMULTICONFIG += "${EWAOL_VM_MC}"
 
 env:

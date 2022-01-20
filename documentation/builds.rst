@@ -419,7 +419,6 @@ The available environment variables and their default values are as follows:
 
 .. code-block:: yaml
 
-   EWAOL_VM_MACHINE: "generic-arm64"           # Yocto machine configuration used for the VM
    EWAOL_VM_NUMBER_OF_CPUS: "4"                # Number of VM CPUs
    EWAOL_VM_MEMORY_SIZE: "6144"                # Memory size for VM (MB)
    EWAOL_VM_ROOTFS_EXTRA_SPACE: ""             # Extra storage space for VM (KB)
