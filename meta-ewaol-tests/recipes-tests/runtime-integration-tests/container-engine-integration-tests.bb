@@ -1,4 +1,4 @@
-# Copyright (c) 2021, Arm Limited.
+# Copyright (c) 2021-2022, Arm Limited.
 #
 # SPDX-License-Identifier: MIT
 
@@ -11,6 +11,8 @@ DESCRIPTION = "Integration tests for the Docker container engine. \
 LICENSE = "MIT"
 LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/MIT;md5=0835ade698e0bcf8506ecda2f7b4f302"
 
+OVERRIDES:append = "${EWAOL_OVERRIDES}"
+
 TEST_SUITE_NAME = "container-engine-integration-tests"
 TEST_SUITE_PREFIX = "CE"
 
@@ -18,8 +20,28 @@ TEST_FILES = "file://container-engine-integration-tests.bats \
               file://container-engine-funcs.sh \
               file://integration-tests-common-funcs.sh"
 
+TEST_FILES:append:ewaol-virtualization = " \
+    file://integration-tests-common-virtual-funcs.sh \
+    file://virtual-guest-funcs.expect \
+    file://guest-run-command.expect \
+    file://container-engine-additional-virtual-tests.bats \
+    file://container-engine-virtualization-funcs.sh \
+    "
+
 SRC_URI = "${TEST_FILES} \
            file://run-test-suite \
            file://run-ptest"
 
 require runtime-integration-tests.inc
+
+do_install:append:ewaol-virtualization() {
+
+    # Append the virtualization tests to the deployed test suite
+    # Skip the first 2 lines to omit the shebang
+    tail -n +3 \
+        "${D}/${TEST_DIR}/container-engine-additional-virtual-tests.bats" \
+        >> "${D}/${TEST_DIR}/container-engine-integration-tests.bats"
+
+    rm "${D}/${TEST_DIR}/container-engine-additional-virtual-tests.bats"
+
+}

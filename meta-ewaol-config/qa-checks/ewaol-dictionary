@@ -23,6 +23,7 @@ BSPs
 build_id
 build's
 CE_TEST_CLEAN_ENV
+CE_TEST_GUEST_NAME
 CE_TEST_IMAGE
 CE_TEST_LOG_DIR
 cgit
@@ -73,6 +74,7 @@ Gitlab
 gitlab-ci
 go-fsnotify
 hardknott
+Hostname
 html
 http
 https
@@ -148,8 +150,8 @@ sh
 ShellCheck
 shellcheck-py
 SOAFEE
-SOURCE_MIRROR_URL
 sourceforge
+SOURCE_MIRROR_URL
 SPDX
 sstate-cache
 SSTATE_CACHE
