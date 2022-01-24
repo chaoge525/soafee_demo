@@ -181,7 +181,7 @@ Each sub-test result is formatted as:
 
 Where ``TIMESTAMP`` is of the format ``%Y-%m-%d %H:%M:%S`` (see
 `Python Datetime Format Codes`_), and ``RESULT`` is
-either ``PASS`` or ``FAIL``.
+either ``PASS``, ``FAIL``, or ``SKIP``.
 
 .. _Python Datetime Format Codes: https://docs.python.org/3/library/datetime.html#strftime-and-strptime-format-codes
 
@@ -210,13 +210,16 @@ for execution via ``ptest-runner`` or as a standalone BATS suite, as described
 in `Running the Tests`_.
 
 On an EWAOL virtualization image, the container engine test suite is available
-for execution on both the Host and the VM.
+for execution on both the Host and the VM. In addition, as part of running the
+test suite on the Host, an extra test will be performed which logs into the VM
+and runs the test suite on the VM also, thereby reporting any failures as part
+of the Host test suite execution.
 
 The test suite is built and installed in the image according to the following
 bitbake recipe within
 ``meta-ewaol-tests/recipes-tests/runtime-integration-tests/container-engine-integration-tests.bb``.
 
-Currently the test suite contains two top-level integration tests, which run
+Currently the test suite contains three top-level integration tests, which run
 consecutively in the following order.
 
 | 1. ``run container`` is composed of four sub-tests:
@@ -233,6 +236,13 @@ consecutively in the following order.
          via the ``docker run`` command
 |        - Create and start a container, re-using the existing image
 |        - Update package lists within container from external network
+| 3. ``run container engine integration tests on the VM from the Host`` is only
+     executed on the Host. On the VM this test is skipped. The test is composed
+     of two sub-tests:
+|    3.1. Check that Xendomains is initialized and the VM is running
+|    3.2. Run the container engine integration tests on the VM
+|        - Uses an Expect script to log-in and execute the
+           ``ptest-runner container-engine-integration-tests`` command.
 
 The tests can be customized via environment variables passed to the execution,
 each prefixed by ``CE_`` to identify the variable as associated to the
@@ -247,6 +257,10 @@ container engine tests:
 |  ``CE_TEST_CLEAN_ENV``: enable test environment cleanup
 |    Default: ``1`` (enabled)
 |    See `Container Engine Environment Clean-Up`_
+|  ``CE_TEST_GUEST_NAME``: defines the Xen domain name and Hostname of the VM
+|    Only available when running the tests on an EWAOL virtualization image
+|    Represents the target VM to test when executing the suite on the Host
+|    Default: ``ewaol-vm``
 
 Container Engine Environment Clean-Up
 """""""""""""""""""""""""""""""""""""
