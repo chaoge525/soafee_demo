@@ -64,6 +64,7 @@ FVP_Base_RevC-2xAEMvA_11
 GB
 GBytes
 ghcr
+github
 Gitlab
 gitlab-ci
 go-fsnotify
@@ -78,6 +79,8 @@ K3S_TEST_CLEAN_ENV
 K3S_TEST_LOG_DIR
 kubectl
 kube-system
+libpcre
+libpcre2
 licensees
 localhost
 LTS
@@ -132,6 +135,7 @@ ShellCheck
 shellcheck-py
 SOAFEE
 SOURCE_MIRROR_URL
+sourceforge
 SPDX
 sstate-cache
 SSTATE_CACHE

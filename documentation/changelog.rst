@@ -1,6 +1,33 @@
 Changelog & Release Notes
 #########################
 
+v0.2.2
+******
+
+New Features
+============
+
+No new features were introduced.
+
+Changed
+=======
+
+Bug fixes as listed in `v0.2.2 Resolved and Known Issues`_.
+
+Limitations
+===========
+
+None.
+
+.. _v0.2.2 Resolved and Known Issues:
+
+Resolved and Known Issues
+=========================
+
+Resolved issues from v0.2.1:
+
+  * ewaol-distro: libpcre and libpcre2 to fetch from sourceforge and github
+
 v0.2.1
 ******
 

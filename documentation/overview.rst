@@ -77,7 +77,7 @@ Layer Dependencies
 -------------------
 
 The repository contains Yocto layers that require dependencies as follows. The
-layers revisions are related to the EWAOL v0.2.1 release.
+layers revisions are related to the EWAOL v0.2.2 release.
 
 The ``meta-ewaol-distro`` layer depends on:
 
