@@ -1,6 +1,66 @@
 Changelog & Release Notes
 #########################
 
+v0.2.2
+******
+
+New Features
+============
+
+No new features were introduced.
+
+Changed
+=======
+
+Bug fixes as listed in `v0.2.2 Resolved and Known Issues`_.
+
+Limitations
+===========
+
+None.
+
+.. _v0.2.2 Resolved and Known Issues:
+
+Resolved and Known Issues
+=========================
+
+Resolved issues from v0.2.1:
+
+  * ewaol-distro: libpcre and libpcre2 to fetch from sourceforge and github
+
+v0.2.1
+******
+
+New Features
+============
+
+No new features were introduced.
+
+Changed
+=======
+
+Bug fixes as listed in `v0.2.1 Resolved and Known Issues`_.
+
+Limitations
+===========
+
+None.
+
+.. _v0.2.1 Resolved and Known Issues:
+
+Resolved and Known Issues
+=========================
+
+Resolved issues from v0.2:
+
+  * qa-checks: shell check running in all relevant files within the repository
+  * qa-checks: shell check SC2288 fixes for integration tests scripts
+  * qa-checks: Consider latest git commit for matching file's copyright year
+  * qa-checks: Fix getting the last modification date of external works
+  * qa-checks: Disable SC2086 shellcheck for k3s-killall.sh from K3s package
+  * ewaol-distro: Fix bitbake fetch for go-fsnotify recipe from
+    meta-virtualization
+
 v0.2
 ****
 
