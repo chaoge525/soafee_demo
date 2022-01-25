@@ -482,13 +482,15 @@ def deploy_artifacts(build_dir, build_artifacts_dir):
     else:
         print("No build configuration files to archive")
 
-    # Collect logs
     tar_logs_filename = os.path.join(build_artifacts_dir, "logs.tgz")
-    with tarfile.open(tar_logs_filename, "w:gz") as log_tar:
+    tar_image_filename = os.path.join(build_artifacts_dir, "images.tgz")
+    with tarfile.open(tar_logs_filename, "w:gz") as log_tar,\
+            tarfile.open(tar_image_filename, "w:gz") as image_tar:
 
+        # Collect logs
         cooker_log = os.path.join(build_dir, "bitbake-cookerdaemon.log")
         if os.path.exists(cooker_log):
-            arcname = os.path.join("logs", os.path.basename(cooker_log))
+            arcname = os.path.join("logs/tmp", os.path.basename(cooker_log))
             log_tar.add(cooker_log, arcname=arcname)
 
         for tmp_dir in glob.glob(f"{build_dir}/tmp*"):
@@ -500,6 +502,7 @@ def deploy_artifacts(build_dir, build_artifacts_dir):
                     log = os.path.join(path, os.readlink(log_link))
 
                     arcname = os.path.relpath(log_link, console_dir)
+                    arcname = os.path.join(os.path.basename(tmp_dir), arcname)
                     arcname = os.path.join("logs", arcname)
                     log_tar.add(log, arcname=arcname)
 
@@ -509,12 +512,14 @@ def deploy_artifacts(build_dir, build_artifacts_dir):
                 if "temp" in dirs:
                     log_dir = os.path.join(path, "temp")
                     arcname = os.path.relpath(path, work_dir)
+                    arcname = os.path.join(os.path.basename(tmp_dir), arcname)
                     arcname = os.path.join("logs", arcname)
                     log_tar.add(log_dir, arcname=arcname)
 
                 if "pseudo.log" in files:
                     pseudo_log = os.path.join(path, "pseudo.log")
                     arcname = os.path.relpath(pseudo_log, work_dir)
+                    arcname = os.path.join(os.path.basename(tmp_dir), arcname)
                     arcname = os.path.join("logs", arcname)
                     log_tar.add(pseudo_log, arcname=arcname)
 
@@ -525,11 +530,8 @@ def deploy_artifacts(build_dir, build_artifacts_dir):
             base_image_dir = os.path.join(tmp_dir, "deploy/images")
             if os.path.exists(base_image_dir):
 
-                tar_image_filename = os.path.join(build_artifacts_dir,
-                                                  "images.tgz")
-                with tarfile.open(tar_image_filename, "w:gz") as image_tar:
-                    image_tar.add(base_image_dir,
-                                  arcname=os.path.basename(base_image_dir))
+                image_tar.add(base_image_dir,
+                              arcname=os.path.basename(base_image_dir))
 
                 print(f"Deployed images from {tmp_dir} into "
                       f"{tar_image_filename}")
