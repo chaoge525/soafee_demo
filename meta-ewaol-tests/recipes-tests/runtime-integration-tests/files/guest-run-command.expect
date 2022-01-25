@@ -7,7 +7,7 @@
 set guest_name [lindex "${argv}" 0]
 set cmd [lindex "${argv}" 1]
 set login_prompt "${guest_name} login:"
-set prompt "root@${guest_name}:~#"
+set prompt "root@${guest_name}:"
 set clean_console "\025\010\r"
 set timeout 30
 

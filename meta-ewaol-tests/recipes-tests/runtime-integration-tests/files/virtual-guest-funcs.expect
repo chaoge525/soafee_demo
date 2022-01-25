@@ -16,6 +16,19 @@ proc guest_logon {guest} {
     send "${clean_console}"
     sleep 0.5
 
+    set glob_timeout ${timeout}
+    set timeout 5
+    expect {
+        -re {.} {
+            exp_continue
+        }
+        timeout {
+            send "${clean_console}"
+            sleep 0.5
+        }
+    }
+    set timeout ${glob_timeout}
+
     # Grab console and log on
     expect {
         "${login_prompt}" {
