@@ -68,8 +68,10 @@ GB
 GBytes
 generic-arm64
 ghcr
+github
 Gitlab
 gitlab-ci
+go-fsnotify
 hardknott
 html
 http
@@ -85,6 +87,8 @@ K3S_TEST_GUEST_NAME
 K3S_TEST_LOG_DIR
 kubectl
 kube-system
+libpcre
+libpcre2
 licensees
 localhost
 LTS
@@ -135,6 +139,8 @@ rst
 runc-opencontainers
 runtime
 runtime-integration-tests
+SC2086
+SC2288
 schedulable
 SCP
 SDK
@@ -143,6 +149,7 @@ ShellCheck
 shellcheck-py
 SOAFEE
 SOURCE_MIRROR_URL
+sourceforge
 SPDX
 sstate-cache
 SSTATE_CACHE
