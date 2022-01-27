@@ -4,6 +4,8 @@
 #
 # SPDX-License-Identifier: MIT
 
+load integration-tests-common-virtual-funcs.sh
+
 if [ -z "${K3S_TEST_GUEST_NAME}" ]; then
     K3S_TEST_GUEST_NAME="ewaol-vm"
 fi
@@ -130,6 +132,29 @@ check_service_is_accessible_directly() {
 # Additional activities are required to run the k3s integration tests on a
 # virtualized k3s cluster (Host server + VM agent). Those functions are
 # implemented by overriding those function calls here.
+
+wait_for_k3s_to_be_running() {
+
+    # The overridden function also ensures that xendomains and the target Guest
+    # is running
+    _run xendomains_and_guest_is_initialized "${K3S_TEST_GUEST_NAME}"
+    if [ "${status}" -ne 0 ]; then
+        echo "${output}"
+        return "${status}"
+    fi
+
+    _run wait_for_success 300 10 k3s_service_is_running
+    if [ "${status}" -ne 0 ]; then
+        echo "Timeout reached before k3s service is active"
+        return "${status}"
+    fi
+
+    _run wait_for_success 300 10 k3s_system_pods_are_running
+    if [ "${status}" -ne 0 ]; then
+        echo "Timeout reached before k3s system pods were initialized"
+    fi
+    return "${status}"
+}
 
 # Stop the agent (if it is running)
 extra_cleanup() {

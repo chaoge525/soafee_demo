@@ -21,6 +21,7 @@ TEST_FILES = "file://virtualization-integration-tests.bats \
               file://virtualization-funcs.sh \
               file://virtual-guest-funcs.expect \
               file://guest-run-command.expect \
+              file://integration-tests-common-virtual-funcs.sh \
               file://integration-tests-common-funcs.sh"
 
 SRC_URI = "${TEST_FILES} \

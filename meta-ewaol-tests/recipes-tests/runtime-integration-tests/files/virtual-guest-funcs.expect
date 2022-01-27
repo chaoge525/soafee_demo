@@ -33,7 +33,7 @@ proc guest_logon {guest} {
     expect {
         "${login_prompt}" {
             send "root\r"
-            sleep 0.5
+            sleep 1
             exp_continue
         }
         "${prompt}" {
@@ -42,7 +42,7 @@ proc guest_logon {guest} {
         }
         "Password:" {
             send "\x03"
-            sleep 0.5
+            sleep 5
             exp_continue
         }
         "Kernel panic" {

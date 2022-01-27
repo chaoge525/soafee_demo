@@ -1,6 +1,6 @@
 #!/usr/bin/env bats
 #
-# Copyright (c) 2021, Arm Limited.
+# Copyright (c) 2021-2022, Arm Limited.
 #
 # SPDX-License-Identifier: MIT
 
@@ -26,18 +26,19 @@ if [ -z "${VIRT_TEST_GUEST_NAME}" ]; then
 fi
 
 load integration-tests-common-funcs.sh
+load integration-tests-common-virtual-funcs.sh
 load virtualization-funcs.sh
 
 # Runs once before the first test
 setup_file() {
     _run test_suite_setup
 
-    # Ensure that xendomains has finished initializing before running the tests
-    _run wait_for_xendomains_to_be_running
+    _run xendomains_and_guest_is_initialized "${VIRT_TEST_GUEST_NAME}"
     if [ "${status}" -ne 0 ]; then
         log "FAIL"
         exit 1
     fi
+
 }
 
 # Runs after the final test
@@ -89,7 +90,7 @@ teardown_file() {
     fi
 
     subtest="Guest is not running on the Host after shutdown"
-    _run guest_is_not_running "${VIRT_TEST_GUEST_NAME}"
+    _run wait_for_success 300 10 guest_is_not_running "${VIRT_TEST_GUEST_NAME}"
     if [ "${status}" -ne 0 ]; then
         log "FAIL" "${subtest}"
         return 1
@@ -107,7 +108,7 @@ teardown_file() {
     fi
 
     subtest="Guest is running after being restarted on the Host"
-    _run guest_is_running "${VIRT_TEST_GUEST_NAME}"
+    _run wait_for_success 300 10 guest_is_running "${VIRT_TEST_GUEST_NAME}"
     if [ "${status}" -ne 0 ]; then
         log "FAIL" "${subtest}"
         return 1
