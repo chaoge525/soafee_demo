@@ -26,7 +26,6 @@ TEST_FILES:append:ewaol-virtualization = " \
     file://virtual-guest-funcs.expect \
     file://guest-run-command.expect \
     file://k3s-virtualization-funcs.sh \
-    file://k3s-test-deployment-guest-affinity.yaml \
     "
 
 SRC_URI = "${TEST_FILES} \
@@ -43,9 +42,10 @@ do_install:append:ewaol-virtualization() {
     sed -i "s#load k3s-funcs.sh#load k3s-funcs.sh\nload k3s-virtualization-funcs.sh#g" \
         "${D}/${TEST_DIR}/k3s-integration-tests.bats"
 
-    # Replace the standard deployment YAML with one that should only execute
-    # on the Guest
-    mv "${D}/${TEST_DIR}/k3s-test-deployment-guest-affinity.yaml" \
-        "${D}/${TEST_DIR}/k3s-test-deployment.yaml"
+    # Add a condition to the deployment to make it only schedulable on the VM
+    cat << EOF >> ${D}/${TEST_DIR}/k3s-test-deployment.yaml
+      nodeSelector:
+        ewaol.node-type: vm
+EOF
 
 }
