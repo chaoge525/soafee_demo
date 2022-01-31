@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: MIT
 
 header:
-  version: 10
+  version: 11
 local_conf_header:
   ci: |
     INHERIT += "rm_work"
