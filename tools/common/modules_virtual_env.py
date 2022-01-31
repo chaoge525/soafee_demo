@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-# Copyright (c) 2021, Arm Limited.
+# Copyright (c) 2021-2022, Arm Limited.
 #
 # SPDX-License-Identifier: MIT
 
@@ -144,7 +144,7 @@ class ModulesVirtualEnv(venv.EnvBuilder):
             url_setuptools = 'https://bootstrap.pypa.io/ez_setup.py'
             self.install_from_url(context, 'setuptools', url_setuptools)
 
-            url_pip = 'https://bootstrap.pypa.io/get-pip.py'
+            url_pip = 'https://bootstrap.pypa.io/pip/3.6/get-pip.py'
             self.install_from_url(context, 'pip', url_pip)
 
     def install_from_url(self, context, name, url):
