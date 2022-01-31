@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: MIT
 
 header:
-  version: 10
+  version: 11
   includes:
     - meta-ewaol-config/kas/ewaol-base.yml
     - meta-ewaol-config/kas/arm-machines.yml

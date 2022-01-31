@@ -235,7 +235,7 @@ In order to add an external machine to be built with EWAOL, you need to add a
 .. code-block:: yaml
 
     header:
-      version: 10
+      version: 11
       includes:
         - repo: meta-ewaol
           file: meta-ewaol-config/kas/ewaol-base.yml
