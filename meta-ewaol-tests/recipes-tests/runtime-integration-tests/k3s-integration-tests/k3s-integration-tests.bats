@@ -96,7 +96,7 @@ teardown_file() {
     fi
 
     subtest="Check deployment is ready with pod replicas"
-    _run wait_for_deployment_to_be_running "k3s-test-deployment"
+    _run wait_for_deployment_to_be_running "k3s-test"
     if [ "${status}" -ne 0 ]; then
         log "FAIL" "${subtest}"
         return 1
@@ -105,7 +105,7 @@ teardown_file() {
     fi
 
     subtest="Expose deployed workload as a service"
-    _run kubectl_expose_deployment "k3s-test-deployment" "k3s-test-service" "80"
+    _run kubectl_expose_deployment "k3s-test" "30000"
     if [ "${status}" -ne 0 ]; then
         log "FAIL" "${subtest}"
         return 1
@@ -113,8 +113,8 @@ teardown_file() {
         log "PASS" "${subtest}"
     fi
 
-    subtest="Get ClusterIP of service"
-    _run get_service_ip "k3s-test-service"
+    subtest="Get target node's IP address"
+    _run get_target_node_ip
     if [ "${status}" -ne 0 ]; then
         log "FAIL" "${subtest}"
         return 1
@@ -124,7 +124,7 @@ teardown_file() {
     ip="${output}"
 
     subtest="Check service is accessible on network"
-    _run check_service_is_accessible_via_server_routing_rules "80"
+    _run check_service_is_accessible "${ip}" "30000"
     if [ "${status}" -ne 0 ]; then
         log "FAIL" "${subtest}"
         return 1
@@ -152,7 +152,7 @@ teardown_file() {
     fi
 
     subtest="Check service remains accessible with failed pod"
-    _run check_service_is_accessible_via_server_routing_rules "80"
+    _run check_service_is_accessible "${ip}" "30000"
     if [ "${status}" -ne 0 ]; then
         log "FAIL" "${subtest}"
         return 1
@@ -170,7 +170,7 @@ teardown_file() {
     fi
 
     subtest="Upgrade deployed container images"
-    _run upgrade_image_of_deployment "k3s-test-deployment" "nginx=nginx:1.21"
+    _run upgrade_image_of_deployment "k3s-test" "nginx=nginx:1.21"
     if [ "${status}" -ne 0 ]; then
         log "FAIL" "${subtest}"
         return 1
@@ -179,7 +179,7 @@ teardown_file() {
     fi
 
     subtest="Check service remains accessible after image upgrade"
-    _run check_service_is_accessible_via_server_routing_rules "80"
+    _run check_service_is_accessible "${ip}" "30000"
     if [ "${status}" -ne 0 ]; then
         log "FAIL" "${subtest}"
         return 1
@@ -205,8 +205,8 @@ teardown_file() {
         log "PASS" "${subtest}"
     fi
 
-    subtest="Check service remains directly accessible with failed K3s server"
-    _run check_service_is_accessible_directly "${ip}" "80"
+    subtest="Check service remains accessible with failed K3s server"
+    _run check_service_is_accessible "${ip}" "30000"
     if [ "${status}" -ne 0 ]; then
         log "FAIL" "${subtest}"
         return 1

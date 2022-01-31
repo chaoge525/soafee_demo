@@ -9,11 +9,13 @@ apply_workload() {
 }
 
 query_kubectl() {
-    kubectl --request-timeout=60s get "${1}" "${2}" -o jsonpath="${3}" 2>"${TEST_STDERR_FILE}"
+    kubectl --request-timeout=60s get "${1}" "${2}" -o jsonpath="${3}" \
+        2>"${TEST_STDERR_FILE}"
 }
 
 kubectl_wait() {
-    kubectl wait --timeout=120s --for=condition="${3}" "${1}" "${2}" 2>"${TEST_STDERR_FILE}"
+    kubectl wait --timeout=120s --for=condition="${3}" "${1}" "${2}" \
+        2>"${TEST_STDERR_FILE}"
 }
 
 kubectl_delete() {
@@ -25,55 +27,8 @@ kubectl_set() {
 }
 
 kubectl_expose_deployment() {
-    kubectl expose deployment "${1}" --name="${2}" 2>"${TEST_STDERR_FILE}"
-
-    # Create a port forwarding service that allows the service to be accessed
-    # via a particular port on localhost, even if that service is deployed
-    # remotely (i.e., within a VM)
-    cat << EOF > /lib/systemd/system/k3s-port-forward.service
-[Unit]
-Description=Run k3s port forwarding
-Documentation=https://k3s.io
-Requires=k3s.service
-After=k3s.service
-
-[Install]
-WantedBy=multi-user.target
-WantedBy=k3s.service
-
-[Service]
-Type=simple
-KillMode=control-group
-TimeoutStartSec=0
-Restart=always
-RestartSec=5s
-# The port-forwarding process can enter an error state but remain running,
-# requiring a restart (e.g. when the forwarded service is changed).
-# To identify an error, check each line of output for the string 'error'. Only
-# if one is found should the process exit with an error code for systemd to
-# subsequently restart the service.
-ExecStart=/bin/bash -c "\\
-    awk '{if(tolower(\$\$0)~/error/){print \$\$0;exit(1)}} 1' \\
-        < <(kubectl port-forward service/${2} ${3}:80 2>&1 || \\
-            echo \"Command returned error code: \$\${?}\"); \\
-    if [ \$\${?} -ne 0 ]; \\
-    then \\
-        exit 1; \\
-    else \\
-        exit 0; \\
-    fi;"
-EOF
-
-    # Add an override to the k3s service that starts the new forwarding service
-    # (if it exists) when the k3s service is started
-    mkdir -p /lib/systemd/system/k3s.service.d
-    cat << EOF > /lib/systemd/system/k3s.service.d/01-port-forward-dependency.conf
-[Unit]
-Wants=k3s-port-forward.service
-EOF
-
-    systemctl daemon-reload 2>"${TEST_STDERR_FILE}"
-    systemctl restart k3s 2>>"${TEST_STDERR_FILE}"
+    kubectl create service nodeport "${1}" --tcp=80:80 --node-port="${2}" \
+        2>"${TEST_STDERR_FILE}"
 }
 
 systemd_service() {
@@ -99,23 +54,15 @@ pod_does_not_exist() {
 
 }
 
-get_service_ip() {
-    query_kubectl "service" "${1}" "{.spec.clusterIP}"
+get_target_node_ip() {
+    echo "localhost"
 }
 
 wait_for_deployment_to_be_running() {
     kubectl_wait "deployment" "${1}" "Available"
 }
 
-check_service_is_accessible_via_server_routing_rules() {
-    # Expect to access the service via requests to localhost with a particular
-    # port (first argument) that has been routed to that service
-    wait_for_success 60 10 get_from_url "http://localhost" "${1}"
-}
-
-check_service_is_accessible_directly() {
-    # The service's ClusterIP (first argument) can be used to access it directly
-    # on its listening port (second argument)
+check_service_is_accessible() {
     wait_for_success 60 10 get_from_url "http://${1}" "${2}"
 }
 
@@ -210,24 +157,12 @@ wait_for_k3s_to_be_running() {
 
 remove_k3s_test_service() {
 
-    # Remove the port-forwarding service if we created it
-    if [ -f "/lib/systemd/system/k3s-port-forward.service" ]; then
-        systemctl stop k3s-port-forward
-        rm -f /lib/systemd/system/k3s-port-forward.service
-    fi
-
-    # Remove the dependency if we created it
-    if [ -f "/lib/systemd/system/k3s.service.d/01-port-forward-dependency.conf" ];
-    then
-        rm -f /lib/systemd/system/k3s.service.d/01-port-forward-dependency.conf
-    fi
-
     # Delete the service that wraps the test deployment if it exists
-    _run query_kubectl "service" "k3s-test-service" "{.spec}"
+    _run query_kubectl "service" "k3s-test" "{.spec}"
     if [ "${status}" -eq 0 ]; then
-        _run kubectl_delete "service" "k3s-test-service"
+        _run kubectl_delete "service" "k3s-test"
         if [ "${status}" -ne 0 ]; then
-            echo "Failed to delete the k3s-test-service Service"
+            echo "Failed to delete the k3s-test Service"
             return 1
         fi
     fi
@@ -246,9 +181,9 @@ remove_k3s_test_deployment() {
         mapfile -t pod_names < <(echo "${output}" | tr ':' '\n')
 
         # Delete the deployment
-        _run kubectl_delete "deployment" "k3s-test-deployment"
+        _run kubectl_delete "deployment" "k3s-test"
         if [ "${status}" -ne 0 ]; then
-            echo "Failed to delete the k3s-test-deployment Deployment"
+            echo "Failed to delete the k3s-test Deployment"
             return 1
         fi
 
@@ -260,7 +195,7 @@ remove_k3s_test_deployment() {
 
             run_ wait_for_success 60 10 pod_does_not_exist "${pod_name}"
             if [ "${status}" -ne 0 ]; then
-                echo "Failed to delete the k3s-test-deployment Deployment"
+                echo "Failed to delete the k3s-test Deployment"
                 return 1
             fi
         done

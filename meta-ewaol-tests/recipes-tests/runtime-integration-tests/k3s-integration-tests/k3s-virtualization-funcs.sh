@@ -52,6 +52,11 @@ wait_for_deployment_to_be_running() {
     return 0
 }
 
+get_target_node_ip() {
+    kubectl get node "${K3S_TEST_GUEST_NAME}" \
+        -o jsonpath="{.status.addresses[?(@.type=='InternalIP')].address}"
+}
+
 # Revert the environment to a state where the VM is idle (its agent is not
 # connected to the Host server)
 cleanup_k3s_agent_on_guest() {
@@ -91,7 +96,7 @@ configure_k3s_agent_on_vm() {
 mkdir -p ${override_dir} && echo -e '\
 [Service]\n\
 ExecStart=\n\
-ExecStart=/usr/local/bin/k3s agent --server=https://${ip}:6443 --token=${token} --node-label=ewaol.node-type=guest' \
+ExecStart=/usr/local/bin/k3s agent --server=https://${ip}:6443 --token=${token} --node-label=ewaol.node-type=vm' \
 > ${K3S_AGENT_OVERRIDE_FILENAME} \
 && systemctl daemon-reload"
 
@@ -109,24 +114,6 @@ start_k3s_agent_on_vm() {
         "systemctl start k3s-agent" \
         2>"${TEST_STDERR_FILE}"
 
-}
-
-query_service_on_vm() {
-
-    expect guest-run-command.expect \
-        "${K3S_TEST_GUEST_NAME}" \
-        "timeout 10 wget -O - ${1}:${2}" \
-        2>"${TEST_STDERR_FILE}"
-
-}
-
-check_service_is_accessible_directly() {
-    # If the service is executed on the VM, accessing it externally requires
-    # routing rules managed by the server.
-    # However, it can also be accessed directly by logging into the VM and
-    # querying its internal Cluster IP, which is done here.
-
-    wait_for_success 120 30 query_service_on_vm "${1}" "${2}"
 }
 
 # Additional activities are required to run the k3s integration tests on a

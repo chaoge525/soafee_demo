@@ -1,11 +1,11 @@
-# Copyright (c) 2021, Arm Limited.
+# Copyright (c) 2021-2022, Arm Limited.
 #
 # SPDX-License-Identifier: MIT
 
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: k3s-test-deployment
+  name: k3s-test
   labels:
     app: k3s-test
 spec:

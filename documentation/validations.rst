@@ -334,23 +334,22 @@ have completed their workload.
 |    **Workload Deployment:**
 |    1.1. Deploy test Nginx workload from YAML file via ``kubectl apply``
 |    1.2. Ensure Pod replicas are initialized via ``kubectl wait``
-|    1.3. Create Service to expose Deployment via ``kubectl expose``, with K3s
-          internal routing to the Service enabled by ``kubectl port-forward``
-|    1.4. Get IP of resulting Service via ``kubectl get``
-|    1.5. Ensure web service is accessible using K3s routing via ``wget``
+|    1.3. Create NodePort Service to expose Deployment via
+          ``kubectl create service``
+|    1.4. Get the IP of the node running the Deployment via ``kubectl get``
+|    1.5. Ensure web service is accessible on the node via ``wget``
 |    **Pod Failure Tolerance:**
 |    1.6. Get random Pod name from Deployment name via ``kubectl get``
 |    1.7. Delete random Pod via ``kubectl delete``
-|    1.8. Ensure web service is still accessible using K3s routing via ``wget``
+|    1.8. Ensure web service is still accessible via ``wget``
 |    **Deployment Upgrade:**
 |    1.9. Get image version of random Pod via ``kubectl get``
 |    1.10. Upgrade image version of Deployment via ``kubectl set``
-|    1.11. Ensure web service is still accessible using K3s routing via ``wget``
+|    1.11. Ensure web service is still accessible via ``wget``
 |    1.12. Get upgraded image version of random Pod via ``kubectl get``
 |    **Server Failure Tolerance:**
 |    1.13. Stop K3s server systemd service
-|    1.14. Ensure web service is directly accessible on the local deployment
-           node via ``wget`` to the Service IP
+|    1.14. Ensure web service is still accessible via ``wget``
 |    1.15. Restart the systemd service
 |    1.16. Check K3S server is again responding to ``kubectl get``
 
@@ -384,7 +383,7 @@ execution.
 
 The environment clean operation involves:
 
-    * Deleting any previous K3s test Service and k3 port forwarding processes
+    * Deleting any previous K3s test Service
     * Deleting any previous K3s test Deployment, ensuring corresponding Pods
       are also deleted
 
