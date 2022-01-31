@@ -36,7 +36,7 @@ systemd_service() {
 }
 
 get_from_url() {
-    timeout 10 wget -O - "${1}:${2}" 2>"${TEST_STDERR_FILE}"
+    timeout 10 wget -o /dev/null -O - "${1}:${2}" 2>"${TEST_STDERR_FILE}"
 }
 
 pod_does_not_exist() {
