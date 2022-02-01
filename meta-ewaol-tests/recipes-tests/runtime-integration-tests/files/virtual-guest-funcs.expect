@@ -55,7 +55,7 @@ proc guest_logon {guest} {
         }
         timeout {
             puts "Log-in to '${guest}' timed out"
-            return 1
+            return 124
         }
     }
     return 0
@@ -70,7 +70,15 @@ proc run_cmd {cmd} {
 
     send "${cmd}\r"
     sleep 0.5
-    expect "${prompt}"
+
+    expect {
+        "${prompt}" {
+        }
+        timeout {
+            puts "Executing '${cmd}' exceeded the ${timeout}s time out."
+            return 124
+        }
+    }
 
     send "echo Exit status: \$?\r"
     sleep 0.5
@@ -86,6 +94,7 @@ proc run_cmd {cmd} {
     }
 
     expect "${prompt}"
+
     return $rc
 }
 
