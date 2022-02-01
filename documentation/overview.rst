@@ -115,12 +115,12 @@ The ``meta-ewaol-bsp`` layer depends on:
 
     URI: git://git.yoctoproject.org/poky
     layers: meta
-    branch: honister
+    branch: master
     revision: HEAD
 
     URI: https://gitlab.arm.com/ewaol/meta-ewaol
     layers: meta-ewaol-distro
-    branch: honister-dev
+    branch: main
     revision: HEAD
 
 The ``meta-ewaol-tests`` layer depends on:
