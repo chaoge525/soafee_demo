@@ -5,6 +5,16 @@
 header:
   version: 11
 
+# Since we use generic-arm64 as the MACHINE for the EWAOL VM we need to
+# include meta-arm layer which holds its definition.
+repos:
+  meta-arm:
+    url: https://git.yoctoproject.org/git/meta-arm
+    path: layers/meta-arm
+    layers:
+      meta-arm: included
+      meta-arm-toolchain: included
+
 local_conf_header:
   virtualization: |
     DISTRO_FEATURES:append = " ewaol-virtualization"
