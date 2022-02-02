@@ -1,6 +1,35 @@
 Changelog & Release Notes
 #########################
 
+v0.2.3
+******
+
+New Features
+============
+
+No new features were introduced.
+
+Changed
+=======
+
+Bug fixes as listed in `v0.2.3 Resolved and Known Issues`_.
+
+Limitations
+===========
+
+None.
+
+.. _v0.2.3 Resolved and Known Issues:
+
+Resolved and Known Issues
+=========================
+
+Resolved issues from v0.2.2:
+
+  * qa-checks: Install pip for Python 3.6
+  * ewaol-distro: Fix bitbake fetch for runc-opencontainers recipe from
+    meta-virtualization
+
 v0.2.2
 ******
 
