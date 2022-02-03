@@ -31,12 +31,12 @@ EWAOL_VM_DATA = "${datadir}/vms"
 # EWAOL_VM_*_PATH variables defines file destination paths on the host rootfs.
 EWAOL_VM_CFG_PATH = "${sysconfdir}/xen/auto/${EWAOL_VM_HOSTNAME}.cfg"
 EWAOL_VM_DISK_PATH = "${EWAOL_VM_DATA}/${EWAOL_VM_DISK_IMG}"
-EWAOL_VM_KERNEL_PATH = "${EWAOL_VM_DATA}/${KERNEL_IMAGETYPE}"
+EWAOL_VM_KERNEL_PATH = "${EWAOL_VM_DATA}/${EWAOL_VM_KERNEL_IMAGETYPE}"
 
 # EWAOL_VM_*_SRC variables defines file paths within the build tree.
 EWAOL_VM_CFG_SRC = "${WORKDIR}/ewaol-vm.conf.sample"
 EWAOL_VM_DISK_SRC = "${EWAOL_VM_DEPLOY_DIR}/${EWAOL_VM_DISK_IMG}"
-EWAOL_VM_KERNEL_SRC = "${EWAOL_VM_DEPLOY_DIR}/${KERNEL_IMAGETYPE}"
+EWAOL_VM_KERNEL_SRC = "${EWAOL_VM_DEPLOY_DIR}/${EWAOL_VM_KERNEL_IMAGETYPE}"
 
 EWAOL_VM_PACKAGE_EXTRA_DEPENDS ??= "mc::${EWAOL_VM_MC}:${EWAOL_VM_IMAGE_RECIPE}:do_image_complete"
 

@@ -9,6 +9,7 @@ EWAOL_VM_MC ?= "ewaol-vm"
 EWAOL_VM_HOSTNAME ?= "ewaol-vm"
 EWAOL_VM_IMAGE_RECIPE ?= "ewaol-vm-image"
 EWAOL_VM_MACHINE ?= "generic-arm64"
+EWAOL_VM_KERNEL_IMAGETYPE ?= "Image"
 EWAOL_VM_TMPDIR = "${TOPDIR}/tmp_${EWAOL_VM_MC}"
 
 EWAOL_VM_MEMORY_SIZE ?= "6144"
