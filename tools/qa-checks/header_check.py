@@ -140,8 +140,8 @@ class HeaderCheck(abstract_check.AbstractCheck):
         """ If the file is not tracked by git or it is tracked but has local
             changes, then consider the latest modification date to be the
             file's mtime on the filesystem. Otherwise, consider the latest
-            modification date to be the date of the latest git commit that
-            modified it. """
+            modification date to be the author date (GIT_AUTHOR_DATE) of the
+            latest git commit that modified it. """
 
         dirname = os.path.dirname(path)
 
@@ -167,7 +167,7 @@ class HeaderCheck(abstract_check.AbstractCheck):
                            stderr=subprocess.DEVNULL,
                            check=True)
 
-            git_commit_time_cmd = (f"git -C {dirname} log -1 --pretty=%cs"
+            git_commit_time_cmd = (f"git -C {dirname} log -1 --pretty=%as"
                                    f" {path}")
             proc = subprocess.run(git_commit_time_cmd.split(" "),
                                   check=True,
