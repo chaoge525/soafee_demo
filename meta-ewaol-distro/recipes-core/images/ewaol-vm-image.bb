@@ -38,3 +38,4 @@ vm_image_tweaks() {
 }
 
 ROOTFS_POSTPROCESS_COMMAND += "vm_image_tweaks; "
+
