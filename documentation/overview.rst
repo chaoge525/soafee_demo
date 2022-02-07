@@ -3,21 +3,28 @@ Overview
 
 The Edge Workload Abstraction and Orchestration Layer (EWAOL) project provides
 users with a standards based framework using containers for the deployment and
-orchestration of applications on edge platforms. Under this approach, a full
-software stack is divided into the following software layers:
+orchestration of applications on edge platforms.
 
-* **Workloads**: Applications deployed using containers. These are the users of
-  the EWAOL. Note that the EWAOL project does not provide any workload
-  containers.
+Under this approach, a full software stack is divided into the following
+software layers:
+
+* **Workloads**: Applications deployed using containers. These are the workloads
+  deployed on the EWAOL system. Note that the EWAOL project does not provide any
+  workloads, and they should instead be deployed by the end-users according to
+  their target use-cases.
 
 * **Linux based Filesystem**: This is the main component provided by the EWAOL
-  project. It contains primarily the container engine and its run-time
-  dependencies.
+  project. It contains tools and services that provide EWAOL core functionality
+  such as the container engine and its run-time dependencies, the K3s container
+  orchestration framework, and Xen virtualization management software, as well
+  as optional packages such as those which provide EWAOL run-time integration
+  tests or software development capabilities on the target platform.
 
-* **System software**: Platform specific software composed of firmware and
-  operating system. EWAOL does not provide the system software but uses meta-arm
-  and meta-arm-bsp to provide an example reference stack using the N1SDP
-  platform.
+* **System software**: Platform-specific software composed of firmware and
+  operating system, as well as the Xen type-1 hypervisor when building an EWAOL
+  virtualization image. EWAOL does not provide the system software but uses
+  meta-arm, meta-arm-bsp, and meta-virtualization to provide an example
+  reference stack using the N1SDP platform.
 
 EWAOL is the reference implementation for SOAFEE (Scalable Open Architecture
 For Embedded Edge), the Arm lead industry initiative for extending cloud-native
