@@ -4,15 +4,15 @@ Image Builds
 The ``meta-ewaol`` repository provides build targets for both architectures
 (see :ref:`overview_high-level_architecture`):
 
-  * ``ewaol-image`` for baremetal architecture.
-  * ``ewaol-host-image`` for virtualization architecture, available only if
-    ``ewaol-virtualization`` is defined in ``DISTRO_FEATURES``.
+  * ``ewaol-baremetal-image`` for baremetal architecture.
+  * ``ewaol-virtualization-image`` for virtualization architecture, available
+    only if ``ewaol-virtualization`` is defined in ``DISTRO_FEATURES``.
 
 Both images include the Docker container engine to facilitate containerized
 workload orchestration on the edge and the K3s orchestration package, provided
 by the ``meta-virtualization`` Yocto layer.
 
-On baremetal images, the K3s package is provided with a systemd service that
+On a baremetal image, the K3s package is provided with a systemd service that
 auto-starts on image boot and runs the K3s server. This K3s server may be
 interacted with via the Kubernetes REST API or via the Kubernetes command-line
 tool ``kubectl`` (see `Kubernetes API Overview`_ and `kubectl Overview`_ for
@@ -33,21 +33,21 @@ the K3s server has been disabled.
 .. _Kubernetes API Overview: https://kubernetes.io/docs/reference/using-api/
 .. _kubectl Overview: https://kubernetes.io/docs/reference/kubectl/overview/
 
-EWAOL images with virtualization support include the Xen hypervisor into the
-software stack, to form a Host image (Dom0) that contains a single bundled
-Virtual Machine (VM) image (DomU / Guest). Virtualization support also includes
-Xen-related configuration for the kernel image and all necessary packages for
-the Host and VM rootfs. Both the Host and VM include the Docker container
-engine and K3s container orchestration. On a virtualization image, while the
-same systemd service that is provided on a baremetal EWAOL image is deployed to
-the Host (``k3s-server.service``), a different systemd service which runs a K3s
-agent is included on the VM rootfs (``k3s-agent.service``). Additional run-time
+On a virtualization image, the software stack includes the Xen type-1 hypervisor
+and provides a Control VM (Dom0) and a single bundled Guest VM (DomU), by
+default. Virtualization support also includes Xen-related configuration for the
+kernel image and all necessary packages for the Control VM and Guest VM root
+filesystems. Both VMs include the Docker container engine and K3s container
+orchestration. On a virtualization image, the same systemd service which is
+provided on a baremetal image is deployed to the Control VM
+(``k3s-server.service``), but a different systemd service which runs a K3s agent
+is deployed to the Guest VM (``k3s-agent.service``). Additional run-time
 configuration is required to connect the agent to the server, see
-:ref:`validations:Image Validation` for details. The Guest image is based on
-``generic-arm64`` ``MACHINE``. The Host also includes the ``xen-tools`` package
-along with a network configuration for ``xenbr0`` bridge, to allow the VM
-external network access. More details are provided in `Building EWAOL Image
-with Virtualization Support`_.
+:ref:`validations:Image Validation` for details. The Control VM also includes
+the ``xen-tools`` package along with network configuration for the ``xenbr0``
+bridge, to allow the Guest VM to access the external network. More details are
+provided in `Virtualization Image Build`_. The Guest VM image is based on the
+``generic-arm64`` ``MACHINE``.
 
 To prepare an EWAOL image build, it is necessary to define the target machine
 for the build via the bitbake ``MACHINE`` parameter. The image build can then be
@@ -109,19 +109,17 @@ configure the image are as follows:
 * ``ewaol-sdk``
 
     * Adds the EWAOL Software Development Kit (SDK) which includes packages
-      and image features to support software development on the target image.
-      For more details on the SDK, see
-      `Building EWAOL Software Development Kit (SDK) Image`_
+      and image features to support software development on the target. For
+      more details on the SDK, see
+      `Software Development Kit (SDK) Image Build`_.
 
 * ``ewaol-virtualization``
 
     * Adds the Xen hypervisor into the software stack.
-    * Provides a build target ``ewaol-host-image`` which defines a Host image
-      (Dom0) that contains a single bundled Virtual Machine (VM) image (DomU /
-      Guest) implemented by an ``ewaol-vm-image`` package.
+    * Provides an additional build target ``ewaol-virtualization-image``.
     * Enables Xen specific configs required by kernel.
-    * Includes all necessary packages and adjustments to the Host root file
-      system to support Xen virtualization.
+    * Includes all necessary packages and adjustments to the Control VM's root
+      filesystem to support management of Xen Guest VMs.
 
 Provided their Yocto layer sources can be found by bitbake via
 ``conf/bblayers.conf``, these features can be enabled by passing them as a
@@ -208,15 +206,15 @@ These are the current build modifier YAML files:
 
     Changes the default build targets to the SDK images, and appends
     ``ewaol-sdk`` as a ``DISTRO_FEATURE`` for the build. Documentation for
-    the EWAOL SDK is given in
-    `Building EWAOL Software Development Kit (SDK) Image`_.
+    the EWAOL SDK is given in `Software Development Kit (SDK) Image Build`_.
 
 * ``virtualization.yml``
 
-    Appends ``ewaol-virtualization`` to the ``DISTRO_FEATURES`` and selects
-    ``ewaol-host-image`` as the build target. The Host and VM images can be
-    customized, see `Building EWAOL Image with Virtualization Support`_ for
-    details.
+    Appends ``ewaol-virtualization`` to the ``DISTRO_FEATURES`` and selects the
+    virtualization image as the build target. If this config file is not
+    provided, the default image built by kas will be the baremetal image.
+    The Control VM and Guest VM images can be customized, see
+    `Virtualization Image Build`_ for details.
 
 .. note::
   If a kas build config does not set a build parameter, the parameter will
@@ -286,7 +284,7 @@ The following kernel configs checks are performed:
   ``meta-ewaol-distro/classes/k3s_kernelcfg_check.bbclass``.
   By default `Yocto K3s config`_ is used as the reference.
 
-* For EWAOL images with virtualization support, the Xen related configs is
+* For virtualization images, the Xen related configs is
   done via: ``meta-ewaol-distro/classes/xen_kernelcfg_check.bbclass``.
   By default `Yocto Xen config`_ is used as the reference.
 
@@ -341,24 +339,20 @@ bitbake, it is necessary to prepare a bitbake project as follows:
   enabled by reading these configuration files and manually inserting their
   changes into the build configuration folder.
 
-Building EWAOL Software Development Kit (SDK) Image
----------------------------------------------------
+Software Development Kit (SDK) Image Build
+------------------------------------------
 
 .. note::
   Please note that the SDK image requires at least 110 GBytes of free disk
   space to build!
 
-The EWAOL SDK images enable users to perform common development tasks on the
-target, such as:
+EWAOL SDK images enable users to perform common development tasks on the target,
+such as:
 
   * Application and kernel module compilation
-
   * Remote debugging
-
   * Profiling
-
   * Tracing
-
   * Runtime package management
 
 The precise list of packages and image features provided as part of the EWAOL
@@ -378,8 +372,8 @@ for example `kernel module compilation`_, `profiling and tracing`_, and
 
 To build SDK image append ``meta-ewaol-config/kas/sdk.yml`` configuration
 file to the kas build command. This ``.yml`` file changes the default build
-target to ``ewaol-image-sdk``. For more details about selecting configuration
-files for kas, see: :ref:`quickstart_build_host_setup`.
+target to ``ewaol-baremetal-image-sdk``. For more details about selecting
+configuration files for kas, see: :ref:`quickstart_build_host_setup`.
 
 For example, to build the SDK images for the N1SDP via kas:
 
@@ -388,66 +382,65 @@ For example, to build the SDK images for the N1SDP via kas:
   kas build meta-ewaol-config/kas/n1sdp.yml:meta-ewaol-config/kas/sdk.yml
 
 In this example, the SDK produced image by the kas build will be found at:
-``build/tmp/deploy/images/n1sdp/ewaol-image-sdk-n1sdp.*``.
+``build/tmp/deploy/images/n1sdp/ewaol-baremetal-image-sdk-n1sdp.*``.
 To deploy the generated image, please refer to the
 :ref:`quickstart_deploy_on_n1sdp` section.
 
-Building EWAOL Image with Virtualization Support
-------------------------------------------------
+Virtualization Image Build
+--------------------------
 
 .. note::
-  Please note that an ``ewaol-host-image`` requires at least 100 GBytes of free
-  disk space to build!
+  Please note that an ``ewaol-virtualization-image`` requires at least 100
+  GBytes of free disk space to build!
 
-An ewaol virtualization image includes the Xen hypervisor in its software
-stack. To build the Host image using ``n1sdp`` machine and the Guest image
-using ``generic-arm64`` machine, `Multiple Configuration Build`_ is used. The
-Guest build time variables that are different from the Host ones, like the
-``MACHINE``, are set inside
-``meta-ewaol-distro/conf/multiconfig/ewaol-vm.conf`` file.
+A virtualization image includes the Xen hypervisor into the EWAOL software
+stack. To build a virtualization image for the ``n1sdp`` machine, with a Guest
+VM based on the ``generic-arm64`` ``MACHINE``, `Multiple Configuration Build`_
+is used. Configurable build-time variables for the Guest VM are defined
+within the ``meta-ewaol-distro/conf/multiconfig/ewaol-guest-vm.conf`` file.
 
-A VM is included into the Host rootfs via the ``ewaol-vm-package`` recipe,
-with the rootfs stored as a raw image file in ``*.qcow2`` format. In addition,
-this package includes a sample Xen domain configuration file, which holds the
-customizable VM settings as detailed in `xl domain configuration`_. By default
-one VM (with hostname ``ewaol-vm1``) is built and included on the Host rootfs,
-but this number can be customized, as described in `Multiple EWAOL VM
-Instances`_.
+The Guest VM is included into the EWAOL Virtualization Image via the
+``ewaol-guest-vm-package`` recipe, with the Guest VM's rootfs stored as a raw
+image file in ``*.qcow2`` format. In addition, this package includes a sample
+Xen domain configuration file, which holds the customizable Guest VM settings as
+detailed in `xl domain configuration`_. By default one Guest VM (with hostname
+``ewaol-guest-vm1``) is built and included on the virtualization image, but this
+number can be customized, as described in `Multiple EWAOL Guest VM Instances`_.
 
-The Host and VM images are able to be customized via a set of environment
-variables. The ``EWAOL*_ROOTFS_EXTRA_SPACE`` variables apply their values to
-the relevant ``IMAGE_ROOTFS_EXTRA_SPACE`` bitbake variable.
-
-The following list shows the available environment variables and their default
-values, configuring one VM instance:
+The Control VM and Guest VMs can be customized via a set of environment
+variables. The following list shows the available environment variables and
+their default values, configuring one VM instance:
 
 .. _vm-vars:
 
 .. code-block:: yaml
 
-   EWAOL_VM_INSTANCES: "1"                     # Number of VM instances
-   EWAOL_VM1_NUMBER_OF_CPUS: "4"               # Number of VM1 CPUs
-   EWAOL_VM1_MEMORY_SIZE: "6144"               # Memory size for VM1 (MB)
-   EWAOL_VM1_ROOTFS_EXTRA_SPACE: ""            # Extra storage space for VM1 (KB)
-   EWAOL_HOST_MEMORY_SIZE: "2048"              # Memory size for Host (MB)
-   EWAOL_HOST_ROOTFS_EXTRA_SPACE: "1000000"    # Extra storage space for Host (KB)
-   EWAOL_ROOTFS_EXTRA_SPACE: "2000000"         # Extra storage space for Host and each VM (KB)
+   EWAOL_GUEST_VM_INSTANCES: "1"                      # Number of Guest VM instances
+   EWAOL_GUEST_VM1_NUMBER_OF_CPUS: "4"                # Number of CPUs for Guest VM1
+   EWAOL_GUEST_VM1_MEMORY_SIZE: "6144"                # Memory size for Guest VM1 (MB)
+   EWAOL_GUEST_VM1_ROOTFS_EXTRA_SPACE: ""             # Extra storage space for Guest VM1 (KB)
+   EWAOL_CONTROL_VM_MEMORY_SIZE: "2048"               # Memory size for Control VM (MB)
+   EWAOL_CONTROL_VM_ROOTFS_EXTRA_SPACE: "1000000"     # Extra storage space for Control VM (KB)
+   EWAOL_ROOTFS_EXTRA_SPACE: "2000000"                # Extra storage space for the Control VM and each Guest VM (KB)
 
 .. note::
-  VM instances may be independently customized, where the above list only shows
-  the variables for the default case of a single VM. See `Multiple EWAOL VM
-  Instances`_ for configuring additional VMs.
+  Guest VM instances may be independently customized, where the above list only
+  shows the variables for the default case of a single Guest VM. See
+  `Multiple EWAOL Guest VM Instances`_ for configuring additional Guest VMs.
 
-These variables may be set either within an included kas configuration file
+The variables may be set either within an included kas configuration file
 (see ``meta-ewaol-config/kas/virtualization.yml`` for example usage), or
-directly in the build environment.
+directly in the build environment. The ``EWAOL_*_ROOTFS_EXTRA_SPACE`` variables
+apply their values to the relevant ``IMAGE_ROOTFS_EXTRA_SPACE`` bitbake
+variable.
 
-To build the virtualization enabled image, pass
-``meta-ewaol-config/kas/virtualization.yml`` to the kas build command:
+To build the virtualization image, pass
+``meta-ewaol-config/kas/virtualization.yml`` to the kas build command. For
+example:
 
 .. code-block:: shell
 
-  kas meta-ewaol-config/kas/n1sdp.yml:meta-ewaol-config/kas/virtualization.yml
+  kas build meta-ewaol-config/kas/n1sdp.yml:meta-ewaol-config/kas/virtualization.yml
 
 .. _xl domain configuration:
   https://xenbits.xen.org/docs/4.16-testing/man/xl.cfg.5.html
@@ -455,22 +448,24 @@ To build the virtualization enabled image, pass
 .. _Multiple Configuration Build:
   https://docs.yoctoproject.org/3.3.2/dev-manual/common-tasks.html#building-images-for-multiple-targets-using-multiple-configurations
 
+Multiple EWAOL Guest VM Instances
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Multiple EWAOL VM Instances
-^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Multiple EWAOL Guest VM instances can be included on the virtualization image,
+each one based on the same kernel and image recipe.
 
-Multiple EWAOL VM instances can be included on the virtualization image, each
-one based on the same kernel and image recipes.
-
-The number of VM instances built for and included on the virtualization image
-can be customized via the ``EWAOL_VM_INSTANCES`` variable, as listed
+The number of Guest VM instances built for and included on the virtualization
+image can be set via the ``EWAOL_GUEST_VM_INSTANCES`` variable, which is listed
 :ref:`here<vm-vars>` along with its default value.
 
-VM instances can be independently configured via Bitbake variables which
-reference the VM instance index. For example, variables with a prefix
-``EWAOL_VM1_`` apply to the first VM, variables with a prefix ``EWAOL_VM2_``
-apply to the second VM, and so on. All VM instances use the same default
-configuration, apart from the hostname, which is based on its index:
-``ewaol-vm1`` for the first, ``ewaol-vm2`` for the second, etc. An example of
-configuring a second VM instance is given in
-``meta-ewaol-config/kas/second-vm-parameters.yml``.
+Guest VM instances can be independently configured via Bitbake variables which
+reference the Guest VM's integer instance index. For example, variables with a
+prefix ``EWAOL_GUEST_VM1_`` apply to the first Guest VM, variables with a prefix
+``EWAOL_GUEST_VM2_`` apply to the second Guest VM, and so on. All Guest VM
+instances use the same default configuration, apart from the hostname, which is
+based on their instance index: ``ewaol-guest-vm1`` for the first,
+``ewaol-guest-vm2`` for the second, and so on. An example of configuring a
+second Guest VM instance using the kas tool is given in
+``meta-ewaol-config/kas/second-vm-parameters.yml``, although these variables
+will only be used if ``EWAOL_GUEST_VM_INSTANCES`` is set to build two or more
+Guest VMs.

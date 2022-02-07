@@ -19,8 +19,8 @@ TEST_SUITE_PREFIX = "VIRT"
 
 TEST_FILES = "file://virtualization-integration-tests.bats \
               file://virtualization-funcs.sh \
-              file://virtual-guest-funcs.expect \
-              file://guest-run-command.expect \
+              file://guest-vm-funcs.expect \
+              file://guest-vm-run-command.expect \
               file://integration-tests-common-virtual-funcs.sh \
               file://integration-tests-common-funcs.sh"
 

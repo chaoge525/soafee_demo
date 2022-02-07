@@ -19,8 +19,8 @@ on the target architecture, as follows:
     * K3s Container Orchestration tests (testing single K3s node)
 * Virtualization architecture:
     * Docker Container Engine tests
-    * K3s Container Orchestration tests (testing K3s server on the Host,
-      connected with a K3s agent on the VM)
+    * K3s Container Orchestration tests (testing K3s server on the Control VM,
+      connected with a K3s agent on the Guest VM)
     * Xen Virtualization tests
 
 The integration tests are described in more detail later in this document.
@@ -210,10 +210,11 @@ for execution via ``ptest-runner`` or as a standalone BATS suite, as described
 in `Running the Tests`_.
 
 On an EWAOL virtualization image, the container engine test suite is available
-for execution on both the Host and the VM. In addition, as part of running the
-test suite on the Host, an extra test will be performed which logs into the VM
-and runs the test suite on the VM also, thereby reporting any failures as part
-of the Host test suite execution.
+for execution on both the Control VM and the Guest VM. In addition, as part of
+running the test suite on the Control VM, an extra test will be performed which
+logs into the Guest VM and runs the container engine test suite on it, thereby
+reporting any test failures of the Guest VM as part of the Control VM's test
+suite execution.
 
 The test suite is built and installed in the image according to the following
 bitbake recipe within
@@ -236,13 +237,16 @@ consecutively in the following order.
          via the ``docker run`` command
 |        - Create and start a container, re-using the existing image
 |        - Update package lists within container from external network
-| 3. ``run container engine integration tests on the VM from the Host`` is only
-     executed on the Host. On the VM this test is skipped. The test is composed
-     of two sub-tests:
-|    3.1. Check that Xendomains is initialized and the VM is running
-|    3.2. Run the container engine integration tests on the VM
+| 3. ``run container engine integration tests on the Guest VM from the Control VM``
+     is only executed on the Control VM. On the Guest VM this test is skipped.
+     The test is composed of two sub-tests:
+|    3.1. Check that Xendomains is initialized and the Guest VM is running
+|    3.2. Run the container engine integration tests on the Guest VM
 |        - Uses an Expect script to log-in and execute the
            ``ptest-runner container-engine-integration-tests`` command.
+|        - This command will therefore run only the first and second top-level
+           integration tests of the container engine integration test suite on
+           the Guest VM.
 
 The tests can be customized via environment variables passed to the execution,
 each prefixed by ``CE_`` to identify the variable as associated to the
@@ -257,10 +261,12 @@ container engine tests:
 |  ``CE_TEST_CLEAN_ENV``: enable test environment cleanup
 |    Default: ``1`` (enabled)
 |    See `Container Engine Environment Clean-Up`_
-|  ``CE_TEST_GUEST_NAME``: defines the Xen domain name and Hostname of the VM
+|  ``CE_TEST_GUEST_VM_NAME``: defines the Xen domain name and Hostname of the
+    Guest VM
 |    Only available when running the tests on an EWAOL virtualization image
-|    Represents the target VM to test when executing the suite on the Host
-|    Default: ``ewaol-vm1``
+|    Represents the target Guest VM to test when executing the suite on the
+     Control VM
+|    Default: ``ewaol-guest-vm1``
 
 Container Engine Environment Clean-Up
 """""""""""""""""""""""""""""""""""""
@@ -309,19 +315,20 @@ containerized test workload is therefore deployed to this node for scheduling
 and execution.
 
 For virtualization images, the K3s integration tests consider a cluster
-comprised of two nodes: the Host running a K3s server, and the VM running a K3s
-agent which is connected to the server. The containerized test workload is
-configured to only be schedulable on the VM, meaning that the Host server
-orchestrates a test application which is deployed and executed on the VM. In
-addition to the same initialization procedure that is carried out when running
-the tests on a baremetal image, initialization for virtualization images
-includes connecting the VM K3s agent to the Host K3s server (if it is not
-already connected). To do this, before the tests run the systemd service that
-provides the K3s agent on the VM is configured with a systemd override that
-provides the IP and authentication token of the Host's K3s server, and this
-service is then started. The K3s integration test suite therefore expects that
-the target VM is available when running on a virtualization image, and will not
-create one if it does not exist.
+comprised of two nodes: the Control VM running a K3s server, and the Guest VM
+running a K3s agent which is connected to the server. The containerized test
+workload is configured to only be schedulable on the Guest VM, meaning that the
+server on the Control VM orchestrates a test application which is deployed and
+executed on the Guest VM. In addition to the same initialization procedure that
+is carried out when running the tests on a baremetal image, initialization for
+virtualization images includes connecting the Guest VM's K3s agent to the
+Control VM's K3s server (if it is not already connected). To do this, before the
+tests run, the systemd service that provides the K3s agent on the Guest VM is
+configured with a systemd override that provides the IP and authentication token
+of the Control VM's K3s server, and this service is then started. The K3s
+integration test suite therefore expects that the target Guest VM is available
+when running on a virtualization image, and will not create one if it does not
+exist.
 
 In both cases, the test suite will not be run until the appropriate K3s services
 are in the 'active' state, and all 'kube-system' pods are either running, or
@@ -358,15 +365,16 @@ each prefixed by ``K3S_`` to identify the variable as associated to the
 K3s orchestration tests:
 
 |  ``K3S_TEST_LOG_DIR``: defines the location of the log file
-|    Default: ``/usr/share/k3s-integration-tests/logs``
-|    Directory will be created if it does not exist
-|    See `Test Logging`_
+|  Default: ``/usr/share/k3s-integration-tests/logs``
+|  Directory will be created if it does not exist
+|  See `Test Logging`_
 |  ``K3S_TEST_CLEAN_ENV``: enable test environment cleanup
-|    Default: ``1`` (enabled)
-|    See `K3s Environment Clean-Up`_
-|  ``K3S_TEST_GUEST_NAME``: defines the name of the VM to use for the tests
-|    Only available when running the tests on a virtualization image
-|    Default: ``ewaol-vm1``
+|  Default: ``1`` (enabled)
+|  See `K3s Environment Clean-Up`_
+|  ``K3S_TEST_GUEST_VM_NAME``: defines the name of the Guest VM to use for the
+   tests
+|  Only available when running the tests on a virtualization image
+|  Default: ``ewaol-guest-vm1``
 
 K3s Environment Clean-Up
 """"""""""""""""""""""""
@@ -388,9 +396,9 @@ The environment clean operation involves:
       are also deleted
 
 For virtualization images, additional clean up operations are performed:
-    * Deleting the VM node from the K3s cluster
-    * Stopping the K3s agent running on the VM, and deleting any test systemd
-      service override on the VM
+    * Deleting the Guest VM node from the K3s cluster
+    * Stopping the K3s agent running on the Guest VM, and deleting any test
+      systemd service override on the Guest VM
 
 If enabled then the environment clean operations will always be run, regardless
 of test-suite success or failure.
@@ -414,30 +422,31 @@ architecture.
 
 Currently the test suite contains two top-level integration tests, which
 validate a correctly running Guest VM, and validate that it can be managed
-successfully from the Host. These tests are as follows:
+successfully from the Control VM. These tests are as follows:
 
-| 1. ``validate guest running`` is composed of two sub-tests:
-|    1.1. Check that Xen reports the VM as running
-|    1.2. Check that the VM is operational and has external network access
-|        - Log-in to the VM and access its interactive shell
+| 1. ``validate Guest VM is running`` is composed of two sub-tests:
+|    1.1. Check that Xen reports the Guest VM as running
+|    1.2. Check that the Guest VM is operational and has external network access
+|        - Log-in to the Guest VM and access its interactive shell
 |        - Ping an external IP
-| 2. ``validate guest management`` is composed of five sub-tests:
-|    2.1. Check that Xen reports the VM as running
-|    2.2. Shutdown the VM
-|    2.3. Check that Xen reports the VM as not running
-|    2.4. Start the VM
-|    2.5. Check that Xen reports the VM as running
+| 2. ``validate Guest VM management`` is composed of five sub-tests:
+|    2.1. Check that Xen reports the Guest VM as running
+|    2.2. Shutdown the Guest VM
+|    2.3. Check that Xen reports the Guest VM as not running
+|    2.4. Start the Guest VM
+|    2.5. Check that Xen reports the Guest VM as running
 
 The tests can be customized via environment variables passed to the execution,
 each prefixed by ``VIRT_`` to identify the variable as associated to the
 virtualization integration tests:
 
 |  ``VIRT_TEST_LOG_DIR``: defines the location of the log file
-|    Default: ``/usr/share/virtualization-integration-tests/logs``
-|    Directory will be created if it does not exist
-|    See `Test Logging`_
-|  ``VIRT_TEST_GUEST_NAME``: defines the name of the VM to use for the tests
-|    Default: ``ewaol-vm1``
+|  Default: ``/usr/share/virtualization-integration-tests/logs``
+|  Directory will be created if it does not exist
+|  See `Test Logging`_
+|  ``VIRT_TEST_GUEST_VM_NAME``: defines the name of the Guest VM to use for the
+   tests
+|  Default: ``ewaol-guest-vm1``
 
 Prior to execution, the Xen Virtualization test suite expects the
 ``xendomains.service`` systemd service to be running or in the process of

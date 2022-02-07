@@ -2,11 +2,11 @@
 #
 # SPDX-License-Identifier: MIT
 
-SUMMARY = "EWAOL Xen VM (Guest) Images with common packages"
+SUMMARY = "EWAOL Guest VM image with common packages, providing Xen DomU"
 
 require ewaol-image-core.inc
 
-inherit ewaol_vm_image
+inherit ewaol_guest_vm_image
 
 inherit features_check
 REQUIRED_DISTRO_FEATURES += "ewaol-virtualization"
@@ -14,8 +14,8 @@ REQUIRED_DISTRO_FEATURES += "ewaol-virtualization"
 IMAGE_INSTALL:remove = "k3s-server"
 IMAGE_INSTALL += "k3s-agent"
 
-# These integration tests should only execute on the Host, so make them
-# unavailable on the VM
+# These integration tests should only execute on the Control VM, so make them
+# unavailable on the Guest VM
 IMAGE_INSTALL:remove = "${@bb.utils.contains('DISTRO_FEATURES', \
     'ewaol-test', \
     'k3s-integration-tests-ptest virtualization-integration-tests-ptest', \

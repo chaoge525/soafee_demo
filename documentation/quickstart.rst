@@ -70,8 +70,8 @@ EWAOL Image Build via kas
 
 This section describes how to build the following images for the EWAOL project:
 
-  A. 'Baremetal' image.
-  B. 'Virtualization'-enabled image.
+  A. Baremetal image.
+  B. Virtualization image.
 
 For the description of the above images please see :ref:`builds:Image Builds`.
 Instructions are provided for building these images on the following machine:
@@ -91,8 +91,8 @@ First, the ``meta-ewaol`` repository must be checked out via:
 The build configurations within ``meta-ewaol-config/kas/`` can be passed to kas
 to build images with support for various features. By default, images will
 include the Docker container engine and K3s containerized workload
-orchestration. Other features like tests or software development kit packages
-are also available, see :ref:`builds:Image Builds` for more details.
+orchestration. Other features like tests or Software Development Kit (SDK)
+packages are also available, see :ref:`builds:Image Builds` for more details.
 
 .. _meta-arm-bsp:
    https://git.yoctoproject.org/cgit/cgit.cgi/meta-arm/tree/meta-arm-bsp/documentation
@@ -110,7 +110,7 @@ Build for N1SDP
 
 To build an image for the selected architecture:
 
-  A. Baremetal:
+  A. Baremetal image:
 
      .. code-block:: console
 
@@ -118,17 +118,17 @@ To build an image for the selected architecture:
 
      The resulting baremetal image will be produced:
 
-     ``build/tmp/deploy/images/n1sdp/ewaol-image-n1sdp.*``
+     ``build/tmp/deploy/images/n1sdp/ewaol-baremetal-image-n1sdp.*``
 
-  B. Virtualization:
+  B. Virtualization image:
 
      .. code-block:: console
 
         kas build meta-ewaol-config/kas/n1sdp.yml:meta-ewaol-config/kas/virtualization.yml
 
-     The resulting image with virtualization support will be produced:
+     The resulting virtualization image will be produced:
 
-     ``build/tmp/deploy/images/n1sdp/ewaol-host-image-n1sdp.*``
+     ``build/tmp/deploy/images/n1sdp/ewaol-virtualization-image-n1sdp.*``
 
 .. _quickstart_deploy_on_n1sdp:
 
@@ -137,7 +137,8 @@ Deploy on N1SDP
 
 To deploy an image on N1SDP you will need a tool to copy the image using its
 block map. In this tutorial, we will use ``bmap-tools`` which can be installed
-on your host via the following command (example on Ubuntu based host):
+on your Build Host via the following command (example on a Ubuntu based Build
+Host):
 
 .. code-block:: console
 
@@ -179,20 +180,20 @@ Use ``bmap-tools`` to copy the target image to USB disk:
 
 3. Flash the image for the selected architecture:
 
-  A. Baremetal:
+  A. Baremetal image:
 
     .. code-block:: console
 
-       sudo bmaptool copy --bmap ewaol-image-n1sdp.wic.bmap ewaol-image-n1sdp.wic.gz /dev/sdc
+       sudo bmaptool copy --bmap ewaol-baremetal-image-n1sdp.wic.bmap ewaol-baremetal-image-n1sdp.wic.gz /dev/sdc
 
-  B. Virtualization:
+  B. Virtualization image:
 
      .. code-block:: console
 
-        sudo bmaptool copy --bmap ewaol-host-image-n1sdp.wic.bmap ewaol-host-image-n1sdp.wic.gz /dev/sdc
+        sudo bmaptool copy --bmap ewaol-virtualization-image-n1sdp.wic.bmap ewaol-virtualization-image-n1sdp.wic.gz /dev/sdc
 
-Safely eject the USB storage device from the host PC and plug it onto one of
-the USB 3.0 ports in the N1SDP.
+Safely eject the USB storage device from the Build Host PC and plug it onto one
+of the USB 3.0 ports in the N1SDP.
 
 Board's MCC configuration microSD card
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -291,10 +292,10 @@ Enable USB:
    Cmd> USB_ON
 
 5. Mount the N1SDP's internal microSD card over the DBG USB connection to your
-   host PC and copy the required files.
+   Build Host PC and copy the required files.
 
-The microSD card is visible on your host PC as a disk device after issuing the
-``USB_ON`` command in the MCC console, as performed in the previous step.
+The microSD card is visible on your Build Host PC as a disk device after issuing
+the ``USB_ON`` command in the MCC console, as performed in the previous step.
 This can be found using the ``lsblk`` command:
 
 .. code-block:: console
@@ -336,7 +337,7 @@ This can be found using the ``lsblk`` command:
    `Potential firmware damage notice`_. The ``MB/HBI0316A/io_v123f.txt`` file
    located in the microSD needs to be updated. To update it, set the PMIC image
    (``300k_8c2.bin``) to be used in the newer models by running the following
-   commands on your host PC:
+   commands on your Build Host PC:
 
    .. code-block:: console
 
@@ -358,7 +359,7 @@ Run on N1SDP
 ------------
 
 To run an image, connect to the AP console by running the following command
-from a terminal in your host PC:
+from a terminal in your Build Host PC:
 
 .. code-block:: console
 

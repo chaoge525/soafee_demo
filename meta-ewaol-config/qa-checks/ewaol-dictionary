@@ -23,7 +23,7 @@ BSPs
 build_id
 build's
 CE_TEST_CLEAN_ENV
-CE_TEST_GUEST_NAME
+CE_TEST_GUEST_VM_NAME
 CE_TEST_IMAGE
 CE_TEST_LOG_DIR
 cgit
@@ -54,7 +54,7 @@ ewaol
 ewaol_arch_overview
 ewaol-devel
 ewaol_layers_deps_diagram
-ewaol-n1sdp-host-efidisk
+ewaol-virtualization-n1sdp-efidisk
 ewaol_rel_dev_branches
 ewaol_rel_yocto_overview
 ewaol-vm1
@@ -88,7 +88,7 @@ k3s
 k3s_kernelcfg_check
 k3s-killall
 K3S_TEST_CLEAN_ENV
-K3S_TEST_GUEST_NAME
+K3S_TEST_GUEST_VM_NAME
 K3S_TEST_LOG_DIR
 kubectl
 kube-system
@@ -176,7 +176,7 @@ v
 v0
 v1
 validations
-VIRT_TEST_GUEST_NAME
+VIRT_TEST_GUEST_VM_NAME
 VIRT_TEST_LOG_DIR
 VM
 VMs
@@ -196,3 +196,5 @@ Yocto
 yocto-cache
 yoctoproject
 Yocto's
+EWAOL_GUEST_VM2
+VM's
