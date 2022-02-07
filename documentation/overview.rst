@@ -46,11 +46,11 @@ High-Level Architecture
 
 EWAOL supports two different architectures:
 
-  * Baremetal architecture, in which the entire EWAOL software stack executes
-    directly on the target hardware.
-  * Virtualization architecture, in which the EWAOL software stack is managed
-    by the Xen hypervisor and forms a Host image (Dom0) that contains a single
-    bundled Virtual Machine (VM) image (DomU / Guest).
+* **Baremetal** architecture, where the EWAOL software stack executes directly
+  on the target hardware.
+* **Virtualization** architecture, where the EWAOL software stack includes the
+  Xen hypervisor and provides a Control VM (Dom0) and a single bundled Guest VM
+  (DomU), by default.
 
 .. image:: images/ewaol_arch_overview.png
 

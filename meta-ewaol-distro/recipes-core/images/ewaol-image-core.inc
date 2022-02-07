@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: MIT
 
-SUMMARY = "EWAOL Image Core config with common packages"
+SUMMARY = "EWAOL image core config with common packages"
 
 IMAGE_INSTALL = "packagegroup-core-boot ${CORE_IMAGE_EXTRA_INSTALL}"
 

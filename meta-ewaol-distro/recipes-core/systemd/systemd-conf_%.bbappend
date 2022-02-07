@@ -1,10 +1,10 @@
-# Copyright (c) 2021, Arm Limited.
+# Copyright (c) 2021-2022, Arm Limited.
 #
 # SPDX-License-Identifier: MIT
 
-# This file includes host network configuration responsible for creating
-# a network bridge to share the host eth physical interface with the guests
-# virtual interfaces (vif) in bridged mode.
+# This file includes network configuration responsible for creating a network
+# bridge to share the Control VM eth interface with the Guest VM virtual
+# interfaces (vif) in bridged mode.
 
 OVERRIDES:append = "${EWAOL_OVERRIDES}"
 

@@ -1,0 +1,12 @@
+# Copyright (c) 2022, Arm Limited.
+#
+# SPDX-License-Identifier: MIT
+
+name = "${EWAOL_GUEST_VM_HOSTNAME}"
+memory = ${EWAOL_GUEST_VM_MEMORY_SIZE}
+vcpus = ${EWAOL_GUEST_VM_NUMBER_OF_CPUS}
+extra = " earlyprintk=xenboot console=hvc0 rw"
+root = "/dev/xvda1"
+kernel = "${EWAOL_GUEST_VM_KERNEL_DST}"
+disk = ['format=qcow2, vdev=xvda, access=rw, backendtype=qdisk, target=${EWAOL_GUEST_VM_DISK_DST}']
+vif = ['script=vif-bridge,bridge=xenbr0']

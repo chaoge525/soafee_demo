@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: MIT
 
-SUMMARY = "EWAOL Xen Host Image."
+SUMMARY = "EWAOL Virtualization image, providing a Control VM as Xen Dom0."
 
 require ewaol-image-core.inc
 
@@ -12,15 +12,17 @@ REQUIRED_DISTRO_FEATURES += "ewaol-virtualization"
 EXTRA_IMAGEDEPENDS:append = " xen"
 
 # Increase storage size by 2GB to not run out of free space
-EWAOL_HOST_ROOTFS_EXTRA_SPACE ?= "2000000"
+EWAOL_CONTROL_VM_ROOTFS_EXTRA_SPACE ?= "2000000"
 
-IMAGE_ROOTFS_EXTRA_SPACE:append = "${@ ' + ${EWAOL_HOST_ROOTFS_EXTRA_SPACE}' \
-                                      if '${EWAOL_HOST_ROOTFS_EXTRA_SPACE}' \
-                                      else ''}"
+IMAGE_ROOTFS_EXTRA_SPACE:append = " \
+    ${@ ' + ${EWAOL_CONTROL_VM_ROOTFS_EXTRA_SPACE}' \
+    if '${EWAOL_CONTROL_VM_ROOTFS_EXTRA_SPACE}' \
+    else ''} \
+    "
 
 IMAGE_INSTALL:append = " \
-    ${@ 'ewaol-vm-package' if d.getVar('BUILD_EWAOL_VM') == 'True' else ''} \
-    ${@ 'prebuilt-vm-package' if d.getVar('INCLUDE_PREBUILT_VM') == 'True' else ''} \
+    ${@ 'ewaol-guest-vm-package' if d.getVar('BUILD_EWAOL_GUEST_VM') == 'True' else ''} \
+    ${@ 'prebuilt-guest-vm-package' if d.getVar('INCLUDE_PREBUILT_GUEST_VM') == 'True' else ''} \
     kernel-module-xen-blkback \
     kernel-module-xen-gntalloc \
     kernel-module-xen-gntdev \

@@ -22,8 +22,8 @@ TEST_FILES = "file://container-engine-integration-tests.bats \
 
 TEST_FILES:append:ewaol-virtualization = " \
     file://integration-tests-common-virtual-funcs.sh \
-    file://virtual-guest-funcs.expect \
-    file://guest-run-command.expect \
+    file://guest-vm-funcs.expect \
+    file://guest-vm-run-command.expect \
     file://container-engine-additional-virtual-tests.bats \
     file://container-engine-virtualization-funcs.sh \
     "

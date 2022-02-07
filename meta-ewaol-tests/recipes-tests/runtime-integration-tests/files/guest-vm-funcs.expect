@@ -4,7 +4,7 @@
 #
 # SPDX-License-Identifier: MIT
 
-proc guest_logon {guest} {
+proc guest_vm_logon {guest} {
     global expect_out
     global spawn_id
     global login_prompt
@@ -98,7 +98,7 @@ proc run_cmd {cmd} {
     return $rc
 }
 
-proc guest_logoff {} {
+proc guest_vm_logoff {} {
     global expect_out
     global spawn_id
     global login_prompt
@@ -110,7 +110,7 @@ proc guest_logoff {} {
     sleep 0.5
 
     expect "${login_prompt}"
-    # Send ctrl + ] to exit the guest
+    # Send ctrl + ] to exit the Guest VM
     send "\x1b"
 
     return 0

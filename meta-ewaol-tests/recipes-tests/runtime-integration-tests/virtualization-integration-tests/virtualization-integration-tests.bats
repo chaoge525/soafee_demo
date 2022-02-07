@@ -21,8 +21,8 @@ export TEST_RUN_FILE="${TEST_LOG_DIR}/virt-test-pgid"
 
 # Set test-suite specific configuration
 
-if [ -z "${VIRT_TEST_GUEST_NAME}" ]; then
-    VIRT_TEST_GUEST_NAME="ewaol-vm1"
+if [ -z "${VIRT_TEST_GUEST_VM_NAME}" ]; then
+    VIRT_TEST_GUEST_VM_NAME="ewaol-guest-vm1"
 fi
 
 load integration-tests-common-funcs.sh
@@ -33,7 +33,7 @@ load virtualization-funcs.sh
 setup_file() {
     _run test_suite_setup
 
-    _run xendomains_and_guest_is_initialized "${VIRT_TEST_GUEST_NAME}"
+    _run xendomains_and_guest_vm_is_initialized "${VIRT_TEST_GUEST_VM_NAME}"
     if [ "${status}" -ne 0 ]; then
         log "FAIL"
         exit 1
@@ -46,10 +46,10 @@ teardown_file() {
     _run test_suite_teardown
 }
 
-@test 'validate guest running' {
+@test 'validate Guest VM is running' {
 
-    subtest="Guest is running on the Host"
-    _run guest_is_running "${VIRT_TEST_GUEST_NAME}"
+    subtest="Guest VM is running"
+    _run guest_vm_is_running "${VIRT_TEST_GUEST_VM_NAME}"
     if [ "${status}" -ne 0 ]; then
         log "FAIL" "${subtest}"
         return 1
@@ -57,8 +57,8 @@ teardown_file() {
         log "PASS" "${subtest}"
     fi
 
-    subtest="Log-in to Guest and check external network is accessible"
-    _run test_guest_login_and_network_access "${VIRT_TEST_GUEST_NAME}"
+    subtest="Log-in to Guest VM and check external network is accessible"
+    _run test_guest_vm_login_and_network_access "${VIRT_TEST_GUEST_VM_NAME}"
     if [ "${status}" -ne 0 ]; then
         log "FAIL" "${subtest}"
         return 1
@@ -69,10 +69,10 @@ teardown_file() {
     log "PASS"
 }
 
-@test 'validate guest management' {
+@test 'validate Guest VM management' {
 
-    subtest="Guest is running on the Host"
-    _run guest_is_running "${VIRT_TEST_GUEST_NAME}"
+    subtest="Guest VM is running"
+    _run guest_vm_is_running "${VIRT_TEST_GUEST_VM_NAME}"
     if [ "${status}" -ne 0 ]; then
         log "FAIL" "${subtest}"
         return 1
@@ -80,8 +80,8 @@ teardown_file() {
         log "PASS" "${subtest}"
     fi
 
-    subtest="Shutdown Guest"
-    _run shutdown_guest
+    subtest="Shutdown Guest VM"
+    _run shutdown_guest_vm
     if [ "${status}" -ne 0 ]; then
         log "FAIL" "${subtest}"
         return 1
@@ -89,8 +89,8 @@ teardown_file() {
         log "PASS" "${subtest}"
     fi
 
-    subtest="Guest is not running on the Host after shutdown"
-    _run wait_for_success 300 10 guest_is_not_running "${VIRT_TEST_GUEST_NAME}"
+    subtest="Guest VM is not running after shutdown"
+    _run wait_for_success 300 10 guest_vm_is_not_running "${VIRT_TEST_GUEST_VM_NAME}"
     if [ "${status}" -ne 0 ]; then
         log "FAIL" "${subtest}"
         return 1
@@ -98,8 +98,8 @@ teardown_file() {
         log "PASS" "${subtest}"
     fi
 
-    subtest="Start Guest"
-    _run start_guest
+    subtest="Start Guest VM"
+    _run start_guest_vm
     if [ "${status}" -ne 0 ]; then
         log "FAIL" "${subtest}"
         return 1
@@ -107,8 +107,8 @@ teardown_file() {
         log "PASS" "${subtest}"
     fi
 
-    subtest="Guest is running after being restarted on the Host"
-    _run wait_for_success 300 10 guest_is_running "${VIRT_TEST_GUEST_NAME}"
+    subtest="Guest VM is running after being restarted"
+    _run wait_for_success 300 10 guest_vm_is_running "${VIRT_TEST_GUEST_VM_NAME}"
     if [ "${status}" -ne 0 ]; then
         log "FAIL" "${subtest}"
         return 1

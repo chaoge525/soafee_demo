@@ -4,13 +4,13 @@
 #
 # SPDX-License-Identifier: MIT
 
-if [ -z "${CE_TEST_GUEST_NAME}" ]; then
-    CE_TEST_GUEST_NAME="ewaol-vm1"
+if [ -z "${CE_TEST_GUEST_VM_NAME}" ]; then
+    CE_TEST_GUEST_VM_NAME="ewaol-guest-vm1"
 fi
 
-run_tests_on_vm() {
-    expect guest-run-command.expect \
-        "${CE_TEST_GUEST_NAME}" \
+run_tests_on_guest_vm() {
+    expect guest-vm-run-command.expect \
+        "${CE_TEST_GUEST_VM_NAME}" \
         "ptest-runner container-engine-integration-tests" \
         2>"${TEST_STDERR_FILE}"
 }

@@ -10,20 +10,20 @@
 load integration-tests-common-virtual-funcs.sh
 load container-engine-virtualization-funcs.sh
 
-@test 'run container engine integration tests on the VM from the Host' {
+@test 'run container engine integration tests on the Guest VM from the Control VM' {
 
-    # Use the systemd-detect-virt utility to determine if running on the VM
-    # (utility returns 0) or the Host (utility returns non-zero)
+    # Use the systemd-detect-virt utility to determine if running on the Guest
+    # VM (utility returns 0) or the Control VM (utility returns non-zero)
     _run systemd-detect-virt
     if [ "${status}" -eq 0 ]; then
 
-        log "SKIP" "This test should only run on the Host"
+        log "SKIP" "This test should only run on the Control VM"
         skip
 
     else
 
-        subtest="Xendomains and VM is initialized"
-        _run xendomains_and_guest_is_initialized "${CE_TEST_GUEST_NAME}"
+        subtest="Xendomains and Guest VM is initialized"
+        _run xendomains_and_guest_vm_is_initialized "${CE_TEST_GUEST_VM_NAME}"
         if [ "${status}" -ne 0 ]; then
             log "FAIL" "${subtest}"
             return 1
@@ -32,8 +32,8 @@ load container-engine-virtualization-funcs.sh
         fi
         log "PASS"
 
-        subtest="Run tests on VM"
-        _run run_tests_on_vm
+        subtest="Run tests on Guest VM"
+        _run run_tests_on_guest_vm
         if [ "${status}" -ne 0 ]; then
             log "FAIL" "${subtest}"
             return 1

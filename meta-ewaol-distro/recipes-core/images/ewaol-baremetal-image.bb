@@ -4,7 +4,7 @@
 
 require ewaol-image-core.inc
 
-SUMMARY = "EWAOL Image"
+SUMMARY = "EWAOL Baremetal image"
 
 inherit features_check
 CONFLICT_DISTRO_FEATURES = "ewaol-virtualization"

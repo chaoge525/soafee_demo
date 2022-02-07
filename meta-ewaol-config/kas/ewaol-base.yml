@@ -74,4 +74,4 @@ env:
     EWAOL_ROOTFS_EXTRA_SPACE: "2000000"
 
 target:
-  - ewaol-image
+  - ewaol-baremetal-image
