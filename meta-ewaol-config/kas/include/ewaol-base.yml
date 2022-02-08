@@ -14,6 +14,13 @@ defaults:
 
 repos:
 
+  # Since in ewaol-release.yml we pin meta-adlink-ampere repo, we exclude its
+  # layer in here and eneable it in ava.yml when used for the build. This way
+  # we avoid external bsp layers to checkout and use this layer
+  meta-adlink-ampere:
+    layers:
+      .: excluded
+
   # Since in ewaol-release.yml we pin meta-arm repo, we exclude its layers in
   # here and enable them in arm-machines.yml when included by specific kas
   # configs (e.g. n1sdp.yml)
