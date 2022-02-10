@@ -38,6 +38,7 @@ external_links = {
   "Python Datetime Format Codes": "https://docs.python.org/3/library/datetime.html#strftime-and-strptime-format-codes",
   "Nginx": "https://www.nginx.com/",
   "Potential firmware damage notice": "https://community.arm.com/developer/tools-software/oss-platforms/w/docs/604/notice-potential-damage-to-n1sdp-boards-if-using-latest-firmware-release",
+  "DEFAULTTUNE": "https://docs.yoctoproject.org/3.4.3/ref-manual/variables.html#term-DEFAULTTUNE",
 }
 
 layer_definitions = {
