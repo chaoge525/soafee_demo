@@ -5,8 +5,7 @@ The ``meta-ewaol`` repository provides build targets for both architectures
 (see :ref:`overview_high-level_architecture`):
 
   * ``ewaol-baremetal-image`` for baremetal architecture.
-  * ``ewaol-virtualization-image`` for virtualization architecture, available
-    only if ``ewaol-virtualization`` is defined in ``DISTRO_FEATURES``.
+  * ``ewaol-virtualization-image`` for virtualization architecture.
 
 Both images include the Docker container engine to facilitate containerized
 workload orchestration on the edge and the K3s orchestration package, provided
@@ -74,9 +73,10 @@ The currently supported ``MACHINE`` is:
 The currently supported ``DISTRO_FEATURES`` are:
 
 * ``ewaol-devel``
+* ``ewaol-baremetal``
+* ``ewaol-virtualization``
 * ``ewaol-test``
 * ``ewaol-sdk``
-* ``ewaol-virtualization``
 
 In addition to kas build config files that enable the above build options, an
 image build via kas may be further customized with extra optional config
@@ -91,6 +91,24 @@ Distribution Features
 
 For a particular target ``MACHINE``, the available ``DISTRO_FEATURES`` to
 configure the image are as follows:
+
+* ``ewaol-baremetal``
+
+    * Defines the target image architecture.
+    * Enables the ``ewaol-baremetal-image`` build target.
+    * Builds an EWAOL image for the Baremetal architecture.
+    * Incompatible with the ``ewaol-virtualization`` Distribution Feature.
+
+* ``ewaol-virtualization``
+
+    * Defines the target image architecture.
+    * Enables the ``ewaol-virtualization-image`` build target.
+    * Includes the Xen hypervisor into the software stack, building an EWAOL
+      image for the Virtualization architecture.
+    * Enables Xen specific configs required by kernel.
+    * Includes all necessary packages and adjustments to the Control VM's root
+      filesystem to support management of Xen Guest VMs.
+    * Incompatible with the ``ewaol-baremetal`` Distribution Feature.
 
 * ``ewaol-devel``
 
@@ -112,14 +130,9 @@ configure the image are as follows:
       and image features to support software development on the target. For
       more details on the SDK, see
       `Software Development Kit (SDK) Image Build`_.
-
-* ``ewaol-virtualization``
-
-    * Adds the Xen hypervisor into the software stack.
-    * Provides an additional build target ``ewaol-virtualization-image``.
-    * Enables Xen specific configs required by kernel.
-    * Includes all necessary packages and adjustments to the Control VM's root
-      filesystem to support management of Xen Guest VMs.
+    * Enables two additional SDK build targets, ``ewaol-baremetal-sdk-image``
+      and ``ewaol-virtualization-sdk-image``, each only compatible with the
+      corresponding architecture's Distribution Feature.
 
 Provided their Yocto layer sources can be found by bitbake via
 ``conf/bblayers.conf``, these features can be enabled by passing them as a
@@ -148,51 +161,67 @@ produced with their combined configuration. Further, build configs files can
 extend other build configs files, thereby enabling specialized configurations
 that inherit common and thus shared build configurations.
 
-The kas build configs implemented for the EWAOL project fall into two
-categories, as described below.
+The kas build configs implemented for the EWAOL project fall into three ordered
+categories:
 
-Machine Configs
-^^^^^^^^^^^^^^^
+* Architecture Configs
+* Build Modifier Configs
+* Machine Configs
 
-Machine configs specify the target machine for the kas build. These define the
-``MACHINE`` parameter in the bitbake ``local.conf`` file, and all associated
-layers and configurations required to build a EWAOL project software image to
-run on that machine.
+To build an EWAOL image via kas using this guidance, it is required to provide
+one Architecture Config and one Machine Config, unless otherwise stated in their
+descriptions below. Additional Build Modifiers are optional, and depend on the
+target use-case. Currently, it is necessary that kas configuration files are
+provided in order: the Architecture Config is defined first, then additional
+build features via zero or more Build Modifier Configs, and finally the target
+Machine Config..
 
-``meta-ewaol-config`` currently provides a single machine build config:
+The three categories and their kas config files as provided by meta-ewaol are
+as follows.
 
-* ``n1sdp.yml``
+Architecture Configs
+^^^^^^^^^^^^^^^^^^^^
 
-The name of the machine config YAML file matches the ``MACHINE`` name for the
-bitbake build.
+Architecture Configs specify the target EWAOL architecture.
 
-Each machine config includes common configuration from:
+There are therefore two Architecture Configs provided by ``meta-ewaol-config``:
+
+* ``baremetal.yml``
+
+    Appends ``ewaol-baremetal`` to ``DISTRO_FEATURES`` and sets the build target
+    to ``ewaol-baremetal-image`` in order to build an EWAOL Image for the
+    Baremetal architecture.
+
+* ``virtualization.yml``
+
+    Appends ``ewaol-virtualization`` to ``DISTRO_FEATURES`` and sets the build
+    target to ``ewaol-virtualization-image`` in order to build an EWAOL Image
+    for the Virtualization architecture.  The Control VM and Guest VM images can
+    be customized, see `Virtualization Image Build`_ for details.
+
+Each Architecture Config includes a set of common configuration from a base
+EWAOL kas config file:
 
 * ``ewaol-base.yml``
 
-    Defines the image targets, layer dependencies and their software sources
-    and build configuration variables. It also includes the
-    ``ewaol-release.yml`` where the layers dependencies are pinned for the
-    specific EWAOL release tag.
+    Defines the base EWAOL layer dependencies and their software sources, as
+    well as additional build configuration variables. It also includes the
+    ``ewaol-release.yml`` config file, where the layers dependencies are pinned
+    for the specific EWAOL release tag.
 
-* ``arm-machines.yml``
+Build Modifier Configs
+^^^^^^^^^^^^^^^^^^^^^^
 
-    Defines the BSPs, layers, and dependencies specific to the Arm reference
-    platform of the supported machine.
-
-Build Modifiers
-^^^^^^^^^^^^^^^
-
-Build modifier config files specify additional sources and parameter
+Build Modifier config files specify additional sources and parameter
 customizations relevant to a particular image feature.
 
-These are the current build modifier YAML files:
+These are the current Build Modifier YAML files:
 
 * ``tests.yml``
 
     Includes the Yocto Package Test (ptest) framework in the image, configures
     the inclusion of ``meta-ewaol-tests`` as a Yocto layer source for the
-    build, and appends the ``ewaol-test`` feature as a ``DISTRO_FEATURE`` for
+    build, and appends the ``ewaol-test`` feature to ``DISTRO_FEATURES`` for
     the build. Additional documentation for the EWAOL tests layer is given in
     :ref:`validations:Image Validation`.
 
@@ -202,33 +231,66 @@ These are the current build modifier YAML files:
     Integration pipeline, causing the build process to delete its temporary
     work files following build completion.
 
-* ``sdk.yml``
+* ``baremetal-sdk.yml``
 
-    Changes the default build targets to the SDK images, and appends
-    ``ewaol-sdk`` as a ``DISTRO_FEATURE`` for the build. Documentation for
-    the EWAOL SDK is given in `Software Development Kit (SDK) Image Build`_.
+    Appends ``ewaol-sdk`` to ``DISTRO_FEATURES``, sets the build target to
+    ``ewaol-baremetal-sdk-image``, and includes the necessary configuration
+    from ``baremetal.yml`` to build an SDK image for the Baremetal
+    architecture (meaning it is not necessary to explicitly supply kas with that
+    Architecture Config). Documentation for the EWAOL SDK is given in
+    `Software Development Kit (SDK) Image Build`_.
+    This Build Modifier is not compatible with the ``virtualization.yml``
+    Architecture Config.
 
-* ``virtualization.yml``
+* ``virtualization-sdk.yml``
 
-    Appends ``ewaol-virtualization`` to the ``DISTRO_FEATURES`` and selects the
-    virtualization image as the build target. If this config file is not
-    provided, the default image built by kas will be the baremetal image.
-    The Control VM and Guest VM images can be customized, see
-    `Virtualization Image Build`_ for details.
+    Appends ``ewaol-sdk`` to ``DISTRO_FEATURES``, sets the build target to
+    ``ewaol-virtualization-sdk-image``, and includes the necessary configuration
+    from ``virtualization.yml`` to build an SDK image for the Virtualization
+    architecture (meaning it is not necessary to explicitly supply kas with this
+    Architecture Config). Documentation for the EWAOL SDK is given in
+    `Software Development Kit (SDK) Image Build`_.
+    This Build Modifier is not compatible with the ``baremetal.yml``
+    Architecture Config.
 
 .. note::
-  If a kas build config does not set a build parameter, the parameter will
-  take the default value. For example, if ``tests.yml`` is not included then
-  the value of ``DISTRO_FEATURES`` will take its default value as specified
-  earlier in this document.
+  If a kas configuration file does not set a particular build parameter, the
+  parameter will take its default value. For example, if no kas configuration
+  file sets a value for ``DISTRO_FEATURES``, then ``DISTRO_FEATURES`` will be
+  set to its default value as specified earlier in this document.
+
+Machine Configs
+^^^^^^^^^^^^^^^
+
+Machine Configs specify the target machine for the kas build. These define the
+``MACHINE`` parameter in the bitbake ``local.conf`` file, and all associated
+layers and configurations required to build a EWAOL project software image to
+run on that machine.
+
+``meta-ewaol-config`` currently provides a single Machine Config:
+
+* ``n1sdp.yml``
+
+    This Machine Config prepares an EWAOL image build that targets the Neoverse
+    N1 System Development Platform (N1SDP), corresponding to the ``n1sdp``
+    ``MACHINE`` implemented in `meta-arm-bsp`_.
+    To enable this, the ``n1sdp.yml`` Machine Config includes common
+    configuration from the ``arm-machines.yml`` kas config file,  which defines
+    the BSPs, layers, and dependencies required when building for the ``n1sdp``
+    machine.
+
+.. _meta-arm-bsp:
+   https://git.yoctoproject.org/cgit/cgit.cgi/meta-arm/tree/meta-arm-bsp/documentation
 
 Adding External Machines and BSP Layers
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-In order to add an external machine to be built with EWAOL, you need to add a
-``my-machine.yml`` kas configuration file (where ``my-machine`` is the
-``MACHINE`` name of the external machine) to your Yocto BSP layer:
-``meta-my-bsp-layer``. This file should have the following structure:
+In order to build a custom image which targets an external machine using
+``meta-ewaol``, a kas configuration file must be defined and added to the custom
+Yocto BSP layer. For example, ``my-machine.yml`` (where ``my-machine`` is the
+``MACHINE`` name of the external machine) defined in a custom BSP layer
+``meta-my-bsp-layer`` should have the following structure in order to build a
+baremetal image:
 
 .. code-block:: yaml
 
@@ -236,7 +298,7 @@ In order to add an external machine to be built with EWAOL, you need to add a
       version: 11
       includes:
         - repo: meta-ewaol
-          file: meta-ewaol-config/kas/ewaol-base.yml
+          file: meta-ewaol-config/kas/baremetal.yml
         - repo: meta-ewaol
           file: meta-ewaol-config/kas/tests.yml
 
@@ -248,6 +310,10 @@ In order to add an external machine to be built with EWAOL, you need to add a
         refspec: honister-dev
 
     machine: my-machine
+
+In order to build a virtualization image, include
+``meta-ewaol-config/kas/virtualization.yml`` instead of
+``meta-ewaol-config/kas/baremetal.yml`` in the above example.
 
 To read more about how to customize this configuration file, check the
 `Kas documentation`_. Images for ``my-machine`` can be built by running the
@@ -323,12 +389,15 @@ bitbake, it is necessary to prepare a bitbake project as follows:
 
         ``DISTRO = "ewaol"``
 
-* (Optionally) Configure the image ``DISTRO_FEATURES``
-    The image features as defined in `Distribution Features`_ can be configured
-    to enable particular functionalities within the resulting EWAOL image. For
-    example, as ``ewaol-devel`` is set by default, additional features such as
-    EWAOL image validation tests may simply be added to the build by appending
-    the following to ``conf/local.conf``:
+* Configure the image ``DISTRO_FEATURES``
+    An image architecture must be defined in ``DISTRO_FEATURES`` in order to
+    build an EWAOL image. The features to enable a baremetal or virtualization
+    image architecture are provided in `Distribution Features`_.
+    The additional image features listed can also be configured to enable
+    particular functionalities within the resulting EWAOL image. For example, as
+    ``ewaol-devel`` is set by default, additional features such as EWAOL image
+    validation tests may simply be added to the build by appending the following
+    to ``conf/local.conf``:
 
         ``DISTRO_FEATURES:append = " ewaol-test"``
 
@@ -370,21 +439,33 @@ for example `kernel module compilation`_, `profiling and tracing`_, and
   .. _runtime package management:
       https://docs.yoctoproject.org/3.3.2/dev-manual/common-tasks.html#using-runtime-package-management
 
-To build SDK image append ``meta-ewaol-config/kas/sdk.yml`` configuration
-file to the kas build command. This ``.yml`` file changes the default build
-target to ``ewaol-baremetal-image-sdk``. For more details about selecting
-configuration files for kas, see: :ref:`quickstart_build_host_setup`.
+Building an SDK image for the N1SDP via kas:
 
-For example, to build the SDK images for the N1SDP via kas:
+  * Baremetal SDK image:
 
-.. code-block:: console
+    .. code-block:: console
 
-  kas build meta-ewaol-config/kas/n1sdp.yml:meta-ewaol-config/kas/sdk.yml
+      kas build meta-ewaol-config/kas/baremetal-sdk.yml:meta-ewaol-config/kas/n1sdp.yml
 
-In this example, the SDK produced image by the kas build will be found at:
-``build/tmp/deploy/images/n1sdp/ewaol-baremetal-image-sdk-n1sdp.*``.
-To deploy the generated image, please refer to the
-:ref:`quickstart_deploy_on_n1sdp` section.
+    The resulting baremetal SDK image will be produced:
+
+    ``build/tmp/deploy/images/n1sdp/ewaol-baremetal-sdk-image-n1sdp.*``
+
+  * Virtualization SDK image:
+
+    .. code-block:: console
+
+      kas build meta-ewaol-config/kas/virtualization-sdk.yml:meta-ewaol-config/kas/n1sdp.yml
+
+    The resulting virtualization SDK image will be produced:
+
+    ``build/tmp/deploy/images/n1sdp/ewaol-virtualization-sdk-image-n1sdp.*``
+
+When building a virtualization SDK image, the SDK will be available on both the
+Control VM and the Guest VM.
+
+To deploy an SDK image, please refer to the :ref:`quickstart_deploy_on_n1sdp`
+section.
 
 Virtualization Image Build
 --------------------------
@@ -440,7 +521,7 @@ example:
 
 .. code-block:: shell
 
-  kas build meta-ewaol-config/kas/n1sdp.yml:meta-ewaol-config/kas/virtualization.yml
+  kas build meta-ewaol-config/kas/virtualization.yml:meta-ewaol-config/kas/n1sdp.yml
 
 .. _xl domain configuration:
   https://xenbits.xen.org/docs/4.16-testing/man/xl.cfg.5.html
@@ -459,8 +540,9 @@ image can be set via the ``EWAOL_GUEST_VM_INSTANCES`` variable, which is listed
 :ref:`here<vm-vars>` along with its default value.
 
 Guest VM instances can be independently configured via Bitbake variables which
-reference the Guest VM's integer instance index. For example, variables with a
-prefix ``EWAOL_GUEST_VM1_`` apply to the first Guest VM, variables with a prefix
+reference the Guest VM's integer instance index, from 1 to the value of
+``EWAOL_GUEST_VM_INSTANCES``, inclusive. For example, variables with a prefix
+``EWAOL_GUEST_VM1_`` apply to the first Guest VM, variables with a prefix
 ``EWAOL_GUEST_VM2_`` apply to the second Guest VM, and so on. All Guest VM
 instances use the same default configuration, apart from the hostname, which is
 based on their instance index: ``ewaol-guest-vm1`` for the first,

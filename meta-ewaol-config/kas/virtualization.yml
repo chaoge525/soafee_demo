@@ -5,7 +5,8 @@
 header:
   version: 11
   includes:
-    - meta-ewaol-config/kas/second-vm-parameters.yml
+    - meta-ewaol-config/kas/include/ewaol-base.yml
+    - meta-ewaol-config/kas/include/second-guest-vm-parameters.yml
 
 # Since we use generic-arm64 as the MACHINE for the Guest VM we need to
 # include meta-arm layer which holds its definition.

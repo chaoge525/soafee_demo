@@ -91,8 +91,9 @@ First, the ``meta-ewaol`` repository must be checked out via:
 The build configurations within ``meta-ewaol-config/kas/`` can be passed to kas
 to build images with support for various features. By default, images will
 include the Docker container engine and K3s containerized workload
-orchestration. Other features like tests or Software Development Kit (SDK)
-packages are also available, see :ref:`builds:Image Builds` for more details.
+orchestration. Other features like run-time integration tests or Software
+Development Kit (SDK) packages are also available, see :ref:`builds:Image
+Builds` for more details.
 
 .. _meta-arm-bsp:
    https://git.yoctoproject.org/cgit/cgit.cgi/meta-arm/tree/meta-arm-bsp/documentation
@@ -114,7 +115,7 @@ To build an image for the selected architecture:
 
      .. code-block:: console
 
-        kas build meta-ewaol-config/kas/n1sdp.yml
+        kas build meta-ewaol-config/kas/baremetal.yml:meta-ewaol-config/kas/n1sdp.yml
 
      The resulting baremetal image will be produced:
 
@@ -124,7 +125,7 @@ To build an image for the selected architecture:
 
      .. code-block:: console
 
-        kas build meta-ewaol-config/kas/n1sdp.yml:meta-ewaol-config/kas/virtualization.yml
+        kas build meta-ewaol-config/kas/virtualization.yml:meta-ewaol-config/kas/n1sdp.yml
 
      The resulting virtualization image will be produced:
 

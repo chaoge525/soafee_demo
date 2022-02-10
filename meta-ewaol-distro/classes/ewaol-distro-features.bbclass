@@ -1,4 +1,4 @@
-# Copyright (c) 2021, Arm Limited.
+# Copyright (c) 2021-2022, Arm Limited.
 #
 # SPDX-License-Identifier: MIT
 
@@ -6,7 +6,7 @@
 # the contents of DISTRO_FEATURES
 
 # EWAOL_DISTRO_FEATURES is a list of available features.
-EWAOL_DISTRO_FEATURES = "ewaol-devel ewaol-test ewaol-sdk ewaol-virtualization"
+EWAOL_DISTRO_FEATURES = "ewaol-baremetal ewaol-virtualization ewaol-devel ewaol-test ewaol-sdk "
 
 # Default must be an item from EWAOL_DISTRO_FEATURES
 EWAOL_DISTRO_FEATURES_DEFAULT ?= "ewaol-devel"
@@ -20,6 +20,16 @@ bb.utils.contains_any('DISTRO_FEATURES', d.getVar('EWAOL_DISTRO_FEATURES'),\
 # Add EWAOL_DISTRO_FEATURES_FALLBACK to DISTRO_FEATURES, could be empty.
 DISTRO_FEATURES:append = " ${EWAOL_DISTRO_FEATURES_FALLBACK}"
 
+# Require inc file for ewaol-baremetal DISTRO_FEATURE
+require ${@bb.utils.contains(\
+'DISTRO_FEATURES','ewaol-baremetal',\
+'conf/distro/include/ewaol-baremetal.inc', '', d)}
+
+# Require inc file for ewaol-virtualization DISTRO_FEATURE
+require ${@bb.utils.contains(\
+'DISTRO_FEATURES','ewaol-virtualization',\
+'conf/distro/include/ewaol-virtualization.inc', '', d)}
+
 # Require inc file for development DISTRO_FEATURE
 require ${@bb.utils.contains(\
 'DISTRO_FEATURES','ewaol-devel','conf/distro/include/ewaol-devel.inc', '', d)}
@@ -31,8 +41,3 @@ require ${@bb.utils.contains(\
 # Require inc file for sdk DISTRO_FEATURE
 require ${@bb.utils.contains(\
 'DISTRO_FEATURES','ewaol-sdk','conf/distro/include/ewaol-sdk.inc', '', d)}
-
-# Require inc file for ewaol-virtualization DISTRO_FEATURE
-require ${@bb.utils.contains(\
-'DISTRO_FEATURES','ewaol-virtualization',\
-'conf/distro/include/ewaol-virtualization.inc', '', d)}

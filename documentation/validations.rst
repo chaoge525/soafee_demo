@@ -40,7 +40,7 @@ Building the Tests
 As described in :ref:`builds:Image Builds`, the tests can be included by
 appending ``ewaol-test`` to the build's ``DISTRO_FEATURES`` variable and
 including the ``meta-ewaol-tests`` layer in the bitbake build, or simply by
-passing ``tests.yml`` as a build modifier for a kas build.
+passing ``tests.yml`` as a Build Modifier Config for a kas build.
 
 The tests are built as a Yocto Package Test (ptest_), and implemented and
 executed using the Bash Automated Test Suite (BATS_).
@@ -54,7 +54,7 @@ N1SDP: Build Image Including Tests
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 To build images which include tests for the N1SDP board, follow the same
-process as described in :ref:`quickstart_build_for_n1sdp`, but append an
+process as described in :ref:`quickstart_build_for_n1sdp`, but include an
 additional configuration file ``meta-ewaol-config/kas/tests.yml`` to the kas
 build command.
 
@@ -65,26 +65,26 @@ Therefore, to build images which include EWAOL validation tests for N1SDP:
 
       .. code-block:: console
 
-        kas build meta-ewaol-config/kas/n1sdp.yml:meta-ewaol-config/kas/tests.yml
+        kas build meta-ewaol-config/kas/baremetal.yml:meta-ewaol-config/kas/tests.yml:meta-ewaol-config/kas/n1sdp.yml
 
     * Using ``tools/build/kas-ci-build.py``:
 
       .. code-block:: console
 
-        ./tools/build/kas-ci-build.py n1sdp.yml:tests.yml
+        ./tools/build/kas-ci-build.py baremetal.yml:tests.yml:n1sdp.yml
 
 * Virtualization image:
     * Using ``kas`` directly:
 
       .. code-block:: console
 
-        kas build meta-ewaol-config/kas/n1sdp.yml:meta-ewaol-config/kas/virtualization.yml:meta-ewaol-config/kas/tests.yml
+        kas build meta-ewaol-config/kas/virtualization.yml:meta-ewaol-config/kas/tests.yml:meta-ewaol-config/kas/n1sdp.yml
 
     * Using ``tools/build/kas-ci-build.py``:
 
       .. code-block:: console
 
-        ./tools/build/kas-ci-build.py n1sdp.yml:virtualization.yml:tests.yml
+        ./tools/build/kas-ci-build.py virtualization.yml:tests.yml:n1sdp.yml
 
 To deploy a generated image on the board, please refer to the
 :ref:`quickstart_deploy_on_n1sdp` section.

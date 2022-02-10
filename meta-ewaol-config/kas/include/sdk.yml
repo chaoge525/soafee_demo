@@ -5,9 +5,6 @@
 header:
   version: 11
 
-target:
-  - ewaol-image-sdk
-
 local_conf_header:
   ewaol-sdk: |
     DISTRO_FEATURES:append = " ewaol-sdk"

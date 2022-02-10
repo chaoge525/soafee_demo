@@ -7,7 +7,8 @@ SUMMARY = "EWAOL Virtualization image, providing a Control VM as Xen Dom0."
 require ewaol-image-core.inc
 
 inherit features_check
-REQUIRED_DISTRO_FEATURES += "ewaol-virtualization"
+REQUIRED_DISTRO_FEATURES = "ewaol-virtualization"
+CONFLICT_DISTRO_FEATURES = "ewaol-baremetal"
 
 EXTRA_IMAGEDEPENDS:append = " xen"
 

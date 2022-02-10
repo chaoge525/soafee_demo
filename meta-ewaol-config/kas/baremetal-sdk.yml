@@ -1,0 +1,12 @@
+# Copyright (c) 2022, Arm Limited.
+#
+# SPDX-License-Identifier: MIT
+
+header:
+  version: 11
+  includes:
+    - meta-ewaol-config/kas/baremetal.yml
+    - meta-ewaol-config/kas/include/sdk.yml
+
+target:
+  - ewaol-baremetal-sdk-image
