@@ -1,6 +1,7 @@
 1.0.0+rc93+git0+249bca0a13
 3.2.1+git0+ab4d0cf908
 3rd
+aarch64
 aem
 appends
 arm-machines.yml
@@ -183,6 +184,7 @@ soafee.io
 sourceforge
 spdx
 spdx-license-identifier
+sstate-cache
 stderr
 stdout
 sub-sections

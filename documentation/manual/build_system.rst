@@ -345,6 +345,32 @@ VM(s) are extended via this variable, in addition to any other parameters which
 affect those filesystems as described in
 :ref:`Virtualization Architecture Customization <manual_build_system_virtualization_customization>`.
 
+Filesystem Compilation Tuning
+-----------------------------
+
+The EWAOL filesystem by default uses the generic ``armv8a-crc`` tune for
+``aarch64`` based target platforms. This reduces build times by increasing the
+sstate-cache reused between different image types and target platforms. This
+optimization can be disabled by setting ``EWAOL_GENERIC_ARM64_FILESYSTEM`` to
+``"0"``. The tune used when ``EWAOL_GENERIC_ARM64_FILESYSTEM`` is enabled can
+be changed by setting ``EWAOL_GENERIC_ARM64_DEFAULTTUNE``, which configures the
+``DEFAULTTUNE`` Bitbake variable for the ``aarch64`` based target platforms
+builds. See |DEFAULTTUNE|_ for more information.
+
+In summary, the relevant variables and their default values are:
+
+  .. code-block:: yaml
+
+    EWAOL_GENERIC_ARM64_FILESYSTEM: "1"             # Enable generic file system (1 or 0).
+    EWAOL_GENERIC_ARM64_DEFAULTTUNE: "armv8a-crc"   # Value of DEFAULTTUNE if generic file system enabled.
+
+Their values can be set by passing them as enviromental variables. For example,
+the optimization can be disabled using:
+
+  .. code-block:: console
+
+        EWAOL_GENERIC_ARM64_FILESYSTEM="0" kas build meta-ewaol-config/kas/baremetal.yml:meta-ewaol-config/kas/n1sdp.yml
+
 **************************
 Manual Bitbake Build Setup
 **************************
