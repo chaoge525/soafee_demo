@@ -5,7 +5,7 @@
 header:
   version: 11
   includes:
-    - meta-ewaol-config/kas/ewaol-release.yml
+    - meta-ewaol-config/kas/include/ewaol-release.yml
 
 defaults:
   repos:
@@ -62,8 +62,9 @@ local_conf_header:
       ABORT,${SSTATE_DIR},100M,1K \
       ABORT,/tmp,10M,1K"
 
-machine: unset
 distro: ewaol
+target: unset
+machine: unset
 
 env:
     SSTATE_MIRRORS: ""
@@ -72,6 +73,3 @@ env:
     BB_GENERATE_MIRROR_TARBALLS: ""
     BB_NUMBER_THREADS: "${@os.cpu_count()}"
     EWAOL_ROOTFS_EXTRA_SPACE: "2000000"
-
-target:
-  - ewaol-baremetal-image

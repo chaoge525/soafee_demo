@@ -1,0 +1,15 @@
+# Copyright (c) 2021-2022, Arm Limited.
+#
+# SPDX-License-Identifier: MIT
+
+header:
+  version: 11
+  includes:
+    - meta-ewaol-config/kas/include/ewaol-base.yml
+
+local_conf_header:
+  baremetal: |
+    DISTRO_FEATURES:append = " ewaol-baremetal"
+
+target:
+  - ewaol-baremetal-image

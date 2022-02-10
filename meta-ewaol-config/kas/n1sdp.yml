@@ -5,8 +5,7 @@
 header:
   version: 11
   includes:
-    - meta-ewaol-config/kas/ewaol-base.yml
-    - meta-ewaol-config/kas/arm-machines.yml
+    - meta-ewaol-config/kas/include/arm-machines.yml
 
 repos:
   meta-ewaol:
