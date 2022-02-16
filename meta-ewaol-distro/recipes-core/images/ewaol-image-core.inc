@@ -4,8 +4,6 @@
 
 SUMMARY = "EWAOL image core config with common packages"
 
-IMAGE_INSTALL = "packagegroup-core-boot ${CORE_IMAGE_EXTRA_INSTALL}"
-
 IMAGE_LINGUAS = " "
 
 LICENSE = "MIT"
@@ -20,11 +18,12 @@ IMAGE_ROOTFS_EXTRA_SPACE:append = "${@ ' + ${EWAOL_ROOTFS_EXTRA_SPACE}' \
                                       if '${EWAOL_ROOTFS_EXTRA_SPACE}' \
                                       else ''}"
 
+IMAGE_FEATURES += "ssh-server-openssh"
+
 IMAGE_INSTALL += " \
     ca-certificates \
     docker-moby \
     k3s-server \
-    packagegroup-core-ssh-openssh \
     procps \
     wget \
     "
