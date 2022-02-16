@@ -11,8 +11,8 @@ inherit ewaol_guest_vm_image
 inherit features_check
 REQUIRED_DISTRO_FEATURES += "ewaol-virtualization"
 
-IMAGE_INSTALL:remove = "k3s-server"
-IMAGE_INSTALL += "k3s-agent"
+IMAGE_INSTALL:remove = "k3s-server packagegroup-base-extended"
+IMAGE_INSTALL:append = " k3s-agent"
 
 # These integration tests should only execute on the Control VM, so make them
 # unavailable on the Guest VM
