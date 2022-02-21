@@ -19,7 +19,7 @@ Documentation Build
 A script automating the documentation build process is available under
 ``tools/build/doc-build.py``. It will generate an HTML version of the
 documentation under ``public/``. To use this script and generate the
-documentation, you should use Python 3.8 or higher:
+documentation, Python 3.8 or higher is required:
 
 .. code-block:: console
 

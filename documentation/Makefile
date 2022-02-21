@@ -1,12 +1,12 @@
-# Copyright (c) 2021, Arm Limited.
+# Copyright (c) 2021-2022, Arm Limited.
 #
 # SPDX-License-Identifier: MIT
 
 # Minimal makefile for Sphinx documentation
 #
 
-# You can set these variables from the command line, and also
-# from the environment for the first two.
+# These variables can be set from the command line, and also from the
+# environment for the first two.
 SPHINXOPTS    ?=
 SPHINXBUILD   ?= sphinx-build
 SOURCEDIR     = .

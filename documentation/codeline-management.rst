@@ -42,10 +42,10 @@ EWAOL main branch
 .....................
 
 * Represented by the green line on the diagram above.
-* EWAOL's ``main`` branch is meant to be compatible with ``master`` or ``main``
-  branches from Poky and 3rd party layers.
-* We do not actively develop on this ``main`` branch to avoid the instability
-  inherited by the Yocto development on the master branch.
+* The repository's ``main`` branch is meant to be compatible with ``master`` or
+  ``main`` branches from Poky and 3rd party layers.
+* ``meta-ewaol`` is not actively developed on this ``main`` branch to avoid the
+  instability inherited from Yocto development on the master branch.
 * To reduce the effort required to move EWAOL to a new version of Yocto, this
   main branch is periodically updated with patches from the
   `EWAOL development branches`_  on a regular basis.
@@ -84,7 +84,7 @@ EWAOL release tags
 * `Patch` releases are mainly used for hot fixes which are then back ported to
   the development branch.
 * Both `Major` and `Minor` releases may receive fixes, improvements and new
-  features while `Patch` releases only receive fixes. Poky and 3rd Party layers
+  features while `Patch` releases only receive fixes. Poky and 3rd party layers
   release/stable branches might be updated and pinned.
 
 .. _Yocto Release Process: https://docs.yoctoproject.org/ref-manual/release-process.html

@@ -53,14 +53,15 @@ efi
 ewaol
 ewaol_arch_overview
 ewaol-devel
+EWAOL_GUEST_VM2
 ewaol_layers_deps_diagram
-ewaol-virtualization-n1sdp-efidisk
 ewaol_rel_dev_branches
 ewaol_rel_yocto_overview
+EWAOL's
+ewaol-virtualization-n1sdp-efidisk
 ewaol-vm1
 ewaol-vm2
 EWAOL_VM2
-EWAOL's
 filepaths
 Filesystem
 FOC
@@ -138,6 +139,7 @@ rc1
 README
 Refactor
 Refactored
+repository's
 return_code
 RevC
 RPM
@@ -179,6 +181,7 @@ validations
 VIRT_TEST_GUEST_VM_NAME
 VIRT_TEST_LOG_DIR
 VM
+VM's
 VMs
 webserver
 wget
@@ -196,5 +199,3 @@ Yocto
 yocto-cache
 yoctoproject
 Yocto's
-EWAOL_GUEST_VM2
-VM's
