@@ -42,6 +42,9 @@ do_install:append:ewaol-virtualization() {
     sed -i "s#load k3s-funcs.sh#load k3s-funcs.sh\nload k3s-virtualization-funcs.sh#g" \
         "${D}/${TEST_DIR}/k3s-integration-tests.bats"
 
+    sed -i "s#%GUESTNAME%#${EWAOL_GUEST_VM_HOSTNAME}#g" \
+        "${D}/${TEST_DIR}/k3s-virtualization-funcs.sh"
+
     # Add a condition to the deployment to make it only schedulable on the Guest
     # VM
     cat << EOF >> ${D}/${TEST_DIR}/k3s-test-deployment.yaml

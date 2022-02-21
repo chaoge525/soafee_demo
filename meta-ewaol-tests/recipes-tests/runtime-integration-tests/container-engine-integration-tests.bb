@@ -42,6 +42,9 @@ do_install:append:ewaol-virtualization() {
         "${D}/${TEST_DIR}/container-engine-additional-virtual-tests.bats" \
         >> "${D}/${TEST_DIR}/container-engine-integration-tests.bats"
 
+    sed -i "s#%GUESTNAME%#${EWAOL_GUEST_VM_HOSTNAME}#g" \
+        "${D}/${TEST_DIR}/container-engine-virtualization-funcs.sh"
+
     rm "${D}/${TEST_DIR}/container-engine-additional-virtual-tests.bats"
 
 }

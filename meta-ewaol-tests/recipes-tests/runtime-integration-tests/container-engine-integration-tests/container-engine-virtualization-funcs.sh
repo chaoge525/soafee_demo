@@ -5,7 +5,7 @@
 # SPDX-License-Identifier: MIT
 
 if [ -z "${CE_TEST_GUEST_VM_NAME}" ]; then
-    CE_TEST_GUEST_VM_NAME="ewaol-guest-vm1"
+    CE_TEST_GUEST_VM_NAME="%GUESTNAME%1"
 fi
 
 run_tests_on_guest_vm() {
