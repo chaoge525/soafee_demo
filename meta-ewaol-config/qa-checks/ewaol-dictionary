@@ -54,6 +54,7 @@ ewaol
 ewaol_arch_overview
 ewaol-devel
 EWAOL_GUEST_VM2
+EWAOL_GUEST_VM_HOSTNAME
 ewaol_layers_deps_diagram
 ewaol_rel_dev_branches
 ewaol_rel_yocto_overview

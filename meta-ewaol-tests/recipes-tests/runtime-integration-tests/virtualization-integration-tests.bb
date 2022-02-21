@@ -31,3 +31,10 @@ SRC_URI = "${TEST_FILES} \
 require runtime-integration-tests.inc
 
 RDEPENDS:${PN} += "expect"
+
+do_install:append() {
+
+    sed -i "s#%GUESTNAME%#${EWAOL_GUEST_VM_HOSTNAME}#g" \
+        "${D}/${TEST_DIR}/virtualization-integration-tests.bats"
+
+}
