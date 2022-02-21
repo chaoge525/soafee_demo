@@ -5,14 +5,11 @@ The ``meta-ewaol-tests`` Yocto layer contains recipes and configuration for
 including run-time integration tests into a target image, to be run manually
 after booting the image, or within a Continuous Integration (CI) process.
 
-The EWAOL integration tests provide a mechanism to validate that an image has
-functionality that is compliant with the EWAOL project, where the
-``meta-ewaol-tests`` Yocto layer is independently available for inclusion in
-any desired Yocto image build process.
-
-Run-time integration tests are provided for validating the functionality of
-various core EWAOL components, where the tests included on an EWAOL image depend
-on the target architecture, as follows:
+The EWAOL run-time integration tests, as provided within the
+``meta-ewaol-tests`` Yocto layer, are a mechanism for validating the
+functionality of various core EWAOL components. The integration test suites
+which are included on an EWAOL image depend on its target architecture, as
+follows:
 
 * Baremetal architecture:
     * Docker Container Engine tests
@@ -23,7 +20,8 @@ on the target architecture, as follows:
       connected with a K3s agent on the Guest VM)
     * Xen Virtualization tests
 
-The integration tests are described in more detail later in this document.
+These integration test suites are described in more detail later in this
+document.
 
 To support building and validating EWAOL images within CI environments, a Python
 wrapper script is provided at ``tools/build/kas-ci-build.py`` that runs a
@@ -40,7 +38,8 @@ Building the Tests
 As described in :ref:`builds:Image Builds`, the tests can be included by
 appending ``ewaol-test`` to the build's ``DISTRO_FEATURES`` variable and
 including the ``meta-ewaol-tests`` layer in the bitbake build, or simply by
-passing ``tests.yml`` as a Build Modifier Config for a kas build.
+passing ``meta-ewaol-config/kas/tests.yml`` as a Build Modifier Config for a kas
+build.
 
 The tests are built as a Yocto Package Test (ptest_), and implemented and
 executed using the Bash Automated Test Suite (BATS_).
@@ -106,7 +105,7 @@ If the test suite identifier is omitted, all integration tests will be run.
 .. note::
   Different EWAOL architectures support different test suites.
   ``ptest-runner -l`` is a useful command to list the available test suites on
-  your image.
+  the image.
 
 Alternatively, the tests may be run as a standalone BATS script, via a runner
 script included in the test suite directory:
@@ -131,7 +130,7 @@ these results are described in `Test Logging`_.
 N1SDP: Running Tests
 ^^^^^^^^^^^^^^^^^^^^
 
-To run tests on N1SDP you need to:
+To run tests on an N1SDP:
 
 * Build an image that include tests using the above instructions
   `N1SDP: Build Image Including Tests`_

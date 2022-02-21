@@ -15,7 +15,7 @@ A number of dependencies are required to build projects with Yocto.
 be installed on the Build Host.
 
 .. _The Yocto Project documentation:
-   https://docs.yoctoproject.org/3.4/singleindex.html#required-packages-for-the-build-host
+   https://docs.yoctoproject.org/3.4.2/singleindex.html#required-packages-for-the-build-host
 
 The ``meta-ewaol-config/kas`` directory contains build configs for ``kas``, a
 tool for easily setting up bitbake based projects. Each build config is a YAML
@@ -136,10 +136,9 @@ To build an image for the selected architecture:
 Deploy on N1SDP
 ---------------
 
-To deploy an image on N1SDP you will need a tool to copy the image using its
-block map. In this tutorial, we will use ``bmap-tools`` which can be installed
-on your Build Host via the following command (example on a Ubuntu based Build
-Host):
+To deploy an image on N1SDP, a tool is required to copy the image using its
+block map. This tutorial uses ``bmap-tools`` which can be installed on the Build
+Host via the following command (example on a Ubuntu based Build Host):
 
 .. code-block:: console
 
@@ -201,12 +200,12 @@ Board's MCC configuration microSD card
 
 .. note::
    This process doesn't need to be performed every time the
-   `USB Storage Device` gets updated. You just need to update the MCC
+   `USB Storage Device` gets updated. It is only necessary to update the MCC
    configuration microSD card when the EWAOL version changes.
 
 1. Connect the USB-B cable to the DBG USB port of the N1SDP back panel.
 
-2. Find four TTY USB devices in your ``/dev`` directory. Example:
+2. Find four TTY USB devices in the ``/dev`` directory. Example:
 
 .. code-block:: console
 
@@ -237,8 +236,8 @@ The ports are configured with the following settings:
  - No hardware or software flow support
 
 3. Connect to the MCC console. Any terminal applications such as  ``putty``,
-   ``screen`` or ``minicom``  will work. In this guide, we use the  ``screen``
-   command:
+   ``screen`` or ``minicom``  will work. The  ``screen`` utility is used in the
+   following example:
 
 .. code-block:: console
 
@@ -292,10 +291,10 @@ Enable USB:
 
    Cmd> USB_ON
 
-5. Mount the N1SDP's internal microSD card over the DBG USB connection to your
+5. Mount the N1SDP's internal microSD card over the DBG USB connection to the
    Build Host PC and copy the required files.
 
-The microSD card is visible on your Build Host PC as a disk device after issuing
+The microSD card is visible on the Build Host PC as a disk device after issuing
 the ``USB_ON`` command in the MCC console, as performed in the previous step.
 This can be found using the ``lsblk`` command:
 
@@ -307,7 +306,7 @@ This can be found using the ``lsblk`` command:
    └─sdb1   8:1    0     2G  0 part
 
 .. note::
-   In this example, we need to mount the ``/dev/sdb1`` partition. Be extra
+   In this example, the ``/dev/sdb1`` partition is being mounted. Be extra
    careful when copying and pasting the following commands.
 
 .. code-block:: console
@@ -338,7 +337,7 @@ This can be found using the ``lsblk`` command:
    `Potential firmware damage notice`_. The ``MB/HBI0316A/io_v123f.txt`` file
    located in the microSD needs to be updated. To update it, set the PMIC image
    (``300k_8c2.bin``) to be used in the newer models by running the following
-   commands on your Build Host PC:
+   commands on the Build Host PC:
 
    .. code-block:: console
 
@@ -360,7 +359,7 @@ Run on N1SDP
 ------------
 
 To run an image, connect to the AP console by running the following command
-from a terminal in your Build Host PC:
+from a terminal on the Build Host PC:
 
 .. code-block:: console
 

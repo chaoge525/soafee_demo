@@ -7,30 +7,11 @@ The ``meta-ewaol`` repository provides build targets for both architectures
   * ``ewaol-baremetal-image`` for baremetal architecture.
   * ``ewaol-virtualization-image`` for virtualization architecture.
 
-Both images include the Docker container engine to facilitate containerized
-workload orchestration on the edge and the K3s orchestration package, provided
-by the ``meta-virtualization`` Yocto layer.
-
-On a baremetal image, the K3s package is provided with a systemd service that
-auto-starts on image boot and runs the K3s server. This K3s server may be
-interacted with via the Kubernetes REST API or via the Kubernetes command-line
-tool ``kubectl`` (see `Kubernetes API Overview`_ and `kubectl Overview`_ for
-usage instructions). Enabling and disabling the systemd service via ``systemctl
-[start|stop] k3s`` will bring up or shut down the K3s server running on the
-image, meaning K3s-deployed containers may remain running (without
-orchestration) after stopping the systemd service. To avoid containers running
-after stopping the server, they should be disabled prior to stopping the server
-via the Kubernetes API or command-line tool. Alternatively, the provided
-``k3s-killall.sh`` script may be used to stop all running containers even after
-the K3s server has been disabled.
-
-.. note::
-    Example usage of the K3s orchestration package is provided in the form of
-    the K3s integration test suite implementation, documented in
-    :ref:`validations:Image Validation`.
-
-.. _Kubernetes API Overview: https://kubernetes.io/docs/reference/using-api/
-.. _kubectl Overview: https://kubernetes.io/docs/reference/kubectl/overview/
+To facilitate containerized workload orchestration on the edge, EWAOL images
+include the Docker container engine and the K3s container orchestration package,
+provided by the ``meta-virtualization`` Yocto layer. Example usage of the
+container engine and K3s orchestration is provided within run-time
+integration test suites, documented in :ref:`validations:Image Validation`.
 
 On a virtualization image, the software stack includes the Xen type-1 hypervisor
 and provides a Control VM (Dom0) and a single bundled Guest VM (DomU), by
@@ -432,12 +413,12 @@ for example `kernel module compilation`_, `profiling and tracing`_, and
 `runtime package management`_.
 
   .. _kernel module compilation:
-      https://docs.yoctoproject.org/3.3.2/kernel-dev/common.html#building-out-of-tree-modules-on-the-target
+      https://docs.yoctoproject.org/3.4.2/kernel-dev/common.html#building-out-of-tree-modules-on-the-target
 
-  .. _profiling and tracing: https://docs.yoctoproject.org/3.3.2/profile-manual/index.html
+  .. _profiling and tracing: https://docs.yoctoproject.org/3.4.2/profile-manual/index.html
 
   .. _runtime package management:
-      https://docs.yoctoproject.org/3.3.2/dev-manual/common-tasks.html#using-runtime-package-management
+      https://docs.yoctoproject.org/3.4.2/dev-manual/common-tasks.html#using-runtime-package-management
 
 Building an SDK image for the N1SDP via kas:
 
@@ -527,7 +508,7 @@ example:
   https://xenbits.xen.org/docs/4.16-testing/man/xl.cfg.5.html
 
 .. _Multiple Configuration Build:
-  https://docs.yoctoproject.org/3.3.2/dev-manual/common-tasks.html#building-images-for-multiple-targets-using-multiple-configurations
+  https://docs.yoctoproject.org/3.4.2/dev-manual/common-tasks.html#building-images-for-multiple-targets-using-multiple-configurations
 
 Multiple EWAOL Guest VM Instances
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

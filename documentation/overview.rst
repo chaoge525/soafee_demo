@@ -46,11 +46,11 @@ High-Level Architecture
 
 EWAOL supports two different architectures:
 
-* **Baremetal** architecture, where the EWAOL software stack executes directly
-  on the target hardware.
-* **Virtualization** architecture, where the EWAOL software stack includes the
-  Xen hypervisor and provides a Control VM (Dom0) and a single bundled Guest VM
-  (DomU), by default.
+  * **Baremetal** architecture, where the EWAOL software stack executes directly
+    on the target hardware.
+  * **Virtualization** architecture, where the EWAOL software stack includes the
+    Xen hypervisor and provides a Control VM (Dom0) and a single bundled Guest
+    VM (DomU), by default.
 
 .. image:: images/ewaol_arch_overview.png
 
@@ -58,10 +58,11 @@ The EWAOL images include the following major features:
 
   * Based on ``poky.conf`` distro
   * Systemd as init system
-  * RPM as the package management system
+  * RPM as package management system
   * Docker as container engine
-  * runc-opencontainers as the OCI container runtime
-  * Development and Test images flavors
+  * runc-opencontainers as OCI container runtime
+  * K3s as container orchestration framework
+  * Development and Test image flavors
 
 Repository Structure
 --------------------
@@ -77,7 +78,9 @@ The high-level structure of the ``meta-ewaol`` repository is as follows:
   some of the EWAOL images.
 
 **meta-ewaol-config**:
-  Directory that contains kas configurations files for building EWAOL images.
+  Directory that contains kas configuration files for building EWAOL images, as
+  well as configuration files to use when running the Quality Assurance (QA)
+  tools on the repository.
 
 **meta-ewaol-tests**:
   Yocto layer that provides recipes and configuration to enable the validation
@@ -87,8 +90,9 @@ The high-level structure of the ``meta-ewaol`` repository is as follows:
   Directory that provides documentation for the ``meta-ewaol`` repository.
 
 **tools**:
-  Directory that provides tools that perform quality-assurance checks on the
-  repository as well as tools and scripts to support EWAOL images builds.
+  Directory that provides tools that perform QA checks on the repository, as
+  well as tools and scripts to support EWAOL image builds and documentation
+  rendering.
 
 .. _readme_layer_dependencies:
 
