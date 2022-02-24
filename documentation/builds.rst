@@ -413,12 +413,12 @@ for example `kernel module compilation`_, `profiling and tracing`_, and
 `runtime package management`_.
 
   .. _kernel module compilation:
-      https://docs.yoctoproject.org/3.4.2/kernel-dev/common.html#building-out-of-tree-modules-on-the-target
+      https://docs.yoctoproject.org/kernel-dev/common.html#building-out-of-tree-modules-on-the-target
 
-  .. _profiling and tracing: https://docs.yoctoproject.org/3.4.2/profile-manual/index.html
+  .. _profiling and tracing: https://docs.yoctoproject.org/profile-manual/index.html
 
   .. _runtime package management:
-      https://docs.yoctoproject.org/3.4.2/dev-manual/common-tasks.html#using-runtime-package-management
+      https://docs.yoctoproject.org/dev-manual/common-tasks.html#using-runtime-package-management
 
 Building an SDK image for the N1SDP via kas:
 
@@ -508,7 +508,7 @@ example:
   https://xenbits.xen.org/docs/4.16-testing/man/xl.cfg.5.html
 
 .. _Multiple Configuration Build:
-  https://docs.yoctoproject.org/3.4.2/dev-manual/common-tasks.html#building-images-for-multiple-targets-using-multiple-configurations
+  https://docs.yoctoproject.org/dev-manual/common-tasks.html#building-images-for-multiple-targets-using-multiple-configurations
 
 Multiple EWAOL Guest VM Instances
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
