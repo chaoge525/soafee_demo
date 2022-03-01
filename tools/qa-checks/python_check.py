@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-# Copyright (c) 2021, Arm Limited.
+# Copyright (c) 2021-2022, Arm Limited.
 #
 # SPDX-License-Identifier: MIT
 
@@ -54,6 +54,13 @@ class PythonCheck(abstract_check.AbstractCheck):
                                    " utility) that contain at least one as a"
                                    " substring will be checked.")
 
+        plain_vars["pycodestyle_args"] = ("Custom arguments to pass through to"
+                                          " the pycodestyle command. On"
+                                          " run-checks.py command line, set"
+                                          " this parameter using '=' to avoid"
+                                          " interpretation as arguments for"
+                                          " run-checks.py.")
+
         return list_vars, plain_vars
 
     def __init__(self, logger, *args, **kwargs):
@@ -75,7 +82,11 @@ class PythonCheck(abstract_check.AbstractCheck):
         """ Run the tool on the filepath, and return any code errors as a dict
             mapping the filepath to the list of errors. """
 
-        process = subprocess.run([self.script_path, path],
+        command = [self.script_path, path]
+        if self.pycodestyle_args != "":
+            command += self.pycodestyle_args.split(" ")
+
+        process = subprocess.run(command,
                                  stdout=subprocess.PIPE,
                                  stderr=subprocess.PIPE)
 
@@ -87,14 +98,15 @@ class PythonCheck(abstract_check.AbstractCheck):
         filename = os.path.basename(path)
 
         if process.returncode != 0:
+            search_keyword = f"{filename}:"
             errors = []
             for line in stdout.strip().split("\n"):
-                if filename not in line:
-                    # Not sure if this can happen, but if it can we should
-                    # avoid an IndexError
+                if search_keyword not in line:
+                    # Line does not contain file name but should be
+                    # reported anyway
                     errors.append(line)
                 else:
-                    errors.append(line.split(f"{filename}:")[1])
+                    errors.append(line.split(search_keyword)[1])
 
             if len(errors) == 0:
                 # We failed but got no stdout, don't ignore this error!
@@ -130,7 +142,8 @@ class PythonCheck(abstract_check.AbstractCheck):
                 file_errors[path] = ["File or directory not found."]
                 continue
 
-            self.logger.debug(f"Running {self.name} check on {path}")
+            self.logger.debug(f"Running {self.name} check on {path} using"
+                              f" {self.script} {self.pycodestyle_args}")
             common.recursively_apply_check(
                 path,
                 self.run_pycodestyle,
