@@ -1,0 +1,11 @@
+# Copyright (c) 2022, Arm Limited.
+#
+# SPDX-License-Identifier: MIT
+
+[Match]
+OriginalName=xenbr0
+Type=bridge
+
+[Link]
+NamePolicy=mac
+MACAddressPolicy=none
