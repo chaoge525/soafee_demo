@@ -2,35 +2,8 @@
 #
 # SPDX-License-Identifier: MIT
 
-# This file includes network configuration responsible for creating a network
-# bridge to share the Control VM eth interface with the Guest VM virtual
-# interfaces (vif) in bridged mode.
+# Include systemd-conf_ewaol-virtualization.inc only for the Control VM
 
-OVERRIDES:append = "${EWAOL_OVERRIDES}"
-
-FILESEXTRAPATHS:prepend:ewaol-virtualization := "${THISDIR}/files:"
-
-NETWORK_CONF_FILE:ewaol-virtualization = "01-no-vif.conf"
-XENBR_NETWORK:ewaol-virtualization = "xenbr0.network"
-XENBR_NETDEV:ewaol-virtualization = "xenbr0.netdev"
-
-SRC_URI:append:ewaol-virtualization = "\
-                                       file://${NETWORK_CONF_FILE} \
-                                       file://${XENBR_NETWORK} \
-                                       file://${XENBR_NETDEV} \
-                                       "
-
-do_install:append:ewaol-virtualization() {
-    if ${@bb.utils.contains('PACKAGECONFIG', 'dhcp-ethernet', 'true', 'false', d)}; then
-            NETWORK_CONF_DIR="${sysconfdir}/systemd/network/80-wired.network.d"
-            install -Dm 0644 ${WORKDIR}/${NETWORK_CONF_FILE} \
-                ${D}${NETWORK_CONF_DIR}/${NETWORK_CONF_FILE}
-    fi
-
-    install -Dm 0644 ${WORKDIR}/${XENBR_NETDEV} \
-        ${D}${sysconfdir}/systemd/network/${XENBR_NETDEV}
-    install -Dm 0644 ${WORKDIR}/${XENBR_NETWORK} \
-        ${D}${sysconfdir}/systemd/network/${XENBR_NETWORK}
-}
-
-FILES:${PN}:append:ewaol-virtualization = " ${sysconfdir}/systemd/"
+require ${@bb.utils.contains('DISTRO_FEATURES', 'ewaol-virtualization', \
+               bb.utils.contains('BB_CURRENT_MC', 'ewaol-guest-vm', '', \
+                   'systemd-conf_ewaol-virtualization.inc', d), '', d)}
