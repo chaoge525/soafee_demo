@@ -291,9 +291,9 @@ def get_command_line_args(default_config):
         "-v",
         "--container_image_version",
         help=f"Set the container image version (default: \
-             {default_config['container_image_version']}). Note: it is not \
-             recommended to use versions 2.5 or lower for kas containers \
-             due to lack of support for KAS_BUILD_DIR.")
+             {default_config['container_image_version']}). Note: version \
+             {default_config['container_image_version']} is the only version \
+             that kas-runner.py is currently validated with.")
 
     parser.add_argument(
         "-j",
@@ -546,7 +546,7 @@ def main():
       "config": None,
       "container_engine": "docker",
       "container_image": "ghcr.io/siemens/kas/kas",
-      "container_image_version": "2.6.1",
+      "container_image_version": "3.0",
       "engine_arguments": None,
       "number_threads": f"{os.cpu_count()}",
       "deploy_artifacts": False,
