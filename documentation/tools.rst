@@ -122,7 +122,7 @@ All other dependencies of bitbake and kas will be handled by the docker
 container image provided for kas:
 
 * Image: ``ghcr.io/siemens/kas/kas``
-* Image version: ``2.6.1``
+* Image version: ``3.0``
 
 The container engine, image source, and version are configurable as command
 line arguments to the Python script. However, only Docker and the
