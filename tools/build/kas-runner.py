@@ -8,6 +8,7 @@ import argparse
 import enum
 import glob
 import os
+import pathlib
 import signal
 import subprocess
 import sys
@@ -539,6 +540,69 @@ def deploy_artifacts(build_dir, build_artifacts_dir):
                 print("No image directory found, did not archive images")
 
 
+# Convert string of paths with specified separator to a list of path objects
+def string_to_paths(kas_files, separator=":"):
+    return [pathlib.Path(kfile) for kfile in kas_files[0].split(separator)]
+
+
+# Convert list of path objects to string with specified separator
+def paths_to_string(paths, separator=":"):
+    return separator.join(map(lambda path: str(path), paths))
+
+
+# Get the highest common ancestor of two path objects
+def _get_highest_common_ancestor(a, b):
+    a_ancestors = a.parts
+    b_ancestors = b.parts
+
+    i = 0
+    end = min(len(a_ancestors), len(b_ancestors))
+    while i < end and a_ancestors[i] == b_ancestors[i]:
+        i += 1
+
+    return pathlib.Path(*a_ancestors[:i])
+
+
+# Get the highest common ancestor of a list of path objects
+def get_highest_common_ancestor(paths):
+    highest_common_ancestor = paths[0]
+
+    for path in paths[1:]:
+        highest_common_ancestor = _get_highest_common_ancestor(
+            path, highest_common_ancestor)
+
+    return highest_common_ancestor
+
+
+# Resolve list of path objects and combining relative paths with root.
+def path_resolve_with_root(paths, root):
+    absolute_paths = []
+    for path in paths:
+        if path.is_absolute():
+            absolute_paths.append(path.resolve())
+        else:
+            absolute_paths.append((root / path).resolve())
+    return absolute_paths
+
+
+# Get the directory containing all kas_paths
+def get_kas_file_common_dir(kas_paths, project_root):
+    return get_highest_common_ancestor(kas_paths + [project_root])
+
+
+# Convert kas_paths to be relative to container
+def get_kas_container_paths(kas_paths, new_root, mount_path):
+    paths_relative = []
+    for path in kas_paths:
+        paths_relative.append(path.relative_to(new_root))
+
+    paths_inside = []
+    for path in paths_relative:
+        paths_inside.append(mount_path / path)
+
+    return paths_inside
+
+
 # Entry Point
 def main():
     exit_code = 0
@@ -602,18 +666,28 @@ def main():
             sys.tee = TeeLogger(LogOpt.TO_TERM)
 
         kas_files = config["kasfile"]
-        # Check that all config files for the target exist
-        missing_confs = "\n".join(
-            filter(lambda kfile:
-                   not os.path.isfile(os.path.join(config["project_root"],
-                                                   kfile)),
-                   kas_files[0].split(":")))
 
-        if missing_confs:
-            print((f"Error: The kas config files: \n{missing_confs}\nwere not"
-                  " found."), file=sys.tee)
+        project_root = pathlib.Path(config["project_root"]).resolve()
+        kas_paths = string_to_paths(kas_files)
+        kas_paths = path_resolve_with_root(kas_paths, project_root)
+
+        missing_kas_files = list(filter(
+            lambda kpath:
+                not (kpath.exists() and kpath.is_file()),
+                kas_paths))
+        if any(missing_kas_files):
+            missing_kas_files_string = paths_to_string(missing_kas_files,
+                                                       separator="\n")
+            print((f"Error: The kas config files: \n{missing_kas_files_string}"
+                  "\nwere not found."), file=sys.tee)
             exit_code = 1
             continue
+
+        kas_file_common_dir = get_kas_file_common_dir(kas_paths, project_root)
+
+        config_volume_mount = "/common_configs"
+        kas_paths_inside = get_kas_container_paths(
+            kas_paths, kas_file_common_dir, pathlib.Path(config_volume_mount))
 
         # Print the argument
         if args["print"]:
@@ -647,6 +721,9 @@ def main():
         engine.add_volume(config["project_root"], work_dir_name)
         engine.add_arg(f"--workdir={work_dir_name}")
         engine.add_env("KAS_WORK_DIR", work_dir_name)
+
+        # Mount config directory
+        engine.add_volume(kas_file_common_dir, config_volume_mount, "ro")
 
         # Mount and set up build directory
         kas_build_dir_name = "/kas_build_dir"
@@ -694,19 +771,16 @@ def main():
             engine.add_env('INHERIT', "own-mirrors")
             engine.add_env('BB_GENERATE_MIRROR_TARBALLS', "1")
 
-        # kasfiles must be relative to container filesystem
-        kas_config = kasconfig_format(kas_files,
-                                      config["project_root"],
-                                      work_dir_name)
-
         if config['engine_arguments']:
             engine.add_arg(config['engine_arguments'])
 
         if config['number_threads']:
             engine.add_env('BB_NUMBER_THREADS', config['number_threads'])
 
+        kas_files_string = paths_to_string(kas_paths_inside)
+
         # Execute the command
-        exit_code |= engine.run(kas_config, config['kas_arguments'])
+        exit_code |= engine.run(kas_files_string, config['kas_arguments'])
 
         # Grab build artifacts and store in artifacts_dir/buildname
         if config["deploy_artifacts"]:
