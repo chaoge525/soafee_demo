@@ -1,6 +1,6 @@
 ---
 #
-# Copyright (c) 2021, Arm Limited.
+# Copyright (c) 2021-2022, Arm Limited.
 #
 # SPDX-License-Identifier: MIT
 
@@ -21,7 +21,7 @@ presets:
     engine_arguments: ''
 
   path-presets: &path-presets
-    out_dir: '%(project_root)s/ci-build'
+    out_dir: '{project_root}/ci-build'
     deploy_artifacts: true
 
   build-presets: &build-presets
