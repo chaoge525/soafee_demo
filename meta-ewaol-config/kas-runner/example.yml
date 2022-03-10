@@ -1,6 +1,6 @@
 ---
 #
-# Copyright (c) 2021, Arm Limited.
+# Copyright (c) 2021-2022, Arm Limited.
 #
 # SPDX-License-Identifier: MIT
 
@@ -18,7 +18,7 @@ header:
 # Presets section, defining common settings that may be used in configs.
 presets:
   path-presets: &path-presets
-    out_dir: '%(project_root)s/build'
+    out_dir: '{project_root}/build'
 
   kas-presets: &kas-presets
     kasfile:

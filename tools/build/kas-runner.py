@@ -5,6 +5,7 @@
 # SPDX-License-Identifier: MIT
 
 import argparse
+import copy
 import enum
 import glob
 import os
@@ -54,9 +55,9 @@ class ContainerEngine:
         """ Invoke the container engine with all arguments previously added to
             the object. """
 
-        command = f"{self.container_engine} run {' '.join(self.args)}\
-                    {self.container_image}:{self.container_image_version}\
-                    {kas_command} {kas_config}"
+        command = (f"{self.container_engine} run {' '.join(self.args)}"
+                   f" {self.container_image}:{self.container_image_version}"
+                   f" {kas_command} {kas_config}")
 
         def handle_interrupt(signum, frame):
             """ If this script is aborted while we have started a detached
@@ -121,58 +122,352 @@ def mk_newdir(path):
         os.makedirs(path)
 
 
-# replaces colon seperated names of kas config files with full paths
-def kasconfig_format(kasfiles, project_root, mnt_dir):
-
-    def format_path(kfile):
-        return os.path.join(mnt_dir,
-                            kfile)
-
-    return ":".join(map(format_path, kasfiles[0].split(":")))
+# Error to raise when a resolve function fails.
+class RunnerResolveError(ValueError):
+    pass
 
 
-# Function formatting a string to display it on this tool's help. When the
-# argument's default value contains a another argument as a prefix, this
-# prefix shouldn't be replaced with its value to make the dependencies clear
-# to the user.
-def prettify_string_vars(string, prefix_name):
-    var_length = len(prefix_name)
-    printed_string = string[4 + var_length:]
-    printed_string = f"{{{prefix_name}}}{printed_string}"
+# Class containing all the details of how the value of a setting is found.
+#
+# * The default value of the setting {default}.
+# * This is set with a command line argument with the flag --{setting_name} or
+#   optional short flag {short_name}.
+# * The value can also be set in config file using {setting_name}.
+# * The message displayed in the help message is set using {help} and can
+#   reference other RunnerSetting parameters (e.g. default=foo,
+#   help="default {default}" -> help="default foo")
+# * Any key words parameters other than those specified in init will be passed
+#   directly to argparse.add_argument.
+# * If positional=True the command line argument is set using positional args
+# * If internal=True the setting is calculated in the script and is valid as a
+#   command or in config files.
+# * The resolve_function is for extra processing of the setting before it is
+#   used such as transforming a path string to a Path object. This function is
+#   also used to validate by raising a RunnerResolveError if the setting value
+#   is invalid.
+class RunnerSetting():
 
-    return printed_string
+    def __init__(self, setting_name, short_name=None, default=None,
+                 positional=False, help="", resolve_function=None,
+                 internal=False, **kwargs):
 
+        self.setting_name = setting_name
+        self.short_name = short_name
+        self.default = default
+        self.positional = positional
+        self.help = self.format_help(help)
+        self.resolve_function = resolve_function
+        self.arg_kwargs = kwargs
+        self.internal = internal
 
-# Class to implement a self-referential dictionary, where string-values
-# may reference other key-value pairs within the dictionary, by
-# including a substring with the format: "%(key)s".
-# References are evaluated lazily, each time a key's corresponding value
-# is acquired.
-class ArgumentsDictionary(dict):
-    def __getitem__(self, item):
-        value = dict.__getitem__(self, item)
-        if isinstance(value, str):
-            try:
-                evaluated_str = value % self
-                return evaluated_str
-            except KeyError:
-                return value
+    def format_help(self, help_string):
+        return help_string.format_map(self.__dict__)
+
+    # Add this setting to the argparser.
+    def add_to_args(self, argparser):
+
+        if self.internal:
+            return
+
+        arg_args = []
+
+        if self.short_name is not None:
+            arg_args.append(f"{self.short_name}")
+
+        if self.positional:
+            arg_args.append(self.setting_name)
         else:
-            return value
+            arg_args.append(f"--{self.setting_name}")
 
-    # The is_valid() function checks if all defined string references exist
-    # within the dictionary
-    def is_valid(self):
-        for value in self.values():
-            if isinstance(value, str):
-                try:
-                    evaluated_str = value % self
-                except KeyError:
-                    return False
+        arg_kwargs = self.arg_kwargs
+        arg_kwargs["help"] = self.help
+
+        argparser.add_argument(*arg_args, **arg_kwargs)
+
+    # Call the resolve function for this setting.
+    def resolve(self, config, value):
+        if self.resolve_function is None:
+            return value
+        return self.resolve_function(config, value)
+
+
+# Class to contain the value of each setting.
+#
+# The value of settings are stored on this object as variables and can be
+# accessed using runner_setting.{setting_name}.
+# The settings_details contains all information needed to resolve and validate
+# the setting values. This is initialized as a list of RunnerSettings.
+# Note: The order of settings in setting_details_list matters for positional
+# settings and for the order settings are resolved in.
+# The value of settings is intialized to the default value definied in the
+# settings_details and can be overriden using override_settings.
+class RunnerSettings():
+
+    def __init__(self, settings_details_list):
+        self.settings_details = self.setup_settings_details(
+            settings_details_list)
+
+        self.set_to_default()
+        self.resolved = False
+
+    # Convert list of settings to a dictionary indexed by name.
+    def setup_settings_details(self, settings_details):
+        return {s.setting_name: s for s in settings_details}
+
+    # Set the value of all settigns to their default values.
+    def set_to_default(self):
+        default_dict = {x[0]: x[1].default
+                        for x in self.settings_details.items()}
+        self.__dict__.update(default_dict)
+
+    # Override settings
+    def override_settings(self, new_values_dict):
+
+        if not self.validate_incoming(new_values_dict):
+            return False
+
+        self.__dict__.update(new_values_dict)
+        self.resolved = False
         return True
 
+    # Validate that all settings being set exist and are not internal.
+    def validate_incoming(self, config):
+        is_valid = True
+        for setting, value in config.items():
+            if (setting not in self.settings_details or
+                    self.settings_details[setting].internal):
+                print(f"ERROR: Invalid setting '{setting}' specified")
+                is_valid = False
+                continue
 
-def get_command_line_args(default_config):
+        return is_valid
+
+    # Call the resolve function on every setting
+    def resolve_settings(self):
+        if self.resolved:
+            print(f"ERROR: settings already resolved.")
+            raise RunerResolveError()
+        for name, setting in self.settings_details.items():
+            try:
+                value = getattr(self, name)
+                value = setting.resolve(self, value)
+                setattr(self, name, value)
+            except RunnerResolveError as e:
+                print(f"ERROR: Cannot resolve '{name}': {value}")
+                raise e
+        self.resolved = True
+
+    # Get a dictionary containing all settings
+    def setting_values(self):
+        return dict(filter(lambda i: i[0] in self.settings_details.keys(),
+                           self.__dict__.items()))
+
+    def __str__(self):
+        return f"Runtime Config with {self.setting_values()}"
+
+
+# Get a list of the runner settings details.
+def get_settings_details():
+
+    def resolve_config_reference(config, value):
+        try:
+            return value.format_map(config.setting_values())
+        except KeyError as e:
+            print(f"ERROR: Invalid config, string {value} couldn't be"
+                  f" evaluated")
+            raise RunnerResolveError(e)
+
+    def resolve_to_path(_, value):
+        return pathlib.Path(value).resolve()
+
+    def resolve_config_reference_to_path(config, value):
+        return resolve_to_path(config,
+                               resolve_config_reference(config, value))
+
+    def resolve_kas_file_paths(config, value):
+        if isinstance(value, list):
+            if len(value) > 1:
+                print(f"ERROR: Only one set of kasfiles should be"
+                      f" sepecified.")
+                raise RunnerResolveError()
+            if len(value) == 0:
+                print(f"ERROR: No kasfiles specified.")
+                raise RunnerResolveError()
+            value = value[0]
+
+        if bool(value) is False:
+            print(f"ERROR: No kasfiles specified.")
+            raise RunnerResolveError()
+
+        kas_paths = string_to_paths(value)
+        kas_paths = path_resolve_with_root(
+            kas_paths, config.project_root)
+
+        missing_kas_files = list(filter(
+            lambda kpath:
+                not (kpath.exists() and kpath.is_file()),
+            kas_paths))
+
+        if any(missing_kas_files):
+            missing_kas_files_string = paths_to_string(missing_kas_files,
+                                                       separator="\n")
+            print((f"ERROR: The kas config files:\n"
+                   f"{missing_kas_files_string}\n"
+                   f"were not found."))
+            raise RunnerResolveError()
+
+        return kas_paths
+
+    settings_details = [
+        # Positional Settings
+        RunnerSetting(
+            "kasfile",
+            positional=True,
+            nargs='?',
+            metavar='config.yml',
+            default=None,
+            resolve_function=resolve_kas_file_paths,
+            help=("The path to the yaml files containing the config for"
+                  " the kas build. Can provide multiple space-separated build"
+                  " configs, where each config can be a colon (:) separated"
+                  " list of .yml files to merge.")),
+
+        # Flag Argument Settings
+        RunnerSetting(
+            "out_dir",
+            short_name="-o",
+            default="{project_root}/build",
+            resolve_function=resolve_config_reference_to_path,
+            help="Path to build directory (default: {default})."),
+
+        RunnerSetting(
+            "sstate_dir",
+            short_name="-sd",
+            default="{out_dir}/yocto-cache/sstate",
+            resolve_function=resolve_config_reference_to_path,
+            help=("Path to local sstate cache for this build (default:"
+                  " {default}).")),
+
+        RunnerSetting(
+            "dl_dir",
+            short_name="-dd",
+            default="{out_dir}/yocto-cache/downloads",
+            resolve_function=resolve_config_reference_to_path,
+            help=("Path to local downloads cache for this build (default:"
+                  " {default}).")),
+
+        RunnerSetting(
+            "sstate_mirror",
+            short_name="-sm",
+            help=("Path to read-only sstate mirror on local machine or the URL"
+                  " of a server to be used as a sstate mirror.")),
+
+        RunnerSetting(
+            "downloads_mirror",
+            short_name="-dm",
+            help=("Path to read-only downloads mirror on local machine or the"
+                  " URL of a server to be used as a downloads mirror.")),
+
+        RunnerSetting(
+            "deploy_artifacts",
+            short_name="-d",
+            dest="deploy_artifacts",
+            action="store_const",
+            const=True,
+            default=False,
+            help=("Generate artifacts for CI, and store in artifacts dir"
+                  " (default: {default}).")),
+
+        RunnerSetting(
+            "artifacts_dir",
+            short_name="-a",
+            default="{out_dir}/artifacts",
+            resolve_function=resolve_config_reference_to_path,
+            help=("Specify the directory to store the build logs, config and"
+                  " images after the build if --deploy_artifacts is enabled"
+                  " (default: {default}).")),
+
+        RunnerSetting(
+            "network_mode",
+            short_name="-n",
+            default="bridge",
+            help=("Set the network mode of the container (default:"
+                  " {default}).")),
+
+        RunnerSetting(
+            "container_engine",
+            short_name="-e",
+            default="docker",
+            help="Set the container engine (default: {default})."),
+
+        RunnerSetting(
+            "container_image",
+            short_name="-i",
+            default="ghcr.io/siemens/kas/kas",
+            help="Set the container image (default: {default})."),
+
+        RunnerSetting(
+            "engine_arguments",
+            short_name="-ea",
+            help=("Optional string of arguments for running the container,"
+                  " e.g. --{setting_name} '--volume /host/dir:/container/dir"
+                  " --env VAR=value'.")),
+
+        RunnerSetting(
+            "container_image_version",
+            short_name="-v",
+            default="3.0",
+            help=("Set the container image version (default: {default})."
+                  " Note: version {default} is the only version that"
+                  " kas-runner.py is currently validated with.")),
+
+        RunnerSetting(
+            "number_threads",
+            short_name="-j",
+            default=f"{os.cpu_count()}",
+            help=("Sets number of threads used by bitbake, by exporting"
+                  " environment variable BB_NUMBER_THREADS = J. Usually it is"
+                  " set to ({default}), unless a different number of threads"
+                  " is set in a kas config file used for the build.")),
+
+        RunnerSetting(
+            "kas_arguments",
+            short_name="-k",
+            default="build",
+            help=("Arguments to be passed to kas executable within the"
+                  " container (default: {default}).")),
+
+        RunnerSetting(
+            "log_file",
+            short_name="-log",
+            help=("Write output to the given log file as well as to stdout"
+                  " (default: {default}).")),
+
+        RunnerSetting(
+            "project_root",
+            short_name="-r",
+            default=pathlib.Path.cwd().resolve(),
+            resolve_function=resolve_to_path,
+            help="Project root path (default: {default})."),
+
+        # Internal Settings
+        RunnerSetting(
+            "build_dir_name",
+            internal=True,
+            resolve_function=lambda config, _:
+                "_".join(kpath.stem for kpath in config.kasfile)),
+
+        RunnerSetting(
+            "build_dir",
+            internal=True,
+            resolve_function=lambda config, _:
+                config.out_dir / config.build_dir_name),
+    ]
+
+    return settings_details
+
+
+def get_command_line_args(settings_details):
 
     desc = (f"{os.path.basename(__file__)} is used for building yocto based "
             "projects, using the kas container image to handle build "
@@ -184,205 +479,44 @@ def get_command_line_args(default_config):
                "required layers and build an image using the 2 provided "
                "configs.")
 
-    formatted_out_dir = prettify_string_vars(
-                        dict.__getitem__(default_config, 'out_dir'),
-                        'project_root')
-
-    formatted_sstate_dir = prettify_string_vars(
-                        dict.__getitem__(default_config, 'sstate_dir'),
-                        'out_dir')
-
-    formatted_dl_dir = prettify_string_vars(
-                        dict.__getitem__(default_config, 'dl_dir'),
-                        'out_dir')
-
-    formatted_artifacts_dir = prettify_string_vars(
-                        dict.__getitem__(default_config, 'artifacts_dir'),
-                        'out_dir')
     # Parse Arguments and assign to args object
     parser = argparse.ArgumentParser(
         formatter_class=argparse.RawDescriptionHelpFormatter,
         description=f"{desc}\n{usage}\n{example}\n\n")
 
-    parser.add_argument(
-        "kasfile",
-        nargs='*',
-        metavar='config.yml',
-        help="The path to the yaml files containing the config for \
-             the kas build. Can provide multiple space-separated build \
-             configs, where each config can be a colon (:) seperated list of \
-             .yml files to merge.")
-
+    # Command line only arguments
     parser.add_argument(
         "-c",
         "--config",
         help="Load script parameters from file (default: %(default)s).")
 
     parser.add_argument(
-        "-o",
-        "--out_dir",
-        help=f"Path to build directory (default: {formatted_out_dir})")
-
-    parser.add_argument(
-        "-sd",
-        "--sstate_dir",
-        help=f"Path to local sstate cache for this build \
-             (default: {formatted_sstate_dir})")
-
-    parser.add_argument(
-        "-dd",
-        "--dl_dir",
-        help=f"Path to local downloads cache for this build \
-             (default: {formatted_dl_dir})")
-
-    parser.add_argument(
-        "-sm",
-        "--sstate_mirror",
-        help="Path to read-only sstate mirror on local machine or the URL \
-             of a server to be used as a sstate mirror")
-
-    parser.add_argument(
-        "-dm",
-        "--downloads_mirror",
-        help="Path to read-only downloads mirror on local machine or the URL \
-             of a server to be used as a downloads mirror")
-
-    parser.add_argument(
-        "-d",
-        "--deploy_artifacts",
-        dest="deploy_artifacts",
-        action="store_const",
-        const=True,
-        help=f"Generate artifacts for CI, and store in artifacts dir (default:\
-              {default_config['deploy_artifacts']})")
-
-    parser.add_argument(
-        "-a",
-        "--artifacts_dir",
-        help=f"Specify the directory to store the build logs, config and \
-             images after the build if --deploy_artifacts is enabled \
-             (default: {formatted_artifacts_dir})")
-
-    parser.add_argument(
-        "-n",
-        "--network_mode",
-        help=f"Set the network mode of the container (default: \
-             {default_config['network_mode']}).")
-
-    parser.add_argument(
-        "-e",
-        "--container_engine",
-        help=f"Set the container engine (default: \
-             {default_config['container_engine']}).")
-
-    parser.add_argument(
-        "-i",
-        "--container_image",
-        help=f"Set the container image (default: \
-             {default_config['container_image']}).")
-
-    parser.add_argument(
-        "-ea",
-        "--engine_arguments",
-        help="Optional string of arguments for running the container, e.g.\
-              --engine_arguments '--volume /host/dir:/container/dir \
-                                  --env VAR=value'.")
-
-    parser.add_argument(
-        "-v",
-        "--container_image_version",
-        help=f"Set the container image version (default: \
-             {default_config['container_image_version']}). Note: version \
-             {default_config['container_image_version']} is the only version \
-             that kas-runner.py is currently validated with.")
-
-    parser.add_argument(
-        "-j",
-        "--number_threads",
-        help=f"Sets number of threads used by bitbake, by exporting \
-             environment variable BB_NUMBER_THREADS = J. Usually it is set to \
-             ({os.cpu_count()}), unless a different number of threads is set \
-             in a kas config file used for the build.")
-
-    parser.add_argument(
-        "-k",
-        "--kas_arguments",
-        help=f"Arguments to be passed to kas executable within the container \
-             (default: {default_config['kas_arguments']}).")
-
-    parser.add_argument(
-        "-log",
-        "--log_file",
-        help=f"Write output to the given log file as well as to stdout \
-             (default: {default_config['log_file']}).")
-
-    parser.add_argument(
         "-l",
         "--list_configs",
         action="store_true",
         dest="list_configs",
-        help="List all named configs from the config file specified with a \
-             '--config' parameter.")
+        help=("List all named configs from the config file specified with a"
+              " '--config' parameter."))
 
     parser.add_argument(
         "-p",
         "--print",
         dest="print",
-        help="Print a parameter of the config being built. For this argument \
-             to work, a config must be selected")
+        help=("Print a parameter of the config being built. For this argument"
+              " to work, a config must be selected"))
 
-    parser.add_argument(
-        "-r",
-        "--project_root",
-        help=f"Project root path (default: {default_config['project_root']}).")
+    # Add arguments for runner settings
+    for runner_setting in settings_details:
+        runner_setting.add_to_args(parser)
 
-    return ArgumentsDictionary(vars(parser.parse_args()))
+    return vars(parser.parse_args())
 
 
 def merge_configs(base_config, override_config):
-    merged_config = ArgumentsDictionary()
-    for key in base_config:
-        merged_config[key] = base_config[key]
-    merged_config.update(override_config)
+    merged_config = copy.copy(base_config)
+    if not merged_config.override_settings(override_config):
+        exit(1)
     return merged_config
-
-
-# Separate configs that are including multiple kasfiles in a list of configs
-# so that we instead get a config for each kasfile.
-def duplicate_configs(configs):
-    num_configs = len(configs)
-    new_config_list = configs
-    config_index = 0
-    while config_index < num_configs:
-        config = configs[config_index]
-        if len(config["kasfile"]) > 1:
-
-            # Remove the last kasfile string from this config
-            # A kasfile_string is like "one.yml:two.yml:three.yml"
-            kasfile_string = config["kasfile"].pop()
-
-            # Copy this config and set it to have only the single kasfile
-            # string that was removed
-            new_config = ArgumentsDictionary()
-            for key in config:
-                new_config[key] = config[key]
-            new_config["kasfile"] = [kasfile_string]
-
-            # Add the new config to the end of the config list, and continue to
-            # check this config again
-            new_config_list.append(new_config)
-        else:
-            config_index += 1
-
-    return new_config_list
-
-
-# Function returning the build name from a config
-def get_build_name(config):
-    name = "_".join([os.path.basename(os.path.splitext(kfile)[0])
-                    for kfile in config['kasfile'][0].split(':')])
-
-    return name
 
 
 # Get the configuration(s) to run this script with, as a combination
@@ -394,8 +528,8 @@ def get_build_name(config):
 # If no named config is provided, use just the first config in the file
 # Command line arguments override values in all loaded configs
 def get_configs(default_config, args):
-    configs = list()
-    config = default_config
+    runner_configs = list()
+    settings_details = default_config.settings_details
     config_names = dict()
 
     if args["config"]:
@@ -422,48 +556,45 @@ def get_configs(default_config, args):
                 if len(yaml_configs) == 0:
                     print(f"ERROR: No configs defined in config file")
                     exit(1)
-                selected_names = list()
 
                 if named_config is not None:
-                    selected_names.append(named_config)
+                    selected_name = named_config
                 else:
-                    selected_names.append(next(iter(yaml_configs.keys())))
-                for name in selected_names:
-                    config = yaml_configs[name]
-                    configs.append(merge_configs(default_config, config))
+                    selected_name = next(iter(yaml_configs.keys()))
+                config_dict = yaml_configs[selected_name]
+                runner_configs.append(merge_configs(default_config,
+                                                    config_dict))
 
             except KeyError:
                 print(f"ERROR: Invalid configs {args['config']}")
                 exit(1)
 
     else:
-        configs.append(default_config)
-    config = merge_configs(default_config, config)
+        runner_configs.append(default_config)
 
     # Overwrite values in all prior configs with command-line arguments
     # Ignore any None or empty-list arguments from the command-line parser
-    supplied_args = dict(filter(lambda arg: bool(arg[1]) is True or
-                                isinstance(arg[1], bool),
-                                args.items()))
-    configs = [merge_configs(config, supplied_args) for config in configs]
+    # Ignore any args that are not valid external settings.
+    supplied_args = dict(filter(lambda arg:
+                                arg[0] in settings_details and (
+                                    bool(arg[1]) is True or
+                                    isinstance(arg[1], bool)
+                                ), args.items()))
+    runner_configs = [merge_configs(config, supplied_args)
+                      for config in runner_configs]
 
-    configs = duplicate_configs(configs)
+    valid = True
+    for settings in runner_configs:
+        try:
+            settings.resolve_settings()
+        except RunnerResolveError:
+            valid = False
 
-    for config in configs:
-        if not config.is_valid():
-            print("ERROR: Invalid config, string couldn't get evaluated")
-            exit(1)
+    if not valid:
+        print("ERROR: Invalid configuration")
+        exit(1)
 
-    for config in configs:
-
-        if config['kasfile'] != []:
-            # buildname is the kas file names without path or extension
-            buildname = get_build_name(config)
-            # Name of build dir specific to this config
-            config["build_dir_name"] = buildname
-            config["build_dir"] = os.path.join(config["out_dir"], buildname)
-
-    return (configs, config_names)
+    return (runner_configs, config_names)
 
 
 # Deploy generated artifacts like build configs and logs.
@@ -542,7 +673,7 @@ def deploy_artifacts(build_dir, build_artifacts_dir):
 
 # Convert string of paths with specified separator to a list of path objects
 def string_to_paths(kas_files, separator=":"):
-    return [pathlib.Path(kfile) for kfile in kas_files[0].split(separator)]
+    return [pathlib.Path(kfile) for kfile in kas_files.split(separator)]
 
 
 # Convert list of path objects to string with specified separator
@@ -606,33 +737,13 @@ def get_kas_container_paths(kas_paths, new_root, mount_path):
 # Entry Point
 def main():
     exit_code = 0
-    default_config = ArgumentsDictionary({
-      "config": None,
-      "container_engine": "docker",
-      "container_image": "ghcr.io/siemens/kas/kas",
-      "container_image_version": "3.0",
-      "engine_arguments": None,
-      "number_threads": f"{os.cpu_count()}",
-      "deploy_artifacts": False,
-      "kas_arguments": "build",
-      "kasfile": [],
-      "sstate_mirror": None,
-      "downloads_mirror": None,
-      "log_file": None,
-      "network_mode": "bridge",
-      "project_root": f"{os.path.realpath(os.getcwd())}",
 
-      # relative to project_root
-      "out_dir": "%(project_root)s/build",
+    settings_details = get_settings_details()
 
-      # relative to out_dir
-      "sstate_dir": "%(out_dir)s/yocto-cache/sstate",
-      "dl_dir":  "%(out_dir)s/yocto-cache/downloads",
-      "artifacts_dir":  "%(out_dir)s/artifacts"
-    })
     # Parse command line arguments and split build configs
     # for different targets into a list
-    args = get_command_line_args(default_config)
+    args = get_command_line_args(settings_details)
+    default_config = RunnerSettings(settings_details)
     configs, config_names = get_configs(default_config, args)
 
     # List the available configs if the list_config flag was selected
@@ -645,14 +756,15 @@ def main():
                   f"{' '.join(elem for elem in config_names)}")
             exit(0)
 
-    for config in configs:
-        if config['kasfile'] == []:
-            print("ERROR: No config was provided")
-            exit(1)
+    if len(configs) == 0:
+        print("ERROR: No config was provided")
+        exit(1)
 
-        if config["log_file"]:
-            mk_newdir(os.path.dirname(os.path.realpath(config["log_file"])))
-            log_file = open(config["log_file"], "w")
+    for config in configs:
+
+        if config.log_file:
+            mk_newdir(os.path.dirname(os.path.realpath(config.log_file)))
+            log_file = open(config.log_file, "w")
 
             # By default, if we have a log file then only write to it
             # But provide a logger to write to both terminal
@@ -665,52 +777,38 @@ def main():
             # write both stdout and tee to only terminal
             sys.tee = TeeLogger(LogOpt.TO_TERM)
 
-        kas_files = config["kasfile"]
-
-        project_root = pathlib.Path(config["project_root"]).resolve()
-        kas_paths = string_to_paths(kas_files)
-        kas_paths = path_resolve_with_root(kas_paths, project_root)
-
-        missing_kas_files = list(filter(
-            lambda kpath:
-                not (kpath.exists() and kpath.is_file()),
-                kas_paths))
-        if any(missing_kas_files):
-            missing_kas_files_string = paths_to_string(missing_kas_files,
-                                                       separator="\n")
-            print((f"Error: The kas config files: \n{missing_kas_files_string}"
-                  "\nwere not found."), file=sys.tee)
-            exit_code = 1
-            continue
-
-        kas_file_common_dir = get_kas_file_common_dir(kas_paths, project_root)
+        kas_file_common_dir = get_kas_file_common_dir(config.kasfile,
+                                                      config.project_root)
 
         config_volume_mount = "/common_configs"
         kas_paths_inside = get_kas_container_paths(
-            kas_paths, kas_file_common_dir, pathlib.Path(config_volume_mount))
+            config.kasfile, kas_file_common_dir,
+            pathlib.Path(config_volume_mount))
 
         # Print the argument
         if args["print"]:
-            if args['print'] in config:
+            config_dict = config.setting_values()
+            if args['print'] in config_dict:
                 if len(configs) == 1:
-                    print(f"{args['print']}: {config[args['print']]}")
+                    print(f"{args['print']}: {config_dict[args['print']]}")
                 else:
-                    print(f"kasfile: {config['kasfile'][0]}\n"
-                          f"{args['print']}: {config[args['print']]}")
+                    print(f"kasfile: {config.kasfile}\n"
+                          f"{args['print']}: {config_dict[args['print']]}")
             else:
                 print(f"ERROR: parameter {args['print']} cannot be found")
                 exit(1)
             continue
 
-        print(f"Starting build task: {kas_files}", file=sys.tee)
+        print(f"Starting build task: {paths_to_string(config.kasfile)}",
+              file=sys.tee)
 
         # Create directories if they don't exist
-        mk_newdir(config["out_dir"])
-        mk_newdir(config["build_dir"])
+        mk_newdir(config.out_dir)
+        mk_newdir(config.build_dir)
 
-        engine = ContainerEngine(config["container_engine"],
-                                 config["container_image"],
-                                 config["container_image_version"])
+        engine = ContainerEngine(config.container_engine,
+                                 config.container_image,
+                                 config.container_image_version)
 
         # Pass user and group ID to container engine env
         engine.add_env("USER_ID", os.getuid())
@@ -718,7 +816,7 @@ def main():
 
         # Mount and set up workdir
         work_dir_name = "/work"
-        engine.add_volume(config["project_root"], work_dir_name)
+        engine.add_volume(config.project_root, work_dir_name)
         engine.add_arg(f"--workdir={work_dir_name}")
         engine.add_env("KAS_WORK_DIR", work_dir_name)
 
@@ -727,72 +825,73 @@ def main():
 
         # Mount and set up build directory
         kas_build_dir_name = "/kas_build_dir"
-        engine.add_volume(config["build_dir"],
+        engine.add_volume(config.build_dir,
                           kas_build_dir_name)
         engine.add_env("KAS_BUILD_DIR", kas_build_dir_name)
 
         # Configure local caches
-        engine.add_volume(config["sstate_dir"],
+        engine.add_volume(config.sstate_dir,
                           "/sstate_dir",
                           env_var="SSTATE_DIR")
-        mk_newdir(config["sstate_dir"])
+        mk_newdir(config.sstate_dir)
 
-        engine.add_volume(config["dl_dir"], "/dl_dir", env_var="DL_DIR")
-        mk_newdir(config["dl_dir"])
+        engine.add_volume(config.dl_dir, "/dl_dir", env_var="DL_DIR")
+        mk_newdir(config.dl_dir)
 
         # Set network mode
-        network_mode = config["network_mode"]
+        network_mode = config.network_mode
         engine.add_arg(f"--network={network_mode}")
 
         # Configure cache mirrors
-        if config["sstate_mirror"]:
-            if config["sstate_mirror"].startswith("http"):
-                SSTATE_MIRRORS = (f"file://.* {config['sstate_mirror']}/PATH;"
+        if config.sstate_mirror:
+            if config.sstate_mirror.startswith("http"):
+                SSTATE_MIRRORS = (f"file://.* {config.sstate_mirror}/PATH;"
                                   "downloadfilename=PATH")
             else:
                 path = "/sstate_mirrors"
-                mk_newdir(config["sstate_mirror"])
-                engine.add_volume(config["sstate_mirror"], path, "ro")
+                mk_newdir(config.sstate_mirror)
+                engine.add_volume(config.sstate_mirror, path, "ro")
                 SSTATE_MIRRORS = (f"file://.* file://{path}/PATH;"
                                   "downloadfilename=PATH")
 
             engine.add_env("SSTATE_MIRRORS", SSTATE_MIRRORS)
 
-        if config["downloads_mirror"]:
-            if config["downloads_mirror"].startswith("http"):
-                SOURCE_MIRROR_URL = config['downloads_mirror']
+        if config.downloads_mirror:
+            if config.downloads_mirror.startswith("http"):
+                SOURCE_MIRROR_URL = config.downloads_mirror
             else:
                 path = "/source_mirror_url"
-                mk_newdir(config["downloads_mirror"])
-                engine.add_volume(config["downloads_mirror"], path, "ro")
+                mk_newdir(config.downloads_mirror)
+                engine.add_volume(config.downloads_mirror, path, "ro")
                 SOURCE_MIRROR_URL = f"file://{path}"
 
             engine.add_env("SOURCE_MIRROR_URL", SOURCE_MIRROR_URL)
             engine.add_env('INHERIT', "own-mirrors")
             engine.add_env('BB_GENERATE_MIRROR_TARBALLS', "1")
 
-        if config['engine_arguments']:
-            engine.add_arg(config['engine_arguments'])
+        if config.engine_arguments:
+            engine.add_arg(config.engine_arguments)
 
-        if config['number_threads']:
-            engine.add_env('BB_NUMBER_THREADS', config['number_threads'])
+        if config.number_threads:
+            engine.add_env('BB_NUMBER_THREADS', config.number_threads)
 
         kas_files_string = paths_to_string(kas_paths_inside)
 
         # Execute the command
-        exit_code |= engine.run(kas_files_string, config['kas_arguments'])
+        exit_code |= engine.run(kas_files_string, config.kas_arguments)
 
         # Grab build artifacts and store in artifacts_dir/buildname
-        if config["deploy_artifacts"]:
-            mk_newdir(config["artifacts_dir"])
+        if config.deploy_artifacts:
+            mk_newdir(config.artifacts_dir)
 
-            build_artifacts_dir = os.path.join(config["artifacts_dir"],
-                                               config["build_dir_name"])
+            build_artifacts_dir = os.path.join(config.artifacts_dir,
+                                               config.build_dir_name)
             mk_newdir(build_artifacts_dir)
 
-            deploy_artifacts(config["build_dir"], build_artifacts_dir)
+            deploy_artifacts(config.build_dir, build_artifacts_dir)
 
-        print(f"Finished build task: {kas_files}\n", file=sys.tee)
+        print(f"Finished build task: {paths_to_string(config.kasfile)}\n",
+              file=sys.tee)
 
     exit(exit_code)
 
