@@ -10,12 +10,31 @@ import enum
 import glob
 import os
 import pathlib
+import platform
 import signal
 import subprocess
 import sys
 import tarfile
 import time
 import yaml
+
+
+# Any function with external effects should be called with this methods so it
+# does not have any external effects when dry run is enabled. The message
+# provided to this method is always printed.
+# * func_call: function containing external effect to run unless dry run.
+# * message: message to print.
+# * print_kwargs: dictionary with extra kwargs to pass to print function.
+#
+# Example Usage:
+#     def func_external_effect():
+#         foo()
+#     run_external_effect(func_external_effect, "Perform foo external effect")
+#     run_external_effect(lambda: bar(), "Perform bar external effect")
+def run_external_effect(func_call, message, print_kwargs={}):
+    print(message, **print_kwargs)
+    if not is_dry_run:
+        return func_call()
 
 
 class ContainerEngine:
@@ -89,37 +108,59 @@ class ContainerEngine:
 
             exit(1)
 
-        signal.signal(signal.SIGINT, handle_interrupt)
-        signal.signal(signal.SIGTERM, handle_interrupt)
+        def _run(command):
+            """ Subset of the run function that produces side effects so should
+                be called using run_external_effect. """
 
-        # Start the build container
-        print(command, file=sys.tee)
-        proc = subprocess.Popen(command,
-                                stdout=subprocess.PIPE,
-                                stderr=subprocess.STDOUT,
-                                shell=True)
+            signal.signal(signal.SIGINT, handle_interrupt)
+            signal.signal(signal.SIGTERM, handle_interrupt)
 
-        for next_line in proc.stdout:
-            print(next_line.decode(), end='')
+            # Start the build container
+            proc = subprocess.Popen(command,
+                                    stdout=subprocess.PIPE,
+                                    stderr=subprocess.STDOUT,
+                                    shell=True)
 
-        proc.wait()
+            for next_line in proc.stdout:
+                print(next_line.decode(), end='')
 
-        # Deregister the signal handler as the subprocess is complete
-        signal.signal(signal.SIGINT, signal.default_int_handler)
-        signal.signal(signal.SIGTERM, signal.SIG_DFL)
+            proc.wait()
 
-        if proc.returncode is None or proc.returncode > 0:
-            print((f"Error: container command: \n{command}\n"
-                  f"Failed with return code {proc.returncode}"), file=sys.tee)
-            return 1
+            # Deregister the signal handler as the subprocess is complete
+            signal.signal(signal.SIGINT, signal.default_int_handler)
+            signal.signal(signal.SIGTERM, signal.SIG_DFL)
 
-        return 0
+            if proc.returncode is None or proc.returncode > 0:
+                print((f"Error: container command: \n{command}\n"
+                       f"Failed with return code {proc.returncode}"),
+                      file=sys.tee)
+                return 1
+
+            return 0
+
+        retcode = run_external_effect(lambda: _run(command),
+                                      f"{command}",
+                                      dict(file=sys.tee))
+        if retcode is None:
+            retcode = 0
+        return retcode
 
 
 # Create a directory only if it doesn't already exist
 def mk_newdir(path):
     if not os.path.exists(path):
-        os.makedirs(path)
+        run_external_effect(lambda: os.makedirs(path),
+                            f"Create folder at {path}")
+
+
+# Filter a dictionary using the filter_lambda function.
+#
+# This works much like a normal filter function but accepts and returns a
+# dictionary instead of a list.
+# * filter_lambda should accept two arguments (key, value) and return a bool
+def dict_filter(filter_lambda, dictionary):
+    return dict(filter(lambda kv: filter_lambda(*kv),
+                       dictionary.items()))
 
 
 # Error to raise when a resolve function fails.
@@ -320,8 +361,12 @@ class RunnerSettings():
 
     # Get a dictionary containing all settings
     def setting_values(self):
-        return dict(filter(lambda i: i[0] in self.settings_details.keys(),
-                           self.__dict__.items()))
+        return self.filter_settings(self.__dict__)
+
+    # Filter a dictionary to remove any keys that are not settings
+    def filter_settings(self, dictionary):
+        return dict_filter(lambda k, v: k in self.settings_details.keys(),
+                           dictionary)
 
     def __str__(self):
         return f"Runtime Config with {self.setting_values()}"
@@ -565,6 +610,13 @@ def get_command_line_args(settings_details):
         help=("Print a parameter of the config being built. For this argument"
               " to work, a config must be selected"))
 
+    parser.add_argument(
+        "--dry_run",
+        action="store_true",
+        dest="dry_run",
+        help=("Print all the variables, arguments and run commands but don't"
+              "execute anything with external effects."))
+
     # Add arguments for runner settings
     for runner_setting in settings_details:
         runner_setting.add_to_args(parser)
@@ -577,6 +629,14 @@ def merge_configs(base_config, override_config):
     if not merged_config.override_settings(override_config):
         exit(1)
     return merged_config
+
+
+# Remove any arguments that are equivalent to False but not booleans as these
+# are likely to be default arguments (such as None or empty list).
+def filter_empty_args(args):
+    return dict_filter(
+        lambda key, value: bool(value) is True or isinstance(value, bool),
+        args)
 
 
 # Get the configuration(s) to run this script with, as a combination
@@ -634,13 +694,10 @@ def get_configs(default_config, args):
 
     # Overwrite values in all prior configs with command-line arguments
     # Ignore any None or empty-list arguments from the command-line parser
-    # Ignore any args that are not valid external settings.
-    supplied_args = dict(filter(lambda arg:
-                                arg[0] in settings_details and (
-                                    bool(arg[1]) is True or
-                                    isinstance(arg[1], bool)
-                                ), args.items()))
-    runner_configs = [merge_configs(config, supplied_args)
+    # Ignore any args that are not settings.
+    supplied_args = filter_empty_args(args)
+    setting_args = default_config.filter_settings(supplied_args)
+    runner_configs = [merge_configs(config, setting_args)
                       for config in runner_configs]
 
     valid = True
@@ -794,6 +851,75 @@ def get_kas_container_paths(kas_paths, new_root, mount_path):
     return paths_inside
 
 
+# Format a dictionary to a string with each line representing a key value pair.
+# Each key can be padded to the length of the longest key.
+# * dictionary: Dictionary to format
+# * line_format: Format of each key value pair (e.g. "{key}{padding}: {value}")
+def format_dict(dictionary, line_format):
+
+    longest_key = len(max(dictionary.keys(), key=len))
+
+    description_string = ""
+    for key, value in dictionary.items():
+        padding = " " * (longest_key - len(key))
+        description_string += line_format.format(
+            key=key, value=value, padding=padding)
+    return description_string
+
+
+# Print various details about the running environment.
+def print_environment():
+
+    env_dict = {
+        "script": pathlib.Path(__file__).resolve(),
+        "command": " ".join(sys.argv),
+        "python_version": platform.python_version(),
+        "system": platform.platform(),
+        "working_dir": pathlib.Path.cwd(),
+    }
+
+    env_description = format_dict(env_dict, "\t{key}{padding}: {value}\n")
+    env_str = (f"Script Environment: \n{env_description}")
+    print(env_str)
+
+
+# Print the supplied args as ready by the argparser (with empty args filtered)
+def print_args(args):
+    supplied_args = filter_empty_args(args)
+
+    arg_description = format_dict(supplied_args, "\t{key}{padding}: {value}\n")
+    arg_str = (f"Arguments Recieved:\n{arg_description}")
+    print(arg_str)
+
+
+# Print all the settings in a config seperated by whether they are set
+# internally or externally.
+def print_config(config):
+
+    values = config.setting_values()
+    settings = config.settings_details
+
+    external_values = {}
+    internal_values = {}
+
+    for name, setting in settings.items():
+        if setting.internal:
+            internal_values[name] = values[name]
+        else:
+            external_values[name] = values[name]
+
+    external_description = format_dict(external_values,
+                                       "\t\t{key}{padding}: {value}\n")
+    internal_description = format_dict(internal_values,
+                                       "\t\t{key}{padding}: {value}\n")
+
+    config_str = ("Config containing:\n\tExternal Parameters:\n"
+                  f"{external_description}\tInternal Variables:\n"
+                  f"{internal_description}")
+
+    print(config_str)
+
+
 # Entry Point
 def main():
     exit_code = 0
@@ -803,6 +929,15 @@ def main():
     # Parse command line arguments and split build configs
     # for different targets into a list
     args = get_command_line_args(settings_details)
+
+    global is_dry_run
+    is_dry_run = args["dry_run"]
+    if is_dry_run:
+        print("Entered dry run mode\n")
+
+    print_environment()
+    print_args(args)
+
     default_config = RunnerSettings(settings_details)
     configs, config_names = get_configs(default_config, args)
 
@@ -821,6 +956,8 @@ def main():
         exit(1)
 
     for config in configs:
+
+        print_config(config)
 
         if config.log_file:
             mk_newdir(os.path.dirname(os.path.realpath(config.log_file)))
@@ -948,10 +1085,16 @@ def main():
                                                config.build_dir_name)
             mk_newdir(build_artifacts_dir)
 
-            deploy_artifacts(config.build_dir, build_artifacts_dir)
+            run_external_effect(
+                lambda:
+                    deploy_artifacts(config.build_dir, build_artifacts_dir),
+                f"Deploying artifacts for {paths_to_string(config.kasfile)}")
 
         print(f"Finished build task: {paths_to_string(config.kasfile)}\n",
               file=sys.tee)
+
+    if is_dry_run:
+        print("Finished dry run", file=sys.tee)
 
     exit(exit_code)
 
