@@ -1,6 +1,33 @@
 Changelog & Release Notes
 #########################
 
+v0.2.4
+******
+
+New Features
+============
+
+No new features were introduced.
+
+Changed
+=======
+
+Bug fixes as listed in `v0.2.4 Resolved and Known Issues`_.
+
+Limitations
+===========
+
+None.
+
+.. _v0.2.4 Resolved and Known Issues:
+
+Resolved and Known Issues
+=========================
+
+Resolved issues from v0.2.3:
+
+  * ewaol-distro: Fix bitbake fetch for ostree recipe from meta-oe
+
 v0.2.3
 ******
 
