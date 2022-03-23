@@ -1,12 +1,15 @@
+..
+ # Copyright (c) 2021-2022, Arm Limited.
+ #
+ # SPDX-License-Identifier: MIT
+
 Codeline Management
 ===================
-
 
 The EWAOL project is released and developed based on Yocto's release branch
 process. This strategy allows us to make Major, Minor and Point/Patch Releases
 based on upstream stable branches, reducing the risk of having build and runtime
 issues.
-
 
 Yocto Release Process Overview
 ------------------------------
