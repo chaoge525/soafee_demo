@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-# Copyright (c) 2021, Arm Limited.
+# Copyright (c) 2021-2022, Arm Limited.
 #
 # SPDX-License-Identifier: MIT
 
@@ -111,7 +111,8 @@ def main(logger, opts):
     pip_dependencies = dict()
     pip_dependencies["documentation"] = ["sphinx==4.0.2",
                                          "sphinx-rtd-theme==0.5.2",
-                                         "docutils==0.16", "m2r2==0.2.7"]
+                                         "docutils==0.16",
+                                         "sphinx-copybutton==0.4.0"]
     sphinx_path = None
 
     if opts.no_venv:
