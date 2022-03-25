@@ -9,7 +9,7 @@
 # Set generic configuration
 
 if [ -z "${K3S_TEST_LOG_DIR}" ]; then
-    TEST_LOG_DIR="$(pwd)/logs"
+    TEST_LOG_DIR="${HOME}/runtime-integration-tests-logs"
 else
     TEST_LOG_DIR="${K3S_TEST_LOG_DIR}"
 fi

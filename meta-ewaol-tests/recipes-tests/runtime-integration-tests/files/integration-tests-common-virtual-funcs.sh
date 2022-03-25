@@ -6,12 +6,14 @@
 
 get_guest_vm_status() {
 
-    xendomains_output=$(/usr/lib/xen/bin/xendomains status | grep "${1}" \
-                        2>"${TEST_STDERR_FILE}")
+    sudo -v 2>"${TEST_STDERR_FILE}" || return 2
+
+    xendomains_output=$(sudo -n /usr/lib/xen/bin/xendomains status \
+                        | grep "${1}" 2>"${TEST_STDERR_FILE}")
     exitcode="${?}"
 
     if [ "${exitcode}" != 0 ]; then
-        /usr/lib/xen/bin/xendomains status
+        sudo -n /usr/lib/xen/bin/xendomains status
         return "${exitcode}"
     fi
 
@@ -31,7 +33,9 @@ guest_vm_is_running() {
     output=""
 
     _run get_guest_vm_status "${1}"
-    if [ "${status}" -ne 0 ] && [ "${output}" != "running" ]; then
+    if [ "${status}" -eq 2 ]; then
+        return 2
+    elif [ "${status}" -ne 0 ] && [ "${output}" != "running" ]; then
         return 1
     else
         return 0

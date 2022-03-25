@@ -1,6 +1,6 @@
 #!/usr/bin/env bats
 #
-# Copyright (c) 2021, Arm Limited.
+# Copyright (c) 2021-2022, Arm Limited.
 #
 # SPDX-License-Identifier: MIT
 
@@ -9,7 +9,7 @@
 # Set generic configuration
 
 if [ -z "${CE_TEST_LOG_DIR}" ]; then
-    TEST_LOG_DIR="$(pwd)/logs"
+    TEST_LOG_DIR="${HOME}/runtime-integration-tests-logs"
 else
     TEST_LOG_DIR="${CE_TEST_LOG_DIR}"
 fi

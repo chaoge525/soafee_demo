@@ -12,13 +12,13 @@ test_guest_vm_login_and_network_access() {
 }
 
 shutdown_guest_vm() {
-    systemctl stop xendomains 2>"${TEST_STDERR_FILE}"
+    sudo -n systemctl stop xendomains 2>"${TEST_STDERR_FILE}"
 }
 
 start_guest_vm() {
-    systemctl start xendomains 2>"${TEST_STDERR_FILE}"
+    sudo -n systemctl start xendomains 2>"${TEST_STDERR_FILE}"
 }
 
 start_xendomains() {
-    systemctl start xendomains 2>"${TEST_STDERR_FILE}"
+    sudo -n systemctl start xendomains 2>"${TEST_STDERR_FILE}"
 }
