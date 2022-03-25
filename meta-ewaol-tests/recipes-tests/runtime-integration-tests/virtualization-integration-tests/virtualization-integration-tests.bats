@@ -10,7 +10,7 @@
 # Set generic configuration
 
 if [ -z "${VIRT_TEST_LOG_DIR}" ]; then
-    TEST_LOG_DIR="$(pwd)/logs"
+    TEST_LOG_DIR="${HOME}/runtime-integration-tests-logs"
 else
     TEST_LOG_DIR="${VIRT_TEST_LOG_DIR}"
 fi

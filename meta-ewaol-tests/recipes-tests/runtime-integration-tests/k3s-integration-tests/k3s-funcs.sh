@@ -5,34 +5,34 @@
 # SPDX-License-Identifier: MIT
 
 apply_workload() {
-    kubectl apply -f "${1}"  2>"${TEST_STDERR_FILE}"
+    sudo -n kubectl apply -f "${1}"  2>"${TEST_STDERR_FILE}"
 }
 
 query_kubectl() {
-    kubectl --request-timeout=60s get "${1}" "${2}" -o jsonpath="${3}" \
-        2>"${TEST_STDERR_FILE}"
+    sudo -n kubectl --request-timeout=60s get "${1}" "${2}" \
+        -o jsonpath="${3}" 2>"${TEST_STDERR_FILE}"
 }
 
 kubectl_wait() {
-    kubectl wait --timeout=120s --for=condition="${3}" "${1}" "${2}" \
+    sudo -n kubectl wait --timeout=120s --for=condition="${3}" "${1}" "${2}" \
         2>"${TEST_STDERR_FILE}"
 }
 
 kubectl_delete() {
-    kubectl delete "${1}" "${2}" 2>"${TEST_STDERR_FILE}"
+    sudo -n kubectl delete "${1}" "${2}" 2>"${TEST_STDERR_FILE}"
 }
 
 kubectl_set() {
-    kubectl set "${1}" "${2}" "${3}" 2>"${TEST_STDERR_FILE}"
+    sudo -n kubectl set "${1}" "${2}" "${3}" 2>"${TEST_STDERR_FILE}"
 }
 
 kubectl_expose_deployment() {
-    kubectl create service nodeport "${1}" --tcp=80:80 --node-port="${2}" \
-        2>"${TEST_STDERR_FILE}"
+    sudo -n kubectl create service nodeport "${1}" --tcp=80:80 \
+        --node-port="${2}" 2>"${TEST_STDERR_FILE}"
 }
 
 systemd_service() {
-    systemctl "${1}" k3s 2>"${TEST_STDERR_FILE}"
+    sudo -n systemctl "${1}" k3s 2>"${TEST_STDERR_FILE}"
 }
 
 get_from_url() {

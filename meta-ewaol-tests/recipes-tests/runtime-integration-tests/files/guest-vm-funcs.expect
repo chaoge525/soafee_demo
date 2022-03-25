@@ -12,7 +12,7 @@ proc guest_vm_logon {guest} {
     global clean_console
     global timeout
 
-    spawn xl console ${guest}
+    spawn sudo -n xl console ${guest}
     send "${clean_console}"
     sleep 0.5
 

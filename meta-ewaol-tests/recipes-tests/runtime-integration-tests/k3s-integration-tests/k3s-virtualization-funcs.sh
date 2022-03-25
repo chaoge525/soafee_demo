@@ -53,7 +53,7 @@ wait_for_deployment_to_be_running() {
 }
 
 get_target_node_ip() {
-    kubectl get node "${K3S_TEST_GUEST_VM_NAME}" \
+    sudo -n kubectl get node "${K3S_TEST_GUEST_VM_NAME}" \
         -o jsonpath="{.status.addresses[?(@.type=='InternalIP')].address}"
 }
 
@@ -64,13 +64,14 @@ cleanup_k3s_agent_on_guest_vm() {
     # Stop the agent
     expect guest-vm-run-command.expect \
         "${K3S_TEST_GUEST_VM_NAME}" \
-        "systemctl stop k3s-agent" \
+        "sudo -n systemctl stop k3s-agent" \
         2>"${TEST_STDERR_FILE}"
 
     # Remove the systemd override if it exists
     expect guest-vm-run-command.expect \
         "${K3S_TEST_GUEST_VM_NAME}" \
-        "rm -f ${K3S_AGENT_OVERRIDE_FILENAME} && systemctl daemon-reload" \
+        "sudo -n rm -f ${K3S_AGENT_OVERRIDE_FILENAME} && \
+             sudo -n systemctl daemon-reload" \
         2>"${TEST_STDERR_FILE}"
 
     kubectl_delete "node" "${K3S_TEST_GUEST_VM_NAME}"
@@ -79,7 +80,7 @@ cleanup_k3s_agent_on_guest_vm() {
 }
 
 get_server_token() {
-    cat /var/lib/rancher/k3s/server/node-token 2>"${TEST_STDERR_FILE}"
+    sudo -n cat /var/lib/rancher/k3s/server/node-token 2>"${TEST_STDERR_FILE}"
 }
 
 get_server_ip() {
@@ -93,12 +94,12 @@ configure_k3s_agent_on_guest_vm() {
     override_dir=$(dirname "${K3S_AGENT_OVERRIDE_FILENAME}")
 
     cmd="\
-mkdir -p ${override_dir} && echo -e '\
+sudo -n mkdir -p ${override_dir} && echo -e '\
 [Service]\n\
 ExecStart=\n\
 ExecStart=/usr/local/bin/k3s agent --server=https://${ip}:6443 --token=${token} --node-label=ewaol.node-type=guest-vm' \
-> ${K3S_AGENT_OVERRIDE_FILENAME} \
-&& systemctl daemon-reload"
+| sudo -n tee ${K3S_AGENT_OVERRIDE_FILENAME} > /dev/null \
+&& sudo -n systemctl daemon-reload"
 
     expect guest-vm-run-command.expect \
         "${K3S_TEST_GUEST_VM_NAME}" \
@@ -111,7 +112,7 @@ start_k3s_agent_on_guest_vm() {
 
     expect guest-vm-run-command.expect \
         "${K3S_TEST_GUEST_VM_NAME}" \
-        "systemctl start k3s-agent" \
+        "sudo -n systemctl start k3s-agent" \
         2>"${TEST_STDERR_FILE}"
 
 }

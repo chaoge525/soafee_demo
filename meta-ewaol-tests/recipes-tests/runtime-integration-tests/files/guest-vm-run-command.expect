@@ -10,6 +10,10 @@ set login_prompt "${guest_vm_name} login:"
 set prompt "root@${guest_vm_name}:"
 set clean_console "\025\010\r"
 set timeout 60
+if {$argc == 3} {
+    set timeout [lindex "${argv}" 2]
+}
+puts "Setting timeout to '${timeout}' seconds."
 
 source "guest-vm-funcs.expect"
 
@@ -17,7 +21,7 @@ source "guest-vm-funcs.expect"
 # to continue. This may be overriden by adding a timeout handler to a particular
 # expect.
 expect_after {
-    timeout { puts "Expect script timed out."; }
+    timeout { puts "Expect script timed out after $timeout seconds."; }
 }
 
 set rc [guest_vm_logon "${guest_vm_name}"]
