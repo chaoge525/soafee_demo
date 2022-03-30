@@ -1,14 +1,15 @@
-# Copyright (c) 2021, Arm Limited.
+# Copyright (c) 2021-2022, Arm Limited.
 #
 # SPDX-License-Identifier: MIT
 
 inherit ptest
 
-RDEPENDS:${PN} += "bats"
+RDEPENDS:${PN} += "bats runtime-integration-tests-common"
 
 # ptest aborts if it cannot find libgcc for pthread_cancel
 RDEPENDS:${PN}-ptest += "libgcc"
 
+EWAOL_TEST_ACCOUNT ??= "test"
 TEST_DIR ?= "${datadir}/${BPN}"
 
 do_install() {
@@ -25,6 +26,9 @@ do_install() {
         "${D}/${TEST_DIR}/run-${TEST_SUITE_NAME}"
 
     sed -i "s#TESTNAME#${TEST_SUITE_NAME}#g" \
+        "${D}/${TEST_DIR}/run-${TEST_SUITE_NAME}"
+
+    sed -i "s#TESTUSER#${EWAOL_TEST_ACCOUNT}#g" \
         "${D}/${TEST_DIR}/run-${TEST_SUITE_NAME}"
 
 }
