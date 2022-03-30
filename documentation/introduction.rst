@@ -159,6 +159,11 @@ The documentation is structured as follows:
     Describes the branch and release process of EWAOL, and how this process
     aligns with that of the Yocto Project.
 
+  * :ref:`Contributing <contributing:Contributing>`
+
+    Describes guidance for contributing to the EWAOL project, and describes the
+    tooling provided to support it.
+
   * :ref:`License <license_link:License>`
 
     Defines the license under which EWAOL is provided.
@@ -277,12 +282,16 @@ These files may therefore be included in the repository under alternative
 licenses in order to be compliant with the licensing requirements of the
 associated external works.
 
+Contributions to the project should follow the same licensing arrangement.
+
 Contributions and Bug Reports
 -----------------------------
 
-This project has not put in place a process for contributions currently.
+Guidance for contributing to the EWAOL project can be found at
+:ref:`Contributing <contributing:Contributing>`.
 
-For bug reports, please submit an Issue via GitLab.
+For bug reports, please submit an Issue via GitLab, following the project's
+Issue template.
 
 Feedback and support
 --------------------
