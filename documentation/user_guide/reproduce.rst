@@ -47,8 +47,6 @@ classified into three ordered categories:
     distribution
 
     * ``tests.yml`` to include run-time validation tests on the image.
-    * ``ci.yml`` to consider the build as part of a Continuous
-      Integration pipeline.
     * ``baremetal-sdk.yml`` to build an SDK image for the baremetal
       architecture.
     * ``virtualization-sdk.yml`` to build an SDK image for the virtualization
@@ -167,9 +165,6 @@ hardware target platform:
 EWAOL baremetal distribution images can be modified by adding run-time
 validation tests to the distribution by including the
 ``meta-ewaol-config/kas/tests.yml`` kas configuration file as a Build Modifier.
-To apply appropriate post-processing specific to a Continuous Integration
-context, include the ``meta-ewaol-config/kas/ci.yml`` kas configuration file as
-a Build Modifier.
 
 Virtualization Distribution
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -195,10 +190,8 @@ hardware target platform:
   ``build/tmp/deploy/images/n1sdp/ewaol-virtualization-sdk-image-n1sdp.*``
 
 As with the EWAOL baremetal guidance above, EWAOL virtualization distribution
-images can also be modified to include run-time validation tests, or have their
-builds considered as Continuous Integration builds with temporary file removal,
-via the same kas configuration files: ``meta-ewaol-config/kas/tests.yml`` and
-``meta-ewaol-config/kas/ci.yml``, respectively.
+images can also be modified to include run-time validation tests by adding the
+``meta-ewaol-config/kas/tests.yml`` kas configuration file.
 
 Customization
 """""""""""""

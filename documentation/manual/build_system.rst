@@ -157,12 +157,6 @@ These are the current Build Modifier Configs:
     the build. Additional documentation for the EWAOL tests layer is given in
     :ref:`Validation <manual/validation:Validation>`.
 
-  * ``ci.yml``
-
-    Considers the image build to be an image built as part of a Continuous
-    Integration pipeline, causing the build process to delete its temporary
-    work files following build completion.
-
   * ``baremetal-sdk.yml``
 
     Appends ``ewaol-sdk`` to ``DISTRO_FEATURES``, sets the build target to
