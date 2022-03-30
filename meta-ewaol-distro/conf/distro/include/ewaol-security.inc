@@ -12,6 +12,8 @@ EXTRA_USERS_PARAMS:append = "\
     passwd-expire ${EWAOL_ADMIN_ACCOUNT}; \
     passwd-expire ${EWAOL_USER_ACCOUNT}; \
     passwd-expire root; \
+    ${@bb.utils.contains('DISTRO_FEATURES', 'ewaol-test', \
+                        'passwd-expire ${EWAOL_TEST_ACCOUNT};', '', d)} \
     "
 IMAGE_FEATURES:remove = "empty-root-password debug-tweaks"
 
