@@ -172,6 +172,7 @@ SC2288
 schedulable
 SCP
 SDK
+SDL
 sh
 ShellCheck
 shellcheck-py
