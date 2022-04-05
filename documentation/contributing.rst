@@ -7,7 +7,7 @@ Contributing
 ============
 
 EWAOL welcomes contributions via the ``meta-ewaol`` public Gitlab repository:
-`<https://gitlab.arm.com/ewaol/meta-ewaol>`_.
+|meta-ewaol repository|.
 
 Contributions should follow the project's contribution guidelines, below.
 
@@ -49,7 +49,7 @@ to be reviewed and accepted by the EWAOL project:
   order to be compliant with the licensing requirements of the associated
   external works.
 
-* **Contributions should include appropriate documentation.**
+* **Contributions must include appropriate documentation.**
 
   Contributions which change the documentation should be validated by running
   the `Documentation Build Validation`_ step.
@@ -63,7 +63,7 @@ to be reviewed and accepted by the EWAOL project:
   distribution images should be accompanied by run-time integration tests to
   validate the functionality.**
 
-  Any additional run-time integration tests or test suites should be documented,
+  Any additional run-time integration tests or test suites must be documented,
   and follow a similar design to the validation tests described in
   :ref:`Validation <manual/validation:Validation>`.
 
@@ -84,9 +84,9 @@ Gitlab Account Setup
 ^^^^^^^^^^^^^^^^^^^^
 
 In order to contribute to the repository, it is necessary to have an account on
-`<http://gitlab.arm.com>`_. Please see `TBC`_ for details of how to
-create an account. If contributing within a professional capacity, please
-include the affiliation under the ``Organization`` heading on account settings.
+|meta-ewaol repository host|. Please see `TBC`_ for details of how to create an
+account. If contributing within a professional capacity, please include the
+affiliation under the ``Organization`` heading on account settings.
 
 The account must be able have sufficient personal project capacity to fork the
 ``meta-ewaol`` repository. Please see `TBC`_ for details of how to
@@ -102,7 +102,7 @@ Submission
   The process described here is therefore subject to change.
 
 With an appropriate Gitlab account, a contribution can be submitted to
-`<https://gitlab.arm.com/ewaol/meta-ewaol>`_ via the following process:
+|meta-ewaol repository| via the following process:
 
 1. If the contribution is a bug-fix, please include the ``meta-ewaol`` Gitlab
    Issue ID in which the bug was reported within the Git commit message(s) of
@@ -110,8 +110,9 @@ With an appropriate Gitlab account, a contribution can be submitted to
 
 2. Fork the ``meta-ewaol`` Gitlab repository.
 
-3. Push changes to a branch on the forked repository. This branch should be
-   based on the latest development branch of ``meta-ewaol``.
+3. Push changes to a branch on the forked repository. This contribution branch
+    should be based on the latest development branch of ``meta-ewaol``, which
+    is: |meta-ewaol contributions branch|.
 
 4. Submit a Merge Request to ``meta-ewaol`` using the contribution branch on the
    forked repository. Please include all information required by the project's
@@ -231,24 +232,18 @@ Python Code Quality
 
 All Python code contributed to the project must pass validation by the Python
 style guide checker ``pycodestyle``, which enforces style conventions based on
-the `PEP 8`_ style guide for Python code. The precise Python style conventions
-that ``pycodestyle`` validates can be found in the `pycodestyle Documentation`_.
-
-.. _PEP 8: https://peps.python.org/pep-0008/
-.. _pycodestyle Documentation: https://pycodestyle.pycqa.org/en/latest/
+the |PEP 8|_ style guide for Python code. The precise Python style conventions
+that ``pycodestyle`` validates can be found in the |pycodestyle Documentation|_.
 
 Shell Script Code Quality
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
 All shell scripts and BATS files contributed to the project must produce no
-warnings when passed to the `Shellcheck`_ static analysis tool, as made
+warnings when passed to the |Shellcheck|_ static analysis tool, as made
 available by the ``shellcheck-py`` Python package.
 
-Documentation for each specific check is documented within the `Shellcheck wiki
-pages`_.
-
-.. _Shellcheck: https://github.com/koalaman/shellcheck
-.. _Shellcheck wiki pages: https://github.com/koalaman/shellcheck/wiki/Checks
+Documentation for each specific check is documented within the
+|Shellcheck wiki pages|_.
 
 Spelling
 ^^^^^^^^
@@ -267,9 +262,7 @@ Yocto Layer Compatibility
 
 Contributions must not break layer compatibility with the Yocto Project, as
 validated via the Yocto Project's ``yocto-check-layer`` script, documented as
-part of the `Yocto Project Documentation`_.
-
-.. _Yocto Project Documentation: https://docs.yoctoproject.org/3.4.2/singleindex.html#yocto-check-layer-script
+part of the Yocto Project Documentation at |Yocto Check Layer Script|_.
 
 This validation script will be performed as part of the QA checks.
 

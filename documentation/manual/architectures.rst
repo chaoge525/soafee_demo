@@ -71,23 +71,15 @@ The following list shows the available variables for the Control VM and the
 single default Guest VM, together with the default values:
 
   .. code-block:: yaml
+    :substitutions:
 
-     EWAOL_GUEST_VM_INSTANCES: "1"                      # Number of Guest VM instances
-     EWAOL_GUEST_VM1_NUMBER_OF_CPUS: "4"                # Number of CPUs for Guest VM1
-     EWAOL_GUEST_VM1_MEMORY_SIZE: "6144"                # Memory size for Guest VM1 (MB)
-     EWAOL_GUEST_VM1_ROOTFS_EXTRA_SPACE: ""             # Extra storage space for Guest VM1 (KB)
-     EWAOL_CONTROL_VM_MEMORY_SIZE: "2048"               # Memory size for Control VM (MB)
-     EWAOL_CONTROL_VM_ROOTFS_EXTRA_SPACE: "1000000"     # Extra storage space for Control VM (KB)
-     EWAOL_ROOTFS_EXTRA_SPACE: "2000000"                # Extra storage space for the Control VM and each Guest VM (KB)
+    |virtualization customization yaml|
 
 The variables may be set either within an included kas configuration file
 (see ``meta-ewaol-config/kas/virtualization.yml`` for example usage), the
 environment, or manually via, for example, ``local.conf``. The
 ``EWAOL_*_ROOTFS_EXTRA_SPACE`` variables apply their values to the relevant
 ``IMAGE_ROOTFS_EXTRA_SPACE`` bitbake variable.
-
-.. _xl domain configuration:
-  https://xenbits.xen.org/docs/4.16-testing/man/xl.cfg.5.html
 
 It is possible to deploy multiple EWAOL Guest VM instances on the virtualization
 distribution image, each one based on the same kernel and image recipe. The

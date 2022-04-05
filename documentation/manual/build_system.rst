@@ -37,7 +37,7 @@ to configure the image are as follows:
     * Enables Xen specific configs required by kernel.
     * Includes all necessary packages and adjustments to the Control VM's root
       filesystem to support management of Xen Guest VMs.
-    * Uses Bitbake `Multiple Configuration Build`_.
+    * Uses Bitbake |Multiple Configuration Build|_.
     * Guest VM based on the ``generic-arm64`` ``MACHINE`` by default.
     * Incompatible with the ``ewaol-baremetal`` distribution image feature.
 
@@ -71,9 +71,6 @@ to configure the image are as follows:
 
     The SDK is detailed separately, at
     :ref:`Software Development Kit (SDK)<manual/sdk:Software Development Kit (SDK)>`.
-
-.. _Multiple Configuration Build:
-  https://docs.yoctoproject.org/3.4.2/dev-manual/common-tasks.html#building-images-for-multiple-targets-using-multiple-configurations
 
 EWAOL kas Configuration Files
 -----------------------------
@@ -192,14 +189,11 @@ distribution image to run on that target platform.
 
     This Target Platform Config prepares an EWAOL distribution image build that
     targets the Neoverse N1 System Development Platform (N1SDP), corresponding
-    to the ``n1sdp`` ``MACHINE`` implemented in `meta-arm-bsp`_.
+    to the ``n1sdp`` ``MACHINE`` implemented in |meta-arm-bsp|_.
     To enable this, the ``n1sdp.yml`` Target Platform Config includes common
     configuration from the ``include/arm-machines.yml`` kas configuration file,
     which defines the BSPs, layers, and dependencies required when building for
     the ``n1sdp``.
-
-.. _meta-arm-bsp:
-   https://git.yoctoproject.org/cgit/cgit.cgi/meta-arm/tree/meta-arm-bsp/documentation
 
 .. note::
   If a kas configuration file does not set a particular build parameter, the

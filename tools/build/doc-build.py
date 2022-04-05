@@ -109,10 +109,12 @@ def main(logger, opts):
                          "/../../")
 
     pip_dependencies = dict()
-    pip_dependencies["documentation"] = ["sphinx==4.0.2",
-                                         "sphinx-rtd-theme==0.5.2",
-                                         "docutils==0.16",
-                                         "sphinx-copybutton==0.4.0"]
+    pip_dependencies["documentation"] = [
+      "sphinx==4.0.2",
+      "sphinx-rtd-theme==0.5.2",
+      "docutils==0.16",
+      "sphinx-copybutton==0.4.0",
+      "sphinx-substitution-extensions==2022.2.16"]
     sphinx_path = None
 
     if opts.no_venv:

@@ -190,8 +190,8 @@ aspects of achieving the target use-cases via EWAOL:
     distribution image.
 
     For information on how to use these technologies which are provided with the
-    EWAOL distribution, see the `Docker documentation`_ and the
-    `K3s documentation`_.
+    EWAOL distribution, see the |Docker documentation|_ and the
+    |K3s documentation|_.
 
   * Xen Type-1 Hypervisor
 
@@ -204,7 +204,7 @@ aspects of achieving the target use-cases via EWAOL:
 
     For detailed guidance on booting Xen hardware virtualized systems as well
     as managing and connecting to Xen VMs using Xen-specific tools and services,
-    see the public `Xen documentation`_.
+    see the public |Xen documentation|_.
 
   * The Yocto Project
 
@@ -217,19 +217,14 @@ aspects of achieving the target use-cases via EWAOL:
     assumes knowledge of the Yocto project necessary to prepare an appropriate
     build environment with these options configured.
 
-    Readers are referred to the `Yocto Project documentation`_ for information
+    Readers are referred to the |Yocto Project Documentation|_ for information
     on setting up and running non-standard EWAOL distribution builds.
-
-.. _Docker documentation: https://docs.docker.com
-.. _K3s documentation: https://rancher.com/docs/k3s/latest/en
-.. _Xen documentation: https://wiki.xenproject.org/wiki/Main_Page
-.. _Yocto Project documentation: https://docs.yoctoproject.org
 
 Repository Structure
 --------------------
 
-The ``meta-ewaol`` repository (https://gitlab.arm.com/ewaol/meta-ewaol) is
-structured as follows:
+The ``meta-ewaol`` repository (|meta-ewaol repository|) is structured as
+follows:
 
   * ``meta-ewaol``:
 

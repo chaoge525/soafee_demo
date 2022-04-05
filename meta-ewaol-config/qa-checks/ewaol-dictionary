@@ -15,6 +15,7 @@ bootloader
 bsp
 bsps
 build_system
+build-time
 c
 ce_test_clean_env
 ce_test_guest_vm_name
@@ -35,6 +36,7 @@ containerized
 containers_kernelcfg_check.bbclass
 customization
 customizations
+datetime
 dbg
 devicetree
 diego.sueiro
@@ -52,9 +54,11 @@ ewaol-base.yml
 ewaol-devel
 ewaol-distro
 ewaol-guest-vm1
+ewaol_guest_vm1
 ewaol-guest-vm2
 ewaol_guest_vm2
 ewaol_guest_vm_hostname
+ewaol_guest_vm_instances
 ewaol_layers_deps_diagram.png
 ewaol_rel_dev_branches.png
 ewaol-release.yml
@@ -106,12 +110,14 @@ k3s_test_guest_vm_name
 k3s_test_log_dir
 kubectl
 kubernetes
+kube-system
 libpcre
 libpcre2
 licensees
 license.rst
 loopback
 lts
+m
 maxdepth
 meta-arm-bsp
 meta-ewaol
@@ -128,6 +134,7 @@ n1sdp
 n1sdp's
 n1sdp.yml
 neoverse
+nginx
 nodeport
 oci
 optionally
@@ -151,9 +158,12 @@ repository's
 restructuredtext
 return_code
 revc
+rootfs
+rootfs_extra_space
 rpm
 rst
 runc-opencontainers
+run-time
 runtime
 runtime-integration-tests
 sc2086

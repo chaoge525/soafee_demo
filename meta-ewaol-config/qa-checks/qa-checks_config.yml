@@ -55,6 +55,10 @@ modules:
     python:
         file_types:
             - "python script"
+        exclude_patterns:
+            - GITIGNORE_CONTENTS
+            - "*.git"
+            - "/documentation/variables.py"
         pycodestyle_args: ""
 
     shell:
@@ -72,6 +76,7 @@ modules:
             - "*.git"
             - "*.png"
             - "/documentation/conf.py"
+            - "/documentation/variables.py"
             - "/documentation/Makefile"
             - "/documentation/index.rst"
         dict_path: "meta-ewaol-config/qa-checks/ewaol-dictionary"

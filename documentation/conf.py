@@ -2,7 +2,6 @@
 #
 # SPDX-License-Identifier: MIT
 
-
 # Configuration file for the Sphinx documentation builder.
 #
 # This file only contains a selection of the most common options. For a full
@@ -14,11 +13,11 @@
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
-#
-# import os
-# import sys
-# sys.path.insert(0, os.path.abspath('.'))
 
+# Append the documentation directory to the path, so we can import variables
+import os
+import sys
+sys.path.append(os.path.dirname(__file__))
 
 # -- Project information -----------------------------------------------------
 
@@ -38,6 +37,7 @@ extensions = [
     'sphinx.ext.autosectionlabel',
     'sphinx_rtd_theme',
     'sphinx_copybutton',
+    'sphinx_substitution_extensions'
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -54,7 +54,6 @@ language = 'en'
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
 exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
-
 
 # -- Options for HTML output -------------------------------------------------
 
@@ -97,3 +96,6 @@ copybutton_remove_prompts = True
 copybutton_only_copy_prompt_lines = True
 copybutton_copy_empty_lines = False
 copybutton_line_continuation_character = "\\"
+
+import variables
+rst_prolog = variables.generate_rst_prolog()

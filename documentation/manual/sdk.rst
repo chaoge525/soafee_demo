@@ -21,8 +21,8 @@ on the target, such as:
     ``meta-ewaol-distro/conf/distro/include/ewaol-sdk.inc``.
 
 The Yocto project provides guidance for some of these common development tasks,
-for example `kernel module compilation`_, `profiling and tracing`_, and
-`runtime package management`_.
+for example |kernel module compilation|_, |profiling and tracing|_, and
+|runtime package management|_.
 
 The EWAOL SDK is available as a build target only if ``ewaol-sdk`` is included
 in ``DISTRO_FEATURES``.
@@ -30,12 +30,3 @@ in ``DISTRO_FEATURES``.
 When building a virtualization SDK distribution image, the SDK will be available
 on both the Control VM and any EWAOL Guest VMs built during the image build
 process.
-
-  .. _kernel module compilation:
-      https://docs.yoctoproject.org/3.4.2/kernel-dev/common.html#building-out-of-tree-modules-on-the-target
-
-  .. _profiling and tracing: https://docs.yoctoproject.org/3.4.2/profile-manual/index.html
-
-  .. _runtime package management:
-      https://docs.yoctoproject.org/3.4.2/dev-manual/common-tasks.html#using-runtime-package-management
-
