@@ -8,25 +8,24 @@
 # https://www.sphinx-doc.org/en/master/usage/configuration.html for more info).
 
 external_links = {
-  "Yocto Project Documentation": "https://docs.yoctoproject.org",
+  "Yocto Project Documentation": "https://docs.yoctoproject.org/3.4.3",
   "Yocto Release Process": "https://docs.yoctoproject.org/ref-manual/release-process.html",
-  "kernel module compilation": "https://docs.yoctoproject.org/3.4.2/kernel-dev/common.html#building-out-of-tree-modules-on-the-target",
-  "profiling and tracing": "https://docs.yoctoproject.org/3.4.2/profile-manual/index.html",
-  "runtime package management": "https://docs.yoctoproject.org/3.4.2/dev-manual/common-tasks.html#using-runtime-package-management",
-  "Multiple Configuration Build": "https://docs.yoctoproject.org/3.4.2/dev-manual/common-tasks.html#building-images-for-multiple-targets-using-multiple-configurations",
-  "list of essential packages": "https://docs.yoctoproject.org/3.4.2/singleindex.html#required-packages-for-the-build-host",
-  "Yocto Check Layer Script": "https://docs.yoctoproject.org/3.4.2/singleindex.html#yocto-check-layer-script",
-
-  "Yocto Docker config": "http://git.yoctoproject.org/cgit/cgit.cgi/yocto-kernel-cache/tree/features/docker/docker.cfg",
-  "Yocto K3s config": "http://git.yoctoproject.org/cgit/cgit.cgi/meta-virtualization/tree/recipes-kernel/linux/linux-yocto/kubernetes.cfg",
-  "Yocto Xen config": "http://git.yoctoproject.org/cgit/cgit.cgi/yocto-kernel-cache/tree/features/xen/xen.cfg",
-  "kas build tool": "https://kas.readthedocs.io/en/latest/userguide.html",
-
-  "xl documentation": "https://xenbits.xen.org/docs/unstable/man/xl.1.html",
-  "xl domain configuration": "https://xenbits.xen.org/docs/4.16-testing/man/xl.cfg.5.html",
+  "kernel module compilation": "https://docs.yoctoproject.org/3.4.3/kernel-dev/common.html#building-out-of-tree-modules-on-the-target",
+  "profiling and tracing": "https://docs.yoctoproject.org/3.4.3/profile-manual/index.html",
+  "runtime package management": "https://docs.yoctoproject.org/3.4.3/dev-manual/common-tasks.html#using-runtime-package-management",
+  "Multiple Configuration Build": "https://docs.yoctoproject.org/3.4.3/dev-manual/common-tasks.html#building-images-for-multiple-targets-using-multiple-configurations",
+  "list of essential packages": "https://docs.yoctoproject.org/3.4.3/singleindex.html#required-packages-for-the-build-host",
+  "Yocto Check Layer Script": "https://docs.yoctoproject.org/3.4.3/singleindex.html#yocto-check-layer-script",
+  "Yocto Docker config": "https://git.yoctoproject.org/yocto-kernel-cache/tree/features/docker/docker.cfg?h=yocto-5.14",
+  "Yocto K3s config": "http://git.yoctoproject.org/cgit/cgit.cgi/meta-virtualization/tree/recipes-kernel/linux/linux-yocto/kubernetes.cfg?h=yocto-5.14",
+  "Yocto Xen config": "http://git.yoctoproject.org/cgit/cgit.cgi/yocto-kernel-cache/tree/features/xen/xen.cfg?h=yocto-5.14",
+  "kas build tool": "https://kas.readthedocs.io/en/3.0.2/userguide.html",
+  "kas Dependencies & installation": "https://kas.readthedocs.io/en/3.0.2/userguide.html#dependencies-installation",
   "meta-arm-bsp": "https://git.yoctoproject.org/cgit/cgit.cgi/meta-arm/tree/meta-arm-bsp/documentation",
+  "xl domain configuration": "https://xenbits.xen.org/docs/4.15-testing/man/xl.cfg.5.html",
+  "xl documentation": "https://xenbits.xen.org/docs/4.15-testing/man/xl.1.html",
+
   "N1SDP Technical Reference Manual": "https://developer.arm.com/documentation/101489/0000",
-  "kas Dependencies & installation": "https://kas.readthedocs.io/en/latest/userguide.html#dependencies-installation",
   "PEP 8": "https://peps.python.org/pep-0008/",
   "pycodestyle Documentation": "https://pycodestyle.pycqa.org/en/latest/",
   "Shellcheck": "https://github.com/koalaman/shellcheck",
@@ -59,7 +58,7 @@ layer_definitions = {
 }
 
 other_definitions = {
-  "kas version": "2.6.1",
+  "kas version": "3.0.2",
   "virtualization customization yaml":
       """
       EWAOL_GUEST_VM_INSTANCES: "1"                      # Number of Guest VM instances
