@@ -29,8 +29,7 @@ The diagram above gives an overview of the Yocto branch and release process:
   as a means to be compatible with each other.
 
 For a complete description of the Yocto release process, support schedule and
-other details, see the `Yocto Release Process`_ documentation.
-
+other details, see the |Yocto Release Process|_ documentation.
 
 EWAOL Branch and Release Process
 --------------------------------
@@ -89,5 +88,3 @@ EWAOL release tags
 * Both `Major` and `Minor` releases may receive fixes, improvements and new
   features while `Patch` releases only receive fixes. Poky and 3rd party layers
   release/stable branches might be updated and pinned.
-
-.. _Yocto Release Process: https://docs.yoctoproject.org/ref-manual/release-process.html

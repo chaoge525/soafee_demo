@@ -24,24 +24,20 @@ The following kernel configuration checks are performed:
 
   Check performed via:
   ``meta-ewaol-distro/classes/containers_kernelcfg_check.bbclass``.
-  By default `Yocto Docker config`_ is used as the reference.
+  By default |Yocto Docker config|_ is used as the reference.
 
 * **K3s orchestration support**:
 
   Check performed via:
   ``meta-ewaol-distro/classes/k3s_kernelcfg_check.bbclass``.
-  By default `Yocto K3s config`_ is used as the reference.
+  By default |Yocto K3s config|_ is used as the reference.
 
 * **Xen virtualization support** (available for EWAOL virtualization
   distribution images):
 
   Check performed via:
   ``meta-ewaol-distro/classes/xen_kernelcfg_check.bbclass``.
-  By default `Yocto Xen config`_ is used as the reference.
-
-.. _Yocto Docker config: http://git.yoctoproject.org/cgit/cgit.cgi/yocto-kernel-cache/tree/features/docker/docker.cfg
-.. _Yocto K3s config: http://git.yoctoproject.org/cgit/cgit.cgi/meta-virtualization/tree/recipes-kernel/linux/linux-yocto/kubernetes.cfg
-.. _Yocto Xen config: http://git.yoctoproject.org/cgit/cgit.cgi/yocto-kernel-cache/tree/features/xen/xen.cfg
+  By default |Yocto Xen config|_ is used as the reference.
 
 Run-Time Integration Tests
 --------------------------
@@ -63,11 +59,8 @@ image depend on its target architecture, as follows:
       connected with a K3s agent on the Guest VM)
     * `Xen Virtualization Tests`_
 
-The tests are built as a `Yocto Package Test`_ (ptest), and implemented using
-the `Bash Automated Test System`_ (BATS).
-
-.. _Yocto Package Test: https://wiki.yoctoproject.org/wiki/Ptest
-.. _Bash Automated Test System: https://github.com/bats-core/bats-core
+The tests are built as a |Yocto Package Test|_ (ptest), and implemented using
+the |Bash Automated Test System|_ (BATS).
 
 Running the Tests
 ^^^^^^^^^^^^^^^^^
@@ -144,10 +137,8 @@ Each sub-test result is formatted as:
     ``TIMESTAMP RESULT:[top_level_test_name]:[sub_test_name]``
 
 Where ``TIMESTAMP`` is of the format ``%Y-%m-%d %H:%M:%S`` (see
-`Python Datetime Format Codes`_), and ``RESULT`` is
-either ``PASS``, ``FAIL``, or ``SKIP``.
-
-.. _Python Datetime Format Codes: https://docs.python.org/3/library/datetime.html#strftime-and-strptime-format-codes
+|Python Datetime Format Codes|_), and ``RESULT`` is either ``PASS``, ``FAIL``,
+or ``SKIP``.
 
 On a test failure, a debugging message of type ``DEBUG`` will be written to
 the log. The format of a debugging message is:
@@ -274,7 +265,7 @@ bitbake recipe within
 
 Currently the test suite contains a single top-level integration test which
 validates the deployment and high-availability of a test workload based on the
-`Nginx`_ webserver. The test suite is dependent on the target EWAOL
+|Nginx|_ webserver. The test suite is dependent on the target EWAOL
 architecture, as follows.
 
 For baremetal distribution images, the K3s integration tests consider a
@@ -301,8 +292,6 @@ distribution image, and will not create one if it does not exist.
 In both cases, the test suite will not be run until the appropriate K3s services
 are in the 'active' state, and all 'kube-system' pods are either running, or
 have completed their workload.
-
-.. _Nginx: https://www.nginx.com/
 
 | 1. ``K3s orchestration of containerized web service`` is composed of many
      sub-tests, grouped here by test area:

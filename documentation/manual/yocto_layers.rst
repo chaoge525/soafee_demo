@@ -36,38 +36,40 @@ Layer Dependency Overview
 -------------------------
 
 The following diagram illustrates the layers which are integrated by the EWAOL
-project, which are further expanded on below.
+project, which are further expanded on below. |layer dependency statement|
 
 .. image:: ../images/ewaol_layers_deps_diagram.png
 
 EWAOL depends on the following layer dependency sources:
 
   .. code-block:: yaml
+    :substitutions:
 
     URI: git://git.yoctoproject.org/poky
     layers: meta, meta-poky
-    branch: honister
-    revision: HEAD
+    branch: |poky branch|
+    revision: |poky revision|
 
     URI: git://git.openembedded.org/meta-openembedded
     layers: meta-filesystems, meta-networking, meta-oe, meta-python
-    branch: honister
-    revision: HEAD
+    branch: |meta-openembedded branch|
+    revision: |meta-openembedded branch|
 
     URI: git://git.yoctoproject.org/meta-virtualization
     layers: meta-virtualization
-    branch: honister
-    revision: HEAD
+    branch: |meta-virtualization branch|
+    revision: |meta-virtualization revision|
 
 When building for the N1SDP hardware target platform, the following additional
 layer dependency source is required:
 
   .. code-block:: yaml
+    :substitutions:
 
     URI: git://git.yoctoproject.org/meta-arm
     layers: meta-arm, meta-arm-bsp, meta-arm-toolchain
-    branch: honister
-    revision: HEAD
+    branch: |meta-arm branch|
+    revision: |meta-arm revision|
 
 The ``meta-arm`` repository provides:
 

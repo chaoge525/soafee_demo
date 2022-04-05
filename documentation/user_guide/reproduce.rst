@@ -19,8 +19,6 @@ The recommended approach for image build setup and customization is to use the
 and build different target images, different distribution image features, and
 set associated parameter configurations.
 
-.. _kas build tool: https://kas.readthedocs.io/en/latest/userguide.html
-
 This page first briefly describes below the kas configuration files provided
 with EWAOL, before guidance is given on using those kas configuration files to
 set up the EWAOL distribution on a target platform.
@@ -33,9 +31,9 @@ set up the EWAOL distribution on a target platform.
 The ``meta-ewaol-config/kas`` directory contains kas configuration files to
 support building and customizing EWAOL distribution images via kas. These kas
 configuration files contain default parameter settings for an EWAOL distribution
-build, and are described in more detail in :ref:`Build System
-<manual/build_system:Build System>`. Here, the files are briefly introduced,
-classified into three ordered categories:
+build, and are described in more detail in
+:ref:`Build System <manual/build_system:Build System>`. Here, the files are
+briefly introduced, classified into three ordered categories:
 
   * **Architecture Configs**: Set the target EWAOL architecture
 
@@ -56,23 +54,18 @@ classified into three ordered categories:
 
     EWAOL currently supports the The Neoverse N1 System Development Platform
     (N1SDP), corresponding to the ``n1sdp`` ``MACHINE`` implemented in
-    `meta-arm-bsp`_.
+    |meta-arm-bsp|_.
     A single Target Platform Config is therefore provided:
 
       * ``n1sdp.yml`` to select the N1SDP as the target platform.
 
     To read documentation about the N1SDP, see the
-    `N1SDP Technical Reference Manual`_.
+    |N1SDP Technical Reference Manual|_.
 
 .. note::
   Additional information on EWAOL features such as run-time validation tests
   and the SDK can be found in the
   :ref:`Developer Manual <manual/index:Developer Manual>`
-
-.. _meta-arm-bsp:
-  https://git.yoctoproject.org/cgit/cgit.cgi/meta-arm/tree/meta-arm-bsp/documentation
-.. _N1SDP Technical Reference Manual:
-  https://developer.arm.com/documentation/101489/0000
 
 These kas configuration files can be used to build a custom EWAOL distribution
 by passing one **Architecture Config**, zero or more **Build Modifier Configs**,
@@ -89,22 +82,19 @@ This documentation assumes an Ubuntu-based Build Host, where the build steps
 have been validated on the Ubuntu 18.04.6 LTS Linux distribution.
 
 A number of package dependencies must be installed on the Build Host to run
-build scenarios via the Yocto Project. `The Yocto Project documentation`_
-provides the list of essential packages, and a command for their installation.
-
-.. _The Yocto Project documentation:
-  https://docs.yoctoproject.org/3.4.2/singleindex.html#required-packages-for-the-build-host
+build scenarios via the Yocto Project. The Yocto Project documentation
+provides the |list of essential packages|_ together with a command for their
+installation.
 
 The recommended approach for building EWAOL is to use the kas build tool. To
 install kas:
 
 .. code-block:: console
+  :substitutions:
 
-  sudo -H pip3 install --upgrade kas==2.6.1
+  sudo -H pip3 install --upgrade kas==|kas version|
 
-For more details on kas installation, see `kas Dependencies & installation`_.
-
-.. _kas Dependencies & installation: https://kas.readthedocs.io/en/latest/userguide.html#dependencies-installation
+For more details on kas installation, see |kas Dependencies & installation|_.
 
 To deploy an EWAOL distribution image onto the supported target platform, this
 User Guide uses ``bmap-tools``. This can be installed via:
@@ -124,13 +114,14 @@ Download
 The ``meta-ewaol`` repository can be downloaded using Git, via:
 
 .. code-block:: shell
+  :substitutions:
 
   # Change the tag or branch to be fetched by replacing the value supplied to
   # the --branch parameter option
 
   mkdir -p ~/ewaol
   cd ~/ewaol
-  git clone https://git.gitlab.arm.com/ewaol/meta-ewaol.git --branch honister-dev
+  git clone |meta-ewaol remote| --branch |meta-ewaol branch|
   cd meta-ewaol
 
 Build
@@ -201,14 +192,9 @@ VMs included on a virtualization distribution image. The following list shows
 the variables and their default values, when including one Guest VM instance:
 
   .. code-block:: yaml
+    :substitutions:
 
-     EWAOL_GUEST_VM_INSTANCES: "1"                      # Number of Guest VM instances
-     EWAOL_GUEST_VM1_NUMBER_OF_CPUS: "4"                # Number of CPUs for Guest VM1
-     EWAOL_GUEST_VM1_MEMORY_SIZE: "6144"                # Memory size for Guest VM1 (MB)
-     EWAOL_GUEST_VM1_ROOTFS_EXTRA_SPACE: ""             # Extra storage space for Guest VM1 (KB)
-     EWAOL_CONTROL_VM_MEMORY_SIZE: "2048"               # Memory size for Control VM (MB)
-     EWAOL_CONTROL_VM_ROOTFS_EXTRA_SPACE: "1000000"     # Extra storage space for Control VM (KB)
-     EWAOL_ROOTFS_EXTRA_SPACE: "2000000"                # Extra storage space for the Control VM and each Guest VM (KB)
+    |virtualization customization yaml|
 
 To customize these variables, set their value in the environment for the kas
 build. For example, to build a virtualization distribution image for the N1SDP
@@ -485,8 +471,6 @@ Build Host. The instructions are as follows:
       sudo umount /tmp/sdcard
       sudo rmdir /tmp/sdcard
 
-.. _Potential firmware damage notice: https://community.arm.com/developer/tools-software/oss-platforms/w/docs/604/notice-potential-damage-to-n1sdp-boards-if-using-latest-firmware-release
-
 Run
 ---
 
@@ -511,12 +495,10 @@ EWAOL virtualization distribution image:
     xl console ewaol-guest-vm1
 
 This command will provide a console on the Guest VM, which can be exited by
-entering ``Ctrl+]``. See the `xl documentation`_ for further details.
+entering ``Ctrl+]``. See the |xl documentation|_ for further details.
 
 The distribution can then be used for deployment and orchestration of
 application workloads in order to achieve the desired use-cases.
-
-.. _xl documentation: https://xenbits.xen.org/docs/unstable/man/xl.1.html
 
 Validate
 --------
@@ -587,9 +569,9 @@ This example use-case is performed on the:
   * EWAOL baremetal architecture
   * EWAOL virtualization architecture
 
-This example deploys a `Nginx`_ webserver as the application workload, using the
-``nginx`` container image available from Docker's default image repository. The
-deployment can be achieved either via Docker or via K3s, as follows:
+This example deploys the |Nginx|_ webserver as an application workload, using
+the ``nginx`` container image available from Docker's default image repository.
+The deployment can be achieved either via Docker or via K3s, as follows:
 
   1. Boot the image and log-in as ``root``, with no password.
 
@@ -652,8 +634,6 @@ deployment can be achieved either via Docker or via K3s, as follows:
   cannot be run simultaneously and one deployment must be stopped before the
   other can start.
 
-.. _Nginx: https://www.nginx.com/
-
 Orchestrating Resource-Managed and Isolated Application Workloads via K3s and Xen VMs
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -662,7 +642,7 @@ This example use-case is performed on the:
   * EWAOL virtualization architecture
 
 This example uses the K3s orchestration framework to use the Control VM to
-schedule an `Nginx`_ webserver application workload for execution on the Guest
+schedule an |Nginx|_ webserver application workload for execution on the Guest
 VM.
 
 To do this, it is first necessary for a K3s agent to be initialized on the Guest

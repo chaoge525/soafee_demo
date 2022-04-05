@@ -22,23 +22,24 @@ or unsupported target platform) defined in a custom BSP layer
 distribution image:
 
 .. code-block:: yaml
+  :substitutions:
 
-    header:
-      version: 11
-      includes:
-        - repo: meta-ewaol
-          file: meta-ewaol-config/kas/baremetal.yml
-        - repo: meta-ewaol
-          file: meta-ewaol-config/kas/tests.yml
+  header:
+    version: 11
+    includes:
+      - repo: meta-ewaol
+        file: meta-ewaol-config/kas/baremetal.yml
+      - repo: meta-ewaol
+        file: meta-ewaol-config/kas/tests.yml
 
-    repos:
-      meta-my-bsp-layer:
+  repos:
+    meta-my-bsp-layer:
 
-      meta-ewaol:
-        url: https://git.gitlab.arm.com/ewaol/meta-ewaol.git
-        refspec: honister-dev
+    meta-ewaol:
+      url: |meta-ewaol remote|
+      refspec: |meta-ewaol branch|
 
-    machine: my-machine
+  machine: my-machine
 
 This example kas configuration file for the ``my-machine`` target platform
 defines the Yocto project configuration build via the kas configuration files
