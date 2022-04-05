@@ -521,7 +521,7 @@ def get_settings_details():
         RunnerSetting(
             "container_image_version",
             short_name="-v",
-            default="3.0",
+            default="3.0.2",
             help=("Set the container image version (default: {default})."
                   " Note: version {default} is the only version that"
                   " kas-runner.py is currently validated with.")),
