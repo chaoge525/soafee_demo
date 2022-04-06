@@ -41,6 +41,8 @@ The following kernel configuration checks are performed:
   ``meta-ewaol-distro/classes/xen_kernelcfg_check.bbclass``.
   By default |Yocto Xen config|_ is used as the reference.
 
+.. _validation_run-time_integration_tests:
+
 **************************
 Run-Time Integration Tests
 **************************
@@ -57,23 +59,30 @@ image depend on its target architecture, as follows:
     * `Container Engine Tests`_
     * `K3s Orchestration Tests`_ (testing single K3s node)
 * Virtualization architecture:
-    * `Container Engine Tests`_
-    * `K3s Orchestration Tests`_ (testing K3s server on the Control VM,
-      connected with a K3s agent on the Guest VM)
-    * `Xen Virtualization Tests`_
+    * Control VM:
+
+      * `Container Engine Tests`_
+      * `K3s Orchestration Tests`_ (testing K3s server on the Control VM,
+        connected with a K3s agent on the Guest VM)
+      * `Xen Virtualization Tests`_
+    * Guest VM:
+
+      * `Container Engine Tests`_
 
 The tests are built as a |Yocto Package Test|_ (ptest), and implemented using
 the |Bash Automated Test System|_ (BATS).
 
+Run-time integration tests are not included on an EWAOL distribution image by
+default, and must instead be included explicitly. See
+:ref:`manual_build_system_run_time_integration_tests` within the Build System
+documentation for details on how to include the tests.
+
 Running the Tests
 =================
 
-In order to run the run-time validation tests, they must first be included on
-the EWAOL distribution image. See the
-:ref:`Reproduce Guide <user_guide/reproduce:Reproduce>` for guidance on
-including the tests.
-
-After booting the image, they can be run using the ptest framework via:
+If the tests have been included on the EWAOL distribution image, they may be run
+via the ptest framework, using the following command after booting the image and
+logging in:
 
 .. code-block:: console
 
@@ -110,7 +119,7 @@ script included in the test suite directory:
 
 Upon completion of the test-suite, a result indicator will be output by the
 script, as one of two options: ``PASS:[test-suite-id]`` or
-``FAIL:[test-suite-id]``.
+``FAIL:[test-suite-id]``, as well as an appropriate exit status.
 
 A test suite consists of one or more 'top-level' BATS tests, which may be
 composed of multiple assertions, where each assertion is considered a named

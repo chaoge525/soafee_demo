@@ -128,6 +128,8 @@ The ``meta-ewaol`` repository can be downloaded using Git, via:
   git clone |meta-ewaol remote| --branch |meta-ewaol branch|
   cd meta-ewaol
 
+.. _user_guide_reproduce_build:
+
 *****
 Build
 *****
@@ -161,6 +163,8 @@ hardware target platform:
 EWAOL baremetal distribution images can be modified by adding run-time
 validation tests to the distribution by including the
 ``meta-ewaol-config/kas/tests.yml`` kas configuration file as a Build Modifier.
+See :ref:`manual_build_system_run_time_integration_tests` for more details on
+including run-time validation tests.
 
 Virtualization Distribution
 ===========================
@@ -187,14 +191,17 @@ hardware target platform:
 
 As with the EWAOL baremetal guidance above, EWAOL virtualization distribution
 images can also be modified to include run-time validation tests by adding the
-``meta-ewaol-config/kas/tests.yml`` kas configuration file.
+``meta-ewaol-config/kas/tests.yml`` kas configuration file. See
+:ref:`manual_build_system_run_time_integration_tests` for more details on
+including run-time validation tests.
 
 Customization
 -------------
 
 EWAOL defines a set of customizable environment variables for configuring the
 VMs included on a virtualization distribution image. The following list shows
-the variables and their default values, when including one Guest VM instance:
+the variables and their default values (where ``MB`` and ``KB`` refer to
+Megabytes and Kilobytes, respectively), when including one Guest VM instance:
 
   .. code-block:: yaml
     :substitutions:
@@ -212,7 +219,7 @@ for its Guest VM, run:
 
 EWAOL supports adding multiple independently-configurable Guest VMs to a
 virtualization distribution image. Additional details for this are provided at
-:ref:`System Architectures<manual/architectures:System Architectures>`.
+:ref:`manual_build_system_virtualization_customization`.
 
 ******
 Deploy
@@ -543,21 +550,8 @@ running successfully, depending on the target architecture:
 
 More thorough run-time validation of EWAOL components are provided as a series
 of integration tests, available if the ``meta-ewaol-config/kas/tests.yml`` kas
-configuration file was included in the image build.
-
-These run-time validation tests can be performed on the target image by running
-the following command at the terminal:
-
-  .. code-block:: console
-
-    ptest-runner
-
-This command will execute all run-time integration tests defined for the target,
-with results reported to the terminal and returning an appropriate exit status.
-
-.. note::
-  On a virtualization distribution image, run-time validation tests are
-  available for execution on the Control VM and any Guest VMs.
+configuration file was included in the image build. These are detailed at
+:ref:`validation_run-time_integration_tests`.
 
 The integration tests that this command will execute are detailed in
 :ref:`Validation <manual/validation:Validation>`, along with the expected
@@ -623,7 +617,7 @@ The deployment can be achieved either via Docker or via K3s, as follows:
 
             .. code-block:: console
 
-              cat << EOT >> nginx-example.yaml
+              cat << EOT > nginx-example.yaml
               apiVersion: v1
               kind: Pod
               metadata:
@@ -734,7 +728,7 @@ Guest VM via K3s orchestration. This example process is as follows:
 
          .. code-block:: console
 
-           cat << EOT >> nginx-example.yaml
+           cat << EOT > nginx-example.yaml
            apiVersion: v1
            kind: Pod
            metadata:
