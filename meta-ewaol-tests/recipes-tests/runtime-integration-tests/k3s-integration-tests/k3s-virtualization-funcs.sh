@@ -62,16 +62,18 @@ get_target_node_ip() {
 cleanup_k3s_agent_on_guest_vm() {
 
     # Stop the agent
-    expect guest-vm-run-command.expect \
-        "${K3S_TEST_GUEST_VM_NAME}" \
-        "sudo -n systemctl stop k3s-agent" \
+    expect run-command.expect \
+        -hostname "${K3S_TEST_GUEST_VM_NAME}" \
+        -command "sudo -n systemctl stop k3s-agent" \
+        -console "guest_vm" \
         2>"${TEST_STDERR_FILE}"
 
     # Remove the systemd override if it exists
-    expect guest-vm-run-command.expect \
-        "${K3S_TEST_GUEST_VM_NAME}" \
-        "sudo -n rm -f ${K3S_AGENT_OVERRIDE_FILENAME} && \
+    expect run-command.expect \
+        -hostname "${K3S_TEST_GUEST_VM_NAME}" \
+        -command "sudo -n rm -f ${K3S_AGENT_OVERRIDE_FILENAME} && \
              sudo -n systemctl daemon-reload" \
+        -console "guest_vm" \
         2>"${TEST_STDERR_FILE}"
 
     kubectl_delete "node" "${K3S_TEST_GUEST_VM_NAME}"
@@ -101,18 +103,20 @@ ExecStart=/usr/local/bin/k3s agent --server=https://${ip}:6443 --token=${token} 
 | sudo -n tee ${K3S_AGENT_OVERRIDE_FILENAME} > /dev/null \
 && sudo -n systemctl daemon-reload"
 
-    expect guest-vm-run-command.expect \
-        "${K3S_TEST_GUEST_VM_NAME}" \
-        "${cmd}" \
+    expect run-command.expect \
+        -hostname "${K3S_TEST_GUEST_VM_NAME}" \
+        -command "${cmd}" \
+        -console "guest_vm" \
         2>"${TEST_STDERR_FILE}"
 
 }
 
 start_k3s_agent_on_guest_vm() {
 
-    expect guest-vm-run-command.expect \
-        "${K3S_TEST_GUEST_VM_NAME}" \
-        "sudo -n systemctl start k3s-agent" \
+    expect run-command.expect \
+        -hostname "${K3S_TEST_GUEST_VM_NAME}" \
+        -command "sudo -n systemctl start k3s-agent" \
+        -console "guest_vm" \
         2>"${TEST_STDERR_FILE}"
 
 }
@@ -152,9 +156,10 @@ extra_cleanup() {
 extra_setup() {
 
     # Check if the agent is already running
-    _run expect guest-vm-run-command.expect \
-        "${K3S_TEST_GUEST_VM_NAME}" \
-        "systemctl is-active k3s-agent" \
+    _run expect run-command.expect \
+        -hostname "${K3S_TEST_GUEST_VM_NAME}" \
+        -command "systemctl is-active k3s-agent" \
+        -console "guest_vm" \
         2>"${TEST_STDERR_FILE}"
 
     if [ "${status}" -eq 0 ]; then

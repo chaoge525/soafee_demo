@@ -1,0 +1,158 @@
+#!/usr/bin/env expect
+#
+# Copyright (c) 2021-2022, Arm Limited.
+#
+# SPDX-License-Identifier: MIT
+
+# This script allows to execute 'command' on 'hostname' using 'console'
+# as 'user'. The following parameters are accepted:
+# * 'command' - single command or list of commands to execute, e.g.:
+#     'pwd' or 'cd /tmp && ptest-runner; echo Done'
+# * 'console' can be set to one out of three options: 'ssh', 'local' or
+#     'guest_vm'. Depending on this parameter, a relevent console is spawned.
+#     Selecting console to 'ssh' or 'guest_vm' requires to specify correct
+#     'hostname' parameter. Check [guest_vm|ssh|local]_logon function for more
+#     details.
+# * 'hostname' depends on the chosen 'console' type, 'hostname' refers to:
+#     - for console = 'guest_vm', hostname is the 'domain-id'.
+#     - for console = 'ssh', hostname is the remote hostname or the ip address.
+#     - for console = 'local' hostname is the output from $(hostname) command.
+#     Default value is the output of $(hostname).
+# * 'timeout', the timeout value in seconds for the spawned console.
+#     Default is 60 seconds.
+# * 'user', - the user account used to log in and execute the 'command'.
+#     By default, user that executes this script.
+#
+# This script procedure is:
+#  1. Spawn the console and log in.
+#  2. Execute the command.
+#  3. Close the console and return the command exit code.
+#
+# Examples:
+# $ expect run-command.expect \
+#       -command pwd          \
+#       -console local        \
+#       -user test
+#
+# $ expect run-command.expect \
+#       -command 'ls -l'      \
+#       -console ssh          \
+#       -hostname 1.2.3.4     \
+#       -user admin           \
+#       -timeout 120
+#
+# $ expect run-command.expect \
+#       -command ptest-runner \
+#       -console guest_vm     \
+#       -hostname guest_vm1   \
+#       -user test            \
+#
+
+# Defaults:
+set hostname [info hostname]
+set user "$env(USER)"
+set timeout 60
+
+# This variable holds the string used for cleaning the terminal buffer,
+# required when attaching to a console that may contain a garbled buffer.
+# '\025' is the end of medium, '\010' is the line feed,
+# '\r' is the carriage return.
+set clean_console "\025\010\r"
+
+# This bool variable, if set to 'true', enables conditional code for spawning
+# and closing the xl console in the logon and logoff functions.
+set vm "false"
+
+# parse command line arguments
+if {[info exists argv0]} {
+
+    while {[llength $argv]} {
+        # example of an argv list:
+        # 'flag1 value1 flag2 value2' e.t.c.
+        puts [list ooo $argv]
+
+        # get ${flag} parameter and remove it from the argv list
+        set argv [lassign $argv[set argv {}] flag]
+
+        switch -glob $flag {
+            -user -
+            -hostname -
+            -timeout -
+            -command {
+                # fallthrough and use the same processing block for all above parameters
+
+                # get ${value} parameter and remove it from the argv list
+                set argv [lassign $argv[set argv {}] value]
+
+                # remove the leading '-' from ${flag}
+                set flag_trimmed [string trim ${flag} "-" ]
+
+                # set the variable
+                set "${flag_trimmed}" "${value}"
+                puts "setting var: '${flag_trimmed}' with value: '${value}'"
+            }
+            -console {
+                # get ${value} parameter and remove it from the argv list
+                set argv [lassign $argv[set argv {}] value]
+                switch -glob ${value} {
+                    guest_vm -
+                    local -
+                    ssh {
+                        set logon_func "${value}_logon"
+                    }
+                    default {
+                        puts "invalid arguments for ${flag}: '${value}'"
+                        return 1
+                    }
+                }
+            }
+            -- break
+            -* {
+                return -code error [list {unknown option} $flag]
+            }
+            default {
+                set argv [list $flag {*}$argv]
+                break
+            }
+        }
+    }
+}
+
+set login_prompt "${hostname} login:"
+set prompt "${user}@${hostname}:"
+
+if {"${logon_func}" == "guest_vm_logon"} {
+    set vm "true"
+}
+
+puts "Setting timeout to '${timeout}' seconds."
+
+source "login-console-funcs.expect"
+
+# Default timeout handler logs that a time out occured, but allows the script
+# to continue. This may be overriden by adding a timeout handler to a particular
+# expect.
+expect_after {
+    timeout { puts "Expect script timed out after $timeout seconds."; }
+}
+
+set rc ["${logon_func}"]
+if { $rc != 0 } {
+    puts "Failed to log-in to '${hostname}'"
+    exit ${rc}
+}
+
+set rc [run_cmd "${command}"]
+if { $rc != 0 } {
+    puts "Failed to run '${command}' on '${hostname}'"
+    exit ${rc}
+}
+
+set rc [console_logoff]
+if { $rc != 0 } {
+    puts "Failed to log-off from '${hostname}'"
+    exit ${rc}
+}
+
+puts "Success"
+exit 0

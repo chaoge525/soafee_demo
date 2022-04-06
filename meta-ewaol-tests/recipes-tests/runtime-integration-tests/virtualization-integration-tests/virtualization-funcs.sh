@@ -5,9 +5,10 @@
 # SPDX-License-Identifier: MIT
 
 test_guest_vm_login_and_network_access() {
-    expect guest-vm-run-command.expect \
-        "${1}" \
-        "ping -c 5 8.8.8.8" \
+    expect run-command.expect \
+        -hostname "${1}" \
+        -command "ping -c 5 8.8.8.8" \
+        -console "guest_vm" \
         2>"${TEST_STDERR_FILE}"
 }
 
