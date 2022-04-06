@@ -511,7 +511,7 @@ application workloads in order to achieve the desired use-cases.
 Validate
 ********
 
-As an initial validation step, check that the following Systemd services are
+As an initial validation step, check that the appropriate Systemd services are
 running successfully, depending on the target architecture:
 
   * Baremetal Architecture:
@@ -519,14 +519,27 @@ running successfully, depending on the target architecture:
     * ``docker.service``
     * ``k3s.service``
 
+    These services can be checked by running the command:
+
+      .. code-block:: console
+
+        systemctl status --no-pager --lines=0 docker.service k3s.service
+
+    And ensuring the command output lists them as active and running.
+
   * Virtualization Architecture:
 
     * ``docker.service``
     * ``k3s.service``
     * ``xendomains.service``
 
-These can be checked by passing the service name as an argument to ``systemctl
-status`` and checking the command output.
+    These services can be checked by running the command:
+
+      .. code-block:: console
+
+        systemctl status --no-pager --lines=0 docker.service k3s.service xendomains.services
+
+    And ensuring the command output lists them as active and running.
 
 More thorough run-time validation of EWAOL components are provided as a series
 of integration tests, available if the ``meta-ewaol-config/kas/tests.yml`` kas
