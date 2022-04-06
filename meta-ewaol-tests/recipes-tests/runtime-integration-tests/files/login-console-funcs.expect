@@ -4,36 +4,32 @@
 #
 # SPDX-License-Identifier: MIT
 
-proc guest_vm_logon {guest} {
+proc console_logon {console hostname} {
     global expect_out
     global spawn_id
     global login_prompt
     global prompt
     global clean_console
     global timeout
-    global username
+    global user
+    global vm
 
-    spawn sudo -n xl console ${guest}
+    # In TCL '{*}' is special syntax for argument expansion:
+    # https://www.tcl.tk/man/tcl8.5/TclCmd/Tcl.html#M9
+    spawn {*}${console}
     send "${clean_console}"
     sleep 0.5
 
-    set glob_timeout ${timeout}
-    set timeout 5
-    expect {
-        -re {.} {
-            exp_continue
-        }
-        timeout {
-            send "${clean_console}"
-            sleep 0.5
-        }
-    }
-    set timeout ${glob_timeout}
-
     set username_regex {[a-z0-9_-]{1,32}}
-    set password "\r"
 
-    # The deafault scenerio is no password prompt for '${username}' user.
+    if {${vm} == "true"} {
+        force_prompt
+        set password "\r"
+    } else {
+        set password "ewaol123\r"
+    }
+
+    # The deafault scenerio is no password prompt for '${user}' user.
     # However, if there is a prompt to set a new password, then use the
     # 'ewaol123' password.
     # Maximum 10 tries
@@ -41,18 +37,23 @@ proc guest_vm_logon {guest} {
         # Grab console and log on
         expect {
             "${login_prompt}" {
-                send "${username}\r"
+                send "${user}\r"
                 set password "ewaol123\r"
                 sleep 1
                 exp_continue
+            }
+            "${prompt} Permission denied (publickey,password)." {
+                # wrong username or password for ssh connection
+                sleep 0.5
+                return 1
             }
             "${prompt}" {
                 send "${clean_console}"
                 sleep 0.5
                 return 0
             }
-            -re ${username_regex}@${guest} {
-                # wrong user logged, exit and login as '${username}' user
+            -re ${username_regex}@${hostname} {
+                # wrong user logged in, exit and login as '${user}' user
                 send "${clean_console}"
                 sleep 0.5
                 send "exit\r"
@@ -67,16 +68,20 @@ proc guest_vm_logon {guest} {
                 exp_continue
             }
             "Kernel panic" {
-                puts "'${guest}' encountered a kernel panic"
+                puts "'${hostname}' encountered a kernel panic"
                 return 1
             }
-            "${guest} is an invalid domain" {
-                puts "'${guest}' is an invalid domain"
+            "${hostname} is an invalid domain" {
+                puts "'${hostname}' is an invalid domain"
                 return 1
             }
             timeout {
-                puts "Log-in to '${guest}' timed out"
+                puts "Log-in to '${hostname}' timed out"
                 return 124
+            }
+            eof {
+                puts "Console closed!"
+                return 1
             }
         }
     }
@@ -121,20 +126,77 @@ proc run_cmd {cmd} {
     return $rc
 }
 
-proc guest_vm_logoff {} {
+proc console_logoff {} {
     global expect_out
     global spawn_id
     global login_prompt
     global clean_console
     global timeout
+    global vm
 
     # Exit the login session
     send "exit\r"
     sleep 0.5
+
+    if {${vm} == "true"} {
+        guest_vm_logoff
+    }
+
+    return 0
+}
+
+proc force_prompt {} {
+    global expect_out
+    global spawn_id
+    global clean_console
+
+    set timeout 5
+    expect {
+        -re {.} {
+            exp_continue
+        }
+        timeout {
+            send "${clean_console}"
+            sleep 0.5
+        }
+    }
+}
+
+proc guest_vm_logoff {} {
+    global expect_out
+    global spawn_id
+    global login_prompt
+    global timeout
 
     expect "${login_prompt}"
     # Send ctrl + ] to exit the Guest VM
     send "\x1b"
 
     return 0
+}
+
+proc guest_vm_logon {} {
+
+    global hostname
+    set console "sudo -n xl console ${hostname}"
+
+    console_logon "${console}" "${hostname}"
+}
+
+proc local_logon {} {
+
+    global user
+    global hostname
+    set console "su - ${user}"
+
+    console_logon "${console}" "${hostname}"
+}
+
+proc ssh_logon {} {
+
+    global user
+    global hostname
+    set console "ssh -o StrictHostKeyChecking=no ${user}@${hostname}"
+
+    console_logon "${console}" "${hostname}"
 }

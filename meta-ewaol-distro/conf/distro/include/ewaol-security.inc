@@ -5,6 +5,8 @@
 # Config specifc to the ewaol-security distro feature, enabled using
 # DISTRO_FEATURES
 
+EWAOL_OVERRIDES:append = ":ewaol-security"
+
 # Force password change after user first log in for:
 # 'EWAOL_USER_ACCOUNT' & 'EWAOL_ADMIN_ACCOUNT',
 # and disable 'root' account login

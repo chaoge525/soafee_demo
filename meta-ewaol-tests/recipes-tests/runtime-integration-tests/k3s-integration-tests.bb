@@ -23,8 +23,8 @@ TEST_FILES = "file://k3s-integration-tests.bats \
 
 TEST_FILES:append:ewaol-virtualization = " \
     file://integration-tests-common-virtual-funcs.sh \
-    file://guest-vm-funcs.expect \
-    file://guest-vm-run-command.expect \
+    file://login-console-funcs.expect \
+    file://run-command.expect \
     file://k3s-virtualization-funcs.sh \
     "
 

@@ -4,7 +4,7 @@
 
 inherit ptest
 
-RDEPENDS:${PN} += "bats runtime-integration-tests-common"
+RDEPENDS:${PN}:append = " bats runtime-integration-tests-common"
 
 # ptest aborts if it cannot find libgcc for pthread_cancel
 RDEPENDS:${PN}-ptest += "libgcc"

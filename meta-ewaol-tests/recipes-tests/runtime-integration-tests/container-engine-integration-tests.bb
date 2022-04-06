@@ -22,8 +22,8 @@ TEST_FILES = "file://container-engine-integration-tests.bats \
 
 TEST_FILES:append:ewaol-virtualization = " \
     file://integration-tests-common-virtual-funcs.sh \
-    file://guest-vm-funcs.expect \
-    file://guest-vm-run-command.expect \
+    file://login-console-funcs.expect \
+    file://run-command.expect \
     file://container-engine-additional-virtual-tests.bats \
     file://container-engine-virtualization-funcs.sh \
     "
@@ -31,6 +31,8 @@ TEST_FILES:append:ewaol-virtualization = " \
 SRC_URI = "${TEST_FILES} \
            file://run-test-suite \
            file://run-ptest"
+
+RDEPENDS:${PN}:ewaol-virtualization += "expect"
 
 require runtime-integration-tests.inc
 
