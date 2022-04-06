@@ -76,6 +76,20 @@ to be reviewed and accepted by the EWAOL project:
   is expected that any security aspects raised by the project's maintainer(s)
   will be engaged with before the contribution can be accepted.
 
+  Example security aspects that must be considered as part of a contribution
+  include:
+
+    * The contribution's effect on the management and storage of data onto
+      temporary or persistent filesystems, and whether appropriate access
+      controls to stored data (e.g. filesystem permissions) have been put in
+      place.
+
+    * The contribution's effect on data communications (both transmitted or
+      received) taking place on the EWAOL distribution, such as changes or
+      additions involving client and server processes, and whether appropriate
+      security mechanisms (e.g. secure protocols, data encryption) have been put
+      in place.
+
 ********************
 Contribution Process
 ********************
