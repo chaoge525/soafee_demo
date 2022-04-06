@@ -3,16 +3,18 @@
  #
  # SPDX-License-Identifier: MIT
 
+#########
 Reproduce
-=========
+#########
 
 The section of the User Guide describes how to reproduce a standard EWAOL
 distribution image for a supported target platform, configuring and deploying
 the supported set of distribution image features, and running simple examples of
 the :ref:`EWAOL Use-Cases <introduction_use_cases_overview>`.
 
+************
 Introduction
-------------
+************
 
 The recommended approach for image build setup and customization is to use the
 `kas build tool`_. To support this, EWAOL provides configuration files to setup
@@ -75,8 +77,9 @@ and one **Target Platform Config** to the kas build tool, chained via a colon
 In the next section, guidance is provided for configuring, building and
 deploying EWAOL distributions using these kas configuration files.
 
+****************************
 Build Host Environment Setup
-----------------------------
+****************************
 
 This documentation assumes an Ubuntu-based Build Host, where the build steps
 have been validated on the Ubuntu 18.04.6 LTS Linux distribution.
@@ -108,8 +111,9 @@ User Guide uses ``bmap-tools``. This can be installed via:
   EWAOL baremetal distribution image, or at least 100 GBytes of free disk space
   to build an EWAOL virtualization distribution image.
 
+********
 Download
---------
+********
 
 The ``meta-ewaol`` repository can be downloaded using Git, via:
 
@@ -124,15 +128,16 @@ The ``meta-ewaol`` repository can be downloaded using Git, via:
   git clone |meta-ewaol remote| --branch |meta-ewaol branch|
   cd meta-ewaol
 
+*****
 Build
------
+*****
 
 As different kas configuration files with different customizable parameters are
 used to build EWAOL for different architectural use-cases, the instructions for
 building an EWAOL distribution depend on the target architecture, as follows.
 
 Baremetal Distribution
-^^^^^^^^^^^^^^^^^^^^^^
+======================
 
 To build a baremetal distribution image for the N1SDP hardware target platform:
 
@@ -158,7 +163,7 @@ validation tests to the distribution by including the
 ``meta-ewaol-config/kas/tests.yml`` kas configuration file as a Build Modifier.
 
 Virtualization Distribution
-^^^^^^^^^^^^^^^^^^^^^^^^^^^
+===========================
 
 To build a virtualization distribution image for the N1SDP hardware target
 platform:
@@ -185,7 +190,7 @@ images can also be modified to include run-time validation tests by adding the
 ``meta-ewaol-config/kas/tests.yml`` kas configuration file.
 
 Customization
-"""""""""""""
+-------------
 
 EWAOL defines a set of customizable environment variables for configuring the
 VMs included on a virtualization distribution image. The following list shows
@@ -209,8 +214,9 @@ EWAOL supports adding multiple independently-configurable Guest VMs to a
 virtualization distribution image. Additional details for this are provided at
 :ref:`System Architectures<manual/architectures:System Architectures>`.
 
+******
 Deploy
-------
+******
 
 Instructions for deploying an EWAOL distribution image on the supported N1SDP
 hardware target platform is divided into two parts:
@@ -226,7 +232,7 @@ hardware target platform is divided into two parts:
   by denoting the alternatives alphabetically (e.g., A, B, ...).
 
 Load the Image on a USB Storage Device
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+======================================
 
 EWAOL distribution images are produced as files with the ``.wic.bmap`` and
 ``.wic.gz`` extensions. They must first be loaded to a USB storage device, as
@@ -294,7 +300,7 @@ The USB storage device can then be safely ejected from the Build Host, and
 plugged into one of the USB 3.0 ports on the N1SDP.
 
 Update the N1SDP MCC Configuration MicroSD Card
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+===============================================
 
 .. note::
   This process doesn't need to be performed every time the USB Storage Device
@@ -471,8 +477,9 @@ Build Host. The instructions are as follows:
       sudo umount /tmp/sdcard
       sudo rmdir /tmp/sdcard
 
+***
 Run
----
+***
 
 To run the deployed EWAOL distribution image, simply boot the target platform.
 For example, on the MCC console accessed via the connected machine described in
@@ -500,8 +507,9 @@ entering ``Ctrl+]``. See the |xl documentation|_ for further details.
 The distribution can then be used for deployment and orchestration of
 application workloads in order to achieve the desired use-cases.
 
+********
 Validate
---------
+********
 
 As an initial validation step, check that the following Systemd services are
 running successfully, depending on the target architecture:
@@ -543,8 +551,9 @@ The integration tests that this command will execute are detailed in
 format of the test output and additional details for running and customizing
 the validation.
 
+*******************************
 Reproducing the EWAOL Use-Cases
--------------------------------
+*******************************
 
 With the EWAOL distribution running and validated, it can be used to achieve the
 target :ref:`EWAOL Use-Cases <introduction_use_cases_overview>`.
@@ -562,7 +571,7 @@ the :ref:`introduction_documentation_assumptions`.
   for further demonstrations of EWAOL use-cases.
 
 Deploying Application Workloads via Docker and K3s
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+==================================================
 
 This example use-case is performed on the:
 
@@ -635,7 +644,7 @@ The deployment can be achieved either via Docker or via K3s, as follows:
   other can start.
 
 Orchestrating Resource-Managed and Isolated Application Workloads via K3s and Xen VMs
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+=====================================================================================
 
 This example use-case is performed on the:
 

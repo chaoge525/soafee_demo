@@ -3,9 +3,11 @@
  #
  # SPDX-License-Identifier: MIT
 
+#########################
 Changelog & Release Notes
 #########################
 
+******
 v0.2.4
 ******
 
@@ -33,6 +35,7 @@ Resolved issues from v0.2.3:
 
   * ewaol-distro: Fix bitbake fetch for ostree recipe from meta-oe
 
+******
 v0.2.3
 ******
 
@@ -62,6 +65,7 @@ Resolved issues from v0.2.2:
   * ewaol-distro: Fix bitbake fetch for runc-opencontainers recipe from
     meta-virtualization
 
+******
 v0.2.2
 ******
 
@@ -89,6 +93,7 @@ Resolved issues from v0.2.1:
 
   * ewaol-distro: libpcre and libpcre2 to fetch from sourceforge and github
 
+******
 v0.2.1
 ******
 
@@ -122,6 +127,7 @@ Resolved issues from v0.2:
   * ewaol-distro: Fix bitbake fetch for go-fsnotify recipe from
     meta-virtualization
 
+****
 v0.2
 ****
 
@@ -217,6 +223,7 @@ Resolved and Known Issues
 
 None.
 
+******
 v0.1.1
 ******
 
@@ -252,6 +259,7 @@ Resolved and Known Issues
 
 None.
 
+****
 v0.1
 ****
 

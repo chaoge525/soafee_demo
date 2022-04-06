@@ -3,15 +3,17 @@
  #
  # SPDX-License-Identifier: MIT
 
+######
 Extend
-======
+######
 
 This section of the User Guide describes how to extend EWAOL in order to
 configure and build it for deployment on custom or unsupported target platforms,
 via kas.
 
+****************************************************************
 Porting EWAOL to a Custom or Unsupported Target Platform via kas
-----------------------------------------------------------------
+****************************************************************
 
 To build an EWAOL distribution image that targets an externally defined target
 platform using ``meta-ewaol``, a kas configuration file must be defined and

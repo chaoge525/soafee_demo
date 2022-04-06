@@ -1,10 +1,11 @@
 ..
- # Copyright (c) 2021, Arm Limited.
+ # Copyright (c) 2022, Arm Limited.
  #
  # SPDX-License-Identifier: MIT
 
+################
 Developer Manual
-================
+################
 
 .. toctree::
    :titlesonly:

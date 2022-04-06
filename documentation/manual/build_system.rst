@@ -3,8 +3,9 @@
  #
  # SPDX-License-Identifier: MIT
 
+############
 Build System
-============
+############
 
 An EWAOL build can be configured by setting the target platform via the
 ``MACHINE`` Bitbake variable, the desired distribution image features via the
@@ -17,8 +18,9 @@ describing the kas configuration files provided in ``meta-ewaol-config/kas`` to
 support building and configuring the EWAOL distribution. The process for
 building without kas is then briefly described.
 
+*********************************
 EWAOL Distribution Image Features
----------------------------------
+*********************************
 
 For a particular ``MACHINE`` target platform, the available ``DISTRO_FEATURES``
 to configure the image are as follows:
@@ -72,8 +74,9 @@ to configure the image are as follows:
     The SDK is detailed separately, at
     :ref:`Software Development Kit (SDK)<manual/sdk:Software Development Kit (SDK)>`.
 
+*****************************
 EWAOL kas Configuration Files
------------------------------
+*****************************
 
 The kas build tool enables automatic fetch and inclusion of layer sources, as
 well as parameter and feature specification for building target images. To
@@ -109,7 +112,7 @@ The three categories and their kas config files as provided in
 ``meta-ewaol-config/kas`` are as follows.
 
 Architecture Configs
-^^^^^^^^^^^^^^^^^^^^
+====================
 
 Architecture Configs specify the target EWAOL architecture.
 
@@ -139,7 +142,7 @@ EWAOL kas configuration file:
     dependencies are pinned for the specific EWAOL release.
 
 Build Modifier Configs
-^^^^^^^^^^^^^^^^^^^^^^
+======================
 
 Build Modifier Configs specify additional sources and parameter customizations
 relevant to a particular EWAOL distribution image feature.
@@ -177,7 +180,7 @@ These are the current Build Modifier Configs:
     Architecture Config.
 
 Target Platform Configs
-^^^^^^^^^^^^^^^^^^^^^^^
+=======================
 
 Target Platform Configs define the ``MACHINE`` Bitbake variable for the build,
 and all associated layers and configurations required to build an EWAOL
@@ -199,8 +202,9 @@ distribution image to run on that target platform.
   If a kas configuration file does not set a particular build parameter, the
   parameter will take its default value.
 
+**************************
 Manual Bitbake Build Setup
---------------------------
+**************************
 
 In order to build an EWAOL distribution image without the kas build tool
 directly via bitbake, it is necessary to prepare a bitbake project as follows:

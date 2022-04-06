@@ -3,11 +3,13 @@
  #
  # SPDX-License-Identifier: MIT
 
+##########
 Validation
-==========
+##########
 
+*************************************
 Build-Time Kernel Configuration Check
--------------------------------------
+*************************************
 
 After the kernel configuration has been produced during the build, it is checked
 to validate the presence of necessary kernel configuration to comply with
@@ -39,8 +41,9 @@ The following kernel configuration checks are performed:
   ``meta-ewaol-distro/classes/xen_kernelcfg_check.bbclass``.
   By default |Yocto Xen config|_ is used as the reference.
 
+**************************
 Run-Time Integration Tests
---------------------------
+**************************
 
 The ``meta-ewaol-tests`` Yocto layer contains recipes and configuration for
 including run-time integration tests into an EWAOL distribution, to be run
@@ -63,7 +66,7 @@ The tests are built as a |Yocto Package Test|_ (ptest), and implemented using
 the |Bash Automated Test System|_ (BATS).
 
 Running the Tests
-^^^^^^^^^^^^^^^^^
+=================
 
 In order to run the run-time validation tests, they must first be included on
 the EWAOL distribution image. See the
@@ -117,7 +120,7 @@ information will be provided in the output of type ``DEBUG``. The format of
 these results are described in `Test Logging`_.
 
 Test Logging
-^^^^^^^^^^^^
+============
 
 Test suite execution will be logged to a ``[test-suite-id].log`` file within
 the log directory of the test suite, which by default is ``logs/`` within the
@@ -150,12 +153,12 @@ Additional informational messages may appear in the log file with ``INFO`` or
 occurred.
 
 Test Suites
-^^^^^^^^^^^
+===========
 
 The test suites are detailed below.
 
 Container Engine Tests
-""""""""""""""""""""""
+----------------------
 
 The container engine test suite is identified as:
 
@@ -228,7 +231,7 @@ container engine tests:
      ``ewaol-guest-vm1``
 
 Container Engine Environment Clean-Up
-*************************************
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 A clean environment is expected when running the container engine tests. For
 example, if the target image already exists within the container engine
@@ -250,7 +253,7 @@ If enabled then the environment clean operations will always be run, regardless
 of test-suite success or failure.
 
 K3s Orchestration Tests
-"""""""""""""""""""""""
+-----------------------
 
 The K3s test suite is identified as:
 
@@ -336,7 +339,7 @@ K3s orchestration tests:
    ``ewaol-guest-vm1``
 
 K3s Environment Clean-Up
-************************
+^^^^^^^^^^^^^^^^^^^^^^^^
 
 A clean environment is expected when running the K3s integration tests, to
 ensure that the system is ready to be validated. For example, the test suite
@@ -365,7 +368,7 @@ If enabled then the environment clean operations will always be run, regardless
 of test-suite success or failure.
 
 Xen Virtualization Tests
-""""""""""""""""""""""""
+------------------------
 
 The Xen Virtualization test suite is identified as:
 

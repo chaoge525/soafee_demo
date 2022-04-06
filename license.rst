@@ -1,5 +1,6 @@
+#######
 License
-=======
+#######
 
 The software is provided under the MIT license (below).
 
@@ -26,8 +27,9 @@ The software is provided under the MIT license (below).
     FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
     IN THE SOFTWARE.
 
+****************
 SPDX Identifiers
-----------------
+****************
 
 Individual files contain the following tag instead of the full license text.
 

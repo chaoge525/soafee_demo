@@ -3,16 +3,18 @@
  #
  # SPDX-License-Identifier: MIT
 
+############
 Contributing
-============
+############
 
 EWAOL welcomes contributions via the ``meta-ewaol`` public Gitlab repository:
 |meta-ewaol repository|.
 
 Contributions should follow the project's contribution guidelines, below.
 
+***********************
 Contribution Guidelines
------------------------
+***********************
 
 The following is a set of guidelines that must be adhered to for contributions
 to be reviewed and accepted by the EWAOL project:
@@ -74,14 +76,15 @@ to be reviewed and accepted by the EWAOL project:
   is expected that any security aspects raised by the project's maintainer(s)
   will be engaged with before the contribution can be accepted.
 
+********************
 Contribution Process
---------------------
+********************
 
 Adhering to the guidelines listed above, contributions to the EWAOL project
 should be made using the process listed in this section.
 
 Gitlab Account Setup
-^^^^^^^^^^^^^^^^^^^^
+====================
 
 In order to contribute to the repository, it is necessary to have an account on
 |meta-ewaol repository host|. Please see `TBC`_ for details of how to create an
@@ -95,7 +98,7 @@ increase personal project capacity.
 .. _TBC: https://
 
 Submission
-^^^^^^^^^^
+==========
 
 .. note::
   The mechanics of the EWAOL submission process has not yet been established.
@@ -118,8 +121,9 @@ With an appropriate Gitlab account, a contribution can be submitted to
    forked repository. Please include all information required by the project's
    Merge Request template.
 
+******************************
 Documentation Build Validation
-------------------------------
+******************************
 
 EWAOL provides a Python script to locally build and render the documentation,
 available at ``tools/build/doc-build.py``. This script will install all
@@ -146,8 +150,9 @@ script:
 
     ./tools/build/doc-build.py --help
 
+************************
 Quality Assurance Checks
-------------------------
+************************
 
 The project provides tooling for running Quality Assurance (QA) checks on the
 repository. These checks aim to automatically validate that contributions adhere
@@ -177,7 +182,7 @@ The script should pass with no errors or warnings.
 The validations performed by each QA check are described as follows.
 
 Commit Message
-^^^^^^^^^^^^^^
+==============
 
 Each commit message of the contribution should pass the following requirements:
 
@@ -190,7 +195,7 @@ Each commit message of the contribution should pass the following requirements:
     be formed correctly.
 
 License and Copyright Header
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+=============================
 
 Contributed files must contain a valid licence and copyright header, following
 one of the two following formats, based on the source of the contribution:
@@ -228,7 +233,7 @@ the QA check configuration. Running the QA check will highlight any files which
 are expected to include a valid header, but do not.
 
 Python Code Quality
-^^^^^^^^^^^^^^^^^^^
+===================
 
 All Python code contributed to the project must pass validation by the Python
 style guide checker ``pycodestyle``, which enforces style conventions based on
@@ -236,7 +241,7 @@ the |PEP 8|_ style guide for Python code. The precise Python style conventions
 that ``pycodestyle`` validates can be found in the |pycodestyle Documentation|_.
 
 Shell Script Code Quality
-^^^^^^^^^^^^^^^^^^^^^^^^^
+=========================
 
 All shell scripts and BATS files contributed to the project must produce no
 warnings when passed to the |Shellcheck|_ static analysis tool, as made
@@ -246,7 +251,7 @@ Documentation for each specific check is documented within the
 |Shellcheck wiki pages|_.
 
 Spelling
-^^^^^^^^
+========
 
 The project expects documentation to have correct English (en-US) spelling.
 Words within documentation text files have their spelling validated via the
@@ -258,7 +263,7 @@ file containing a list of additional valid words exists at
 QA check erroneously highlights valid technical terminology.
 
 Yocto Layer Compatibility
-^^^^^^^^^^^^^^^^^^^^^^^^^
+=========================
 
 Contributions must not break layer compatibility with the Yocto Project, as
 validated via the Yocto Project's ``yocto-check-layer`` script, documented as

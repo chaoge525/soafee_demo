@@ -3,16 +3,19 @@
  #
  # SPDX-License-Identifier: MIT
 
+####################
 System Architectures
-====================
+####################
 
+************
 Introduction
-------------
+************
 
 This page describes the two target architectures supported by the EWAOL project.
 
+**********************
 Baremetal Architecture
-----------------------
+**********************
 
 .. image:: ../images/baremetal_architecture.png
 
@@ -30,8 +33,9 @@ local loopback network interface. This enables the orchestration and execution
 of containerized application workloads on the baremetal distribution image,
 operating as a single-node K3s cluster.
 
+***************************
 Virtualization Architecture
----------------------------
+***************************
 
 .. image:: ../images/virtualization_architecture.png
 
