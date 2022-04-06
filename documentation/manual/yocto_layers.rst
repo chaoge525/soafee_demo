@@ -3,8 +3,9 @@
  #
  # SPDX-License-Identifier: MIT
 
+############
 Yocto Layers
-============
+############
 
 The ``meta-ewaol`` repository provides three layers compatible with the Yocto
 Project, in the following sub-directories:
@@ -32,8 +33,9 @@ Project, in the following sub-directories:
     devicetree together with a Xen efi binary are included into the final wic
     image in the ``boot`` partition.
 
+*************************
 Layer Dependency Overview
--------------------------
+*************************
 
 The following diagram illustrates the layers which are integrated by the EWAOL
 project, which are further expanded on below. |layer dependency statement|

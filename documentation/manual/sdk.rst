@@ -3,8 +3,9 @@
  #
  # SPDX-License-Identifier: MIT
 
+##############################
 Software Development Kit (SDK)
-==============================
+##############################
 
 EWAOL SDK distribution images enable users to perform common development tasks
 on the target, such as:

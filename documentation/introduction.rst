@@ -3,8 +3,9 @@
  #
  # SPDX-License-Identifier: MIT
 
+############
 Introduction
-============
+############
 
 The Edge Workload Abstraction and Orchestration Layer (EWAOL) project provides
 users with a standards-based framework using containers for the deployment and
@@ -57,8 +58,9 @@ distribution images and validating core functionalities.
   Users of this software stack must consider safety and security implications
   according to their own usage goals.
 
+*******************
 High-Level Overview
--------------------
+*******************
 
 The following diagram illustrates the EWAOL software stack. EWAOL provides two
 different system architectures to support application workload deployment and
@@ -69,8 +71,9 @@ introduction.
 
 .. _introduction_use_cases_overview:
 
+******************
 Use-Cases Overview
-------------------
+******************
 
 EWAOL aims to facilitate the following core use-cases on the supported target
 platforms:
@@ -85,8 +88,9 @@ Instructions for achieving these use-cases are given in the
 subject to relevant assumed technical knowledge as listed later in this
 introduction at `Documentation Assumptions`_.
 
+**************************
 EWAOL System Architectures
---------------------------
+**************************
 
 There are two primary system architectures currently provided by EWAOL,
 differing according to the intended use-case, as follows:
@@ -115,8 +119,9 @@ existing application workload, and an EWAOL distribution image which includes a
 Software Development Kit (SDK) that supports on-target development and analyses
 of application workloads and system services.
 
+*****************
 Features Overview
------------------
+*****************
 
 EWAOL includes the following major features:
 
@@ -137,8 +142,9 @@ Other features of EWAOL include:
   * Systemd used as the init system.
   * RPM used as the package management system.
 
+**********************
 Documentation Overview
-----------------------
+**********************
 
 The documentation is structured as follows:
 
@@ -176,7 +182,7 @@ The documentation is structured as follows:
 .. _introduction_documentation_assumptions:
 
 Documentation Assumptions
-^^^^^^^^^^^^^^^^^^^^^^^^^
+=========================
 
 This documentation assumes a base level of knowledge related to two different
 aspects of achieving the target use-cases via EWAOL:
@@ -220,8 +226,9 @@ aspects of achieving the target use-cases via EWAOL:
     Readers are referred to the |Yocto Project Documentation|_ for information
     on setting up and running non-standard EWAOL distribution builds.
 
+********************
 Repository Structure
---------------------
+********************
 
 The ``meta-ewaol`` repository (|meta-ewaol repository|) is structured as
 follows:
@@ -266,8 +273,9 @@ follows:
 The Yocto layers which are provided by ``meta-ewaol`` are detailed with their
 layer dependencies in :ref:`Yocto Layers <manual/yocto_layers:Yocto Layers>`.
 
+******************
 Repository License
-------------------
+******************
 
 The repository's standard licence is the MIT license (more details in
 :ref:`license_link:License`), under which most of the repository's content is
@@ -279,8 +287,9 @@ associated external works.
 
 Contributions to the project should follow the same licensing arrangement.
 
+*****************************
 Contributions and Bug Reports
------------------------------
+*****************************
 
 Guidance for contributing to the EWAOL project can be found at
 :ref:`Contributing <contributing:Contributing>`.
@@ -288,13 +297,15 @@ Guidance for contributing to the EWAOL project can be found at
 For bug reports, please submit an Issue via GitLab, following the project's
 Issue template.
 
+********************
 Feedback and support
---------------------
+********************
 
 To request support please contact Arm at support@arm.com. Arm licensees may
 also contact Arm via their partner managers.
 
+*************
 Maintainer(s)
--------------
+*************
 
 - Diego Sueiro <diego.sueiro@arm.com>

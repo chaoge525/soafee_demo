@@ -3,16 +3,18 @@
  #
  # SPDX-License-Identifier: MIT
 
+###################
 Codeline Management
-===================
+###################
 
 The EWAOL project is released and developed based on Yocto's release branch
 process. This strategy allows us to make Major, Minor and Point/Patch Releases
 based on upstream stable branches, reducing the risk of having build and runtime
 issues.
 
+******************************
 Yocto Release Process Overview
-------------------------------
+******************************
 
 .. image:: images/ewaol_rel_yocto_overview.png
 
@@ -31,8 +33,9 @@ The diagram above gives an overview of the Yocto branch and release process:
 For a complete description of the Yocto release process, support schedule and
 other details, see the |Yocto Release Process|_ documentation.
 
+********************************
 EWAOL Branch and Release Process
---------------------------------
+********************************
 
 .. image:: images/ewaol_rel_dev_branches.png
 
@@ -41,7 +44,7 @@ following sub-sections describe in more details the branch strategy for EWAOL's
 development and release process.
 
 EWAOL main branch
-.....................
+=================
 
 * Represented by the green line on the diagram above.
 * The repository's ``main`` branch is meant to be compatible with ``master`` or
@@ -53,7 +56,7 @@ EWAOL main branch
   `EWAOL development branches`_  on a regular basis.
 
 EWAOL development branches
-..........................
+==========================
 
 * Represented by the red line on the diagram above.
 * EWAOL uses development branches based/compatible with Yocto stable branches.
@@ -67,7 +70,7 @@ EWAOL development branches
   of Yocto.
 
 EWAOL release branches
-......................
+======================
 
 * Represented by the blue line on the diagram above.
 * A new release branch in EWAOL is setup for each new Yocto release using the
@@ -77,7 +80,7 @@ EWAOL release branches
   period (~7 months).
 
 EWAOL release tags
-..................
+==================
 
 * EWAOL is tagged using the version format ``v<Major>.<Minor>.<Patch>``.
 * Tags are always applied to commits from the release branch.
