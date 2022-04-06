@@ -33,6 +33,9 @@ local loopback network interface. This enables the orchestration and execution
 of containerized application workloads on the baremetal distribution image,
 operating as a single-node K3s cluster.
 
+See :ref:`manual_build_system_baremetal_architecture` for details on building an
+EWAOL baremetal distribution image.
+
 ***************************
 Virtualization Architecture
 ***************************
@@ -64,43 +67,12 @@ image file in ``*.qcow2`` format. In addition, this package includes a sample
 Xen domain configuration file, which holds Xen-specific Guest VM settings as
 detailed in `xl domain configuration`_. By default one Guest VM (with hostname
 ``ewaol-guest-vm1``) is built and included on the virtualization distribution
-image, but this number can be customized, as described later in this page.
+image.
 
-Configurable build-time variables for the Guest VM are defined
-within the ``meta-ewaol-distro/conf/multiconfig/ewaol-guest-vm.conf`` file and
-the ``meta-ewaol-distro/conf/distro/include/ewaol-guest-vm.inc`` which it
-includes.
+See :ref:`manual_build_system_virtualization_architecture` for details on
+building an EWAOL virtualization distribution image.
 
-The following list shows the available variables for the Control VM and the
-single default Guest VM, together with the default values:
-
-  .. code-block:: yaml
-    :substitutions:
-
-    |virtualization customization yaml|
-
-The variables may be set either within an included kas configuration file
-(see ``meta-ewaol-config/kas/virtualization.yml`` for example usage), the
-environment, or manually via, for example, ``local.conf``. The
-``EWAOL_*_ROOTFS_EXTRA_SPACE`` variables apply their values to the relevant
-``IMAGE_ROOTFS_EXTRA_SPACE`` bitbake variable.
-
-It is possible to deploy multiple EWAOL Guest VM instances on the virtualization
-distribution image, each one based on the same kernel and image recipe. The
-number of Guest VM instances built for and included on the virtualization
-distribution image can be set via the ``EWAOL_GUEST_VM_INSTANCES`` variable.
-
-Guest VM instances can be independently configured via Bitbake variables which
-reference the Guest VM's integer instance index, from 1 to the value of
-``EWAOL_GUEST_VM_INSTANCES``, inclusive. For example, variables with a prefix
-``EWAOL_GUEST_VM1_`` apply to the first Guest VM, variables with a prefix
-``EWAOL_GUEST_VM2_`` apply to the second Guest VM, and so on. All Guest VM
-instances use the same default configuration, apart from the hostname, which is
-generated for each Guest VM by appending the instance index to the
-``EWAOL_GUEST_VM_HOSTNAME`` Bitbake variable. By default, the first Guest VM
-will have a hostname ``ewaol-guest-vm1``, the second will have a hostname
-``ewaol-guest-vm2``, and so on. An example of configuring a second Guest VM
-instance using the kas tool is given in
-``meta-ewaol-config/kas/second-vm-parameters.yml``, although these variables
-will only be used if ``EWAOL_GUEST_VM_INSTANCES`` is set to build two or more
-Guest VMs.
+An EWAOL virtualization distribution image can be customized, including setting
+the number of included Guest VMs. The supported virtualization-specific
+customization parameters and how to set them are detailed at
+:ref:`manual_build_system_virtualization_customization`.
