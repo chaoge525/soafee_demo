@@ -1,0 +1,75 @@
+# Copyright (c) 2022 Arm Limited or its affiliates. All rights reserved.
+#
+# SPDX-License-Identifier: MIT
+
+header:
+  version: 11
+  includes:
+    - meta-cassini-config/kas/include/cassini-release.yml
+
+defaults:
+  repos:
+    refspec: honister
+
+repos:
+
+  # Since in cassini-release.yml we pin meta-arm repo, we exclude its layers in
+  # here and eneable them in arm-machines.yml when included by specific kas
+  # configs (e.g. n1sdp.yml)
+  meta-arm:
+    layers:
+      meta-arm: excluded
+      meta-arm-bsp: excluded
+      meta-arm-toolchain: excluded
+
+  meta-cassini:
+    layers:
+      meta-cassini-distro:
+
+  meta-openembedded:
+    url: https://git.openembedded.org/meta-openembedded
+    path: layers/meta-openembedded
+    layers:
+      meta-oe:
+      meta-filesystems:
+      meta-networking:
+      meta-python:
+
+  meta-virtualization:
+    url: https://git.yoctoproject.org/git/meta-virtualization
+    path: layers/meta-virtualization
+
+  poky:
+    url: https://git.yoctoproject.org/git/poky
+    path: layers/poky
+    layers:
+      meta:
+      meta-poky:
+
+local_conf_header:
+  cassini-base: |
+    CONF_VERSION = "2"
+    PACKAGECONFIG:remove:pn-qemu-system-native = "gtk+ sdl"
+
+  diskmon: |
+    BB_DISKMON_DIRS = "\
+      STOPTASKS,${TMPDIR},1G,100K \
+      STOPTASKS,${DL_DIR},1G,100K \
+      STOPTASKS,${SSTATE_DIR},1G,100K \
+      STOPTASKS,/tmp,100M,100K \
+      ABORT,${TMPDIR},100M,1K \
+      ABORT,${DL_DIR},100M,1K \
+      ABORT,${SSTATE_DIR},100M,1K \
+      ABORT,/tmp,10M,1K"
+
+distro: cassini
+target: unset
+machine: unset
+
+env:
+    SSTATE_MIRRORS: ""
+    SOURCE_MIRROR_URL: ""
+    INHERIT: ""
+    BB_GENERATE_MIRROR_TARBALLS: ""
+    BB_NUMBER_THREADS: "${@os.cpu_count()}"
+    CASSINI_ROOTFS_EXTRA_SPACE: "2000000"

@@ -1,0 +1,50 @@
+---
+#
+# Copyright (c) 2022 Arm Limited or its affiliates. All rights reserved.
+#
+# SPDX-License-Identifier: MIT
+
+# Header section with current configuration version
+header:
+  version: 1
+
+# Presets section, defining common settings that may be used in configs.
+presets:
+  container-presets: &container-presets
+    network_mode: 'bridge'
+    container_image_version: '2.6.1'
+    container_image: 'ghcr.io/siemens/kas/kas'
+    container_engine: 'docker'
+
+  kas-presets: &kas-presets
+    kas_arguments: 'build'
+    engine_arguments: ''
+
+  path-presets: &path-presets
+    out_dir: '{project_root}/ci-build'
+    deploy_artifacts: true
+
+  build-presets: &build-presets
+    <<: [*container-presets, *kas-presets, *path-presets]
+
+# Configs section, where each 'named-config' may be selected
+# to run with a command-line-parameter.
+configs:
+  n1sdp-tests-build:
+    <<: *build-presets
+    kasfile:
+      - "meta-cassini-config/kas/n1sdp.yml:\
+         meta-cassini-config/kas/tests.yml:\
+         meta-cassini-config/kas/ci.yml"
+
+  n1sdp-sdk-build: &n1sdp-sdk
+    <<: *build-presets
+    kasfile:
+      - "meta-cassini-config/kas/n1sdp.yml:\
+         meta-cassini-config/kas/sdk.yml:\
+         meta-cassini-config/kas/ci.yml"
+
+  n1sdp-sdk-shell:
+    <<: *n1sdp-sdk
+    kas_arguments: 'shell --keep-config-unchanged'
+    engine_arguments: ' -it'

@@ -1,0 +1,20 @@
+# Copyright (c) 2022 Arm Limited or its affiliates. All rights reserved.
+#
+# SPDX-License-Identifier: MIT
+
+########################
+# CASSINI Next Release #
+########################
+
+header:
+  version: 11
+
+repos:
+
+  meta-arm:
+
+  meta-openembedded:
+
+  meta-virtualization:
+
+  poky:

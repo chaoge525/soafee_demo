@@ -1,0 +1,19 @@
+# Copyright (c) 2022 Arm Limited or its affiliates. All rights reserved.
+#
+# SPDX-License-Identifier: MIT
+
+header:
+  version: 11
+
+repos:
+  meta-arm:
+    refspec: honister
+
+  meta-openembedded:
+    refspec: honister
+
+  meta-virtualization:
+    refspec: honister
+
+  poky:
+    refspec: honister

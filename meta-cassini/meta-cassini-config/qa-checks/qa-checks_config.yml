@@ -1,0 +1,82 @@
+# Copyright (c) 2022 Arm Limited or its affiliates. All rights reserved.
+#
+# SPDX-License-Identifier: MIT
+
+# Keywords:
+#   - ROOT:
+#       Root directory of the project's git repository (configurable via the
+#       --project_root script argument).
+#   - GITIGNORE_CONTENTS:
+#       This keyword is replaced by the contents of the repository's base
+#       .gitignore file.
+
+# Each QA-check module defines its required variables, which may be set here.
+# If a required variable is not defined for a particular QA-check module, a
+# value from the defaults section will be used.
+
+defaults:
+    paths:
+        - ROOT
+    exclude_patterns:
+        - GITIGNORE_CONTENTS
+        - "*.git"
+
+modules:
+    commit_msg:
+        title_length: 80
+        body_length: 80
+        commits: "-1"
+
+    header:
+        exclude_patterns:
+            - GITIGNORE_CONTENTS
+            - "/meta-cassini/meta-cassini-config/qa-checks/cassini-dictionary"
+            - "meta-ewaol-config/qa-checks/ewaol-dictionary"
+            - "*.git"
+            - "*.gitignore"
+            - "*.md"
+            - "*.rst"
+            - "*.pyc"
+            - "*.png"
+            - "*.cfg"
+            - "*.css"
+            - "*.scc"
+            - "*.patch"
+
+    layer:
+        kas_configs:
+            - "meta-cassini-config/kas/n1sdp.yml:\
+               meta-cassini-config/kas/tests.yml"
+        test_layers:
+            - "meta-cassini-distro"
+            - "meta-cassini-tests"
+
+    python:
+        file_types:
+            - "python script"
+        exclude_patterns:
+            - GITIGNORE_CONTENTS
+            - "*.git"
+            - "/documentation/variables.py"
+        pycodestyle_args: ""
+
+    shell:
+        file_types:
+            - "shell script"
+            - "bats script"
+            - "bash script"
+
+    spell:
+        paths:
+            - "README.md"
+            - "documentation"
+        exclude_patterns:
+            - GITIGNORE_CONTENTS
+            - "*.git"
+            - "*.png"
+            - "/documentation/conf.py"
+            - "/documentation/variables.py"
+            - "/documentation/Makefile"
+            - "/documentation/index.rst"
+            - "/documentation/requirements.txt"
+        dict_path: "meta-cassini/meta-cassini-config/qa-checks/cassini-dictionary"
