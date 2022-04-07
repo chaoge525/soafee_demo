@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-# Copyright (c) 2021, Arm Limited.
+# Copyright (c) 2021-2022, Arm Limited.
 #
 # SPDX-License-Identifier: MIT
 
@@ -158,7 +158,7 @@ class SpellCheck(abstract_check.AbstractCheck):
         # In addition, get the line number(s) for the word
         for word in errors:
 
-            inc_chars = r"][[:alnum:]\+\-_|"
+            inc_chars = r"][[:alnum:]\+\-_|\.\'"
             search = fr"[{inc_chars}]*{word}[{inc_chars}]*"
             cmd = ["grep", "-inoP", search, path]
             process = subprocess.run(cmd,
@@ -175,16 +175,9 @@ class SpellCheck(abstract_check.AbstractCheck):
                 for line_number, full_word in full_words:
 
                     # Remove any trailing special characters
-                    full_word = full_word \
-                        .strip() \
-                        .strip("_") \
-                        .strip("+") \
-                        .strip("-") \
-                        .strip("|") \
-                        .strip("[") \
-                        .strip("]")
+                    full_word = full_word.strip().strip("_+-|][.'").lower()
 
-                    if any([full_word.lower() in ex for ex in exclusions]):
+                    if any([full_word in ex for ex in exclusions]):
                         continue
 
                     # Check if the proper word is an actual spelling mistake /
@@ -236,7 +229,14 @@ class SpellCheck(abstract_check.AbstractCheck):
                                      f"{dict_path}."))
             else:
                 try:
-                    self.spellcheck.word_frequency.load_text_file(dict_path)
+
+                    def simple_split(text):
+                        return text.split()
+
+                    self.spellcheck.word_frequency.load_text_file(
+                        dict_path,
+                        tokenizer=simple_split)
+
                 except UnicodeDecodeError:
                     self.logger.warning(("Could not UTF-8 decode the"
                                          " dictionary file at"
