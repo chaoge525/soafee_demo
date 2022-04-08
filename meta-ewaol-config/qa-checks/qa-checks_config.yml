@@ -79,4 +79,5 @@ modules:
             - "/documentation/variables.py"
             - "/documentation/Makefile"
             - "/documentation/index.rst"
+            - "/documentation/requirements.txt"
         dict_path: "meta-ewaol-config/qa-checks/ewaol-dictionary"
