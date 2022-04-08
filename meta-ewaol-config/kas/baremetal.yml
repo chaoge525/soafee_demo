@@ -9,6 +9,7 @@ header:
 
 local_conf_header:
   baremetal: |
+    TMPDIR = "${TOPDIR}/tmp_baremetal"
     DISTRO_FEATURES:append = " ewaol-baremetal"
 
 target:

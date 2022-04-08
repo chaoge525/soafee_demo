@@ -20,6 +20,7 @@ repos:
 
 local_conf_header:
   virtualization: |
+    TMPDIR = "${TOPDIR}/tmp_virtualization"
     DISTRO_FEATURES:append = " ewaol-virtualization"
   ewaol_guest_vm: |
     BBMULTICONFIG += "${EWAOL_GUEST_VM_MC}"
