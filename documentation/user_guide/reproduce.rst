@@ -148,7 +148,7 @@ To build a baremetal distribution image for the N1SDP hardware target platform:
     kas build meta-ewaol-config/kas/baremetal.yml:meta-ewaol-config/kas/n1sdp.yml
 
   The resulting baremetal distribution image will be produced at:
-  ``build/tmp/deploy/images/n1sdp/ewaol-baremetal-image-n1sdp.*``
+  ``build/tmp_baremetal/deploy/images/n1sdp/ewaol-baremetal-image-n1sdp.*``
 
 To build a baremetal distribution image with the EWAOL SDK for the N1SDP
 hardware target platform:
@@ -158,7 +158,7 @@ hardware target platform:
     kas build meta-ewaol-config/kas/baremetal-sdk.yml:meta-ewaol-config/kas/n1sdp.yml
 
   The resulting baremetal distribution image will be produced at:
-  ``build/tmp/deploy/images/n1sdp/ewaol-baremetal-sdk-image-n1sdp.*``
+  ``build/tmp_baremetal/deploy/images/n1sdp/ewaol-baremetal-sdk-image-n1sdp.*``
 
 EWAOL baremetal distribution images can be modified by adding run-time
 validation tests to the distribution by including the
@@ -177,7 +177,7 @@ platform:
     kas build meta-ewaol-config/kas/virtualization.yml:meta-ewaol-config/kas/n1sdp.yml
 
   The resulting virtualization distribution image will be produced:
-  ``build/tmp/deploy/images/n1sdp/ewaol-virtualization-image-n1sdp.*``
+  ``build/tmp_virtualization/deploy/images/n1sdp/ewaol-virtualization-image-n1sdp.*``
 
 To build a virtualization distribution image with the EWAOL SDK for the N1SDP
 hardware target platform:
@@ -187,7 +187,7 @@ hardware target platform:
     kas build meta-ewaol-config/kas/virtualization-sdk.yml:meta-ewaol-config/kas/n1sdp.yml
 
   The resulting virtualization distribution image will be produced:
-  ``build/tmp/deploy/images/n1sdp/ewaol-virtualization-sdk-image-n1sdp.*``
+  ``build/tmp_virtualization/deploy/images/n1sdp/ewaol-virtualization-sdk-image-n1sdp.*``
 
 As with the EWAOL baremetal guidance above, EWAOL virtualization distribution
 images can also be modified to include run-time validation tests by adding the
@@ -268,10 +268,19 @@ follows:
 
 2. Prepare for the image copy:
 
-  .. code-block:: console
+  A. Baremetal
 
-     sudo umount /dev/sdc*
-     cd build/tmp/deploy/images/n1sdp/
+    .. code-block:: console
+
+      sudo umount /dev/sdc*
+      cd build/tmp_baremetal/deploy/images/n1sdp/
+
+  B. Virtualization
+
+    .. code-block:: console
+
+      sudo umount /dev/sdc*
+      cd build/tmp_virtualization/deploy/images/n1sdp/
 
 .. warning::
   The next step will result in all prior partitions and data on the USB storage
@@ -453,17 +462,29 @@ Build Host. The instructions are as follows:
     config.txt   ee0316a.txt   LICENSES   LOG.TXT   MB   SOFTWARE
 
 7. Wipe the mounted microSD card, then extract the contents of
-   ``build/tmp/deploy/images/n1sdp/n1sdp-board-firmware_primary.tar.gz``
-   onto it:
+   ``n1sdp-board-firmware_primary.tar.gz`` onto it:
 
-  .. code-block:: console
+  A. Baremetal
 
-    sudo rm -rf /tmp/sdcard/*
-    sudo tar --no-same-owner -xf \
-       build/tmp/deploy/images/n1sdp/n1sdp-board-firmware_primary.tar.gz -C \
-       /tmp/sdcard/ && sync
-    sudo umount /tmp/sdcard
-    sudo rmdir /tmp/sdcard
+    .. code-block:: console
+
+      sudo rm -rf /tmp/sdcard/*
+      sudo tar --no-same-owner -xf \
+        build/tmp_baremetal/deploy/images/n1sdp/n1sdp-board-firmware_primary.tar.gz -C \
+        /tmp/sdcard/ && sync
+      sudo umount /tmp/sdcard
+      sudo rmdir /tmp/sdcard
+
+  B. Virtualization
+
+    .. code-block:: console
+
+      sudo rm -rf /tmp/sdcard/*
+      sudo tar --no-same-owner -xf \
+        build/tmp_virtualization/deploy/images/n1sdp/n1sdp-board-firmware_primary.tar.gz -C \
+        /tmp/sdcard/ && sync
+      sudo umount /tmp/sdcard
+      sudo rmdir /tmp/sdcard
 
   .. note::
     If the N1SDP board was manufactured after November 2019 (Serial Number
