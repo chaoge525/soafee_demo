@@ -276,13 +276,50 @@ Run-Time Integration Tests
     associated with each suite are detailed separately, at
     :ref:`validation_run-time_integration_tests`.
 
+.. _manual_build_system_security_hardening:
+
+Security Hardening
+------------------
+
+  * **Corresponding value in** ``DISTRO_FEATURES`` **variable**:
+    ``ewaol-security``.
+  * **Build Modifier Config**: ``meta-ewaol-config/kas/security.yml``.
+
+    This EWAOL distribution image feature:
+
+      * Configures user accounts, packages, remote access controls and other
+        image features to provide extra security hardening for the EWAOL
+        distribution image.
+
+    To include extra security hardening on an EWAOL distribution image, provide
+    the Build Modifier Config to the kas build command, which appends the
+    ``ewaol-security`` feature to ``DISTRO_FEATURES`` for the build. For
+    example, to include it on the EWAOL distribution image for the N1SDP
+    hardware target platform, run the following commands depending on the
+    target architecture:
+
+    * Baremetal architecture:
+
+      .. code-block:: console
+
+        kas build meta-ewaol-config/kas/baremetal.yml:meta-ewaol-config/kas/security.yml:meta-ewaol-config/kas/n1sdp.yml
+
+    * Virtualization architecture:
+
+      .. code-block:: console
+
+        kas build meta-ewaol-config/kas/virtualization.yml:meta-ewaol-config/kas/security.yml:meta-ewaol-config/kas/n1sdp.yml
+
+    The security hardening is described in more detail at
+    :ref:`Security Hardening<manual/hardening:Security Hardening>`.
+
 .. _manual_build_system_sdk:
 
 Software Development Kit (SDK)
 ------------------------------
 
   * **Corresponding value in** ``DISTRO_FEATURES`` **variable**:
-    ``ewaol-test``.
+    ``ewaol-sdk``.
   * **Build Modifier Config**: ``meta-ewaol-config/kas/baremetal-sdk.yml`` and
     ``meta-ewaol-config/kas/virtualization-sdk.yml``, for the baremetal
     architecture and virtualization architecture, respectively.
