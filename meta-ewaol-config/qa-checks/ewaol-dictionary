@@ -48,6 +48,7 @@ domu
 efi
 e.g
 ewaol
+ewaol_admin_group.in
 ewaol-baremetal
 ewaol-baremetal-image
 ewaol-baremetal-sdk-image
@@ -97,6 +98,7 @@ html
 http
 https
 hypervisor
+image_features
 image_rootfs_extra_space
 implementations
 independently-configurable
@@ -112,6 +114,7 @@ k3s_test_clean_env
 k3s_test_guest_vm_name
 k3s_test_log_dir
 kb
+kernel_features
 kubectl
 kubernetes
 kube-system
@@ -131,6 +134,7 @@ meta-ewaol-config
 meta-ewaol-distro
 meta-ewaol-tests
 meta-virtualization
+meta-openembedded
 minicom
 modifiable
 multiconfig
@@ -176,7 +180,9 @@ sc2288
 schedulable
 sdk
 sdl
+seccomp
 second-vm-parameters.yml
+security.scc
 shellcheck
 shellcheck-py
 soafee
@@ -184,11 +190,14 @@ soafee.io
 sourceforge
 spdx
 spdx-license-identifier
+ssh
 sstate-cache
 stderr
 stdout
 sub-sections
 sub_test_name
+sudo
+sudoers
 sueiro
 systemctl
 systemd
@@ -200,6 +209,7 @@ top_level_test_name
 ubuntu
 ubuntu-based
 use-cases
+user_accounts
 user_guide
 v
 v1.20.11+k3s2
@@ -218,6 +228,7 @@ vms
 webserver
 wget
 wic
+with-libcap[-ng
 workloads
 x86_64-linux
 xen

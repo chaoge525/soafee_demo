@@ -518,8 +518,9 @@ distribution image via:
 
     REBOOT
 
-The resulting EWAOL distribution image can be logged into as ``root``, without
-password.
+The resulting EWAOL distribution image can be logged into as ``ewaol`` user.
+See :ref:`User Accounts<manual/user_accounts:User Accounts>` for more
+information about user accounts and groups.
 
 On an EWAOL virtualization distribution image, this will access the Control VM.
 To log into a Guest VM, the ``xl`` tool can be used. For example, on a default
@@ -527,7 +528,7 @@ EWAOL virtualization distribution image:
 
   .. code-block:: console
 
-    xl console ewaol-guest-vm1
+    sudo xl console ewaol-guest-vm1
 
 This command will provide a console on the Guest VM, which can be exited by
 entering ``Ctrl+]``. See the |xl documentation|_ for further details.
@@ -610,7 +611,7 @@ This example deploys the |Nginx|_ webserver as an application workload, using
 the ``nginx`` container image available from Docker's default image repository.
 The deployment can be achieved either via Docker or via K3s, as follows:
 
-  1. Boot the image and log-in as ``root``, with no password.
+  1. Boot the image and log-in as ``ewaol`` user.
 
      On a virtualization distribution image, this will produce a console on the
      Control VM.
@@ -623,14 +624,14 @@ The deployment can be achieved either via Docker or via K3s, as follows:
 
             .. code-block:: console
 
-              docker run -p 8082:80 -d nginx
+              sudo docker run -p 8082:80 -d nginx
 
        2.2. Confirm the Docker container is running by checking its ``STATUS``
        in the container list:
 
             .. code-block:: console
 
-              docker container list
+              sudo docker container list
 
      * **Deploy via K3s**
 
@@ -638,7 +639,7 @@ The deployment can be achieved either via Docker or via K3s, as follows:
 
             .. code-block:: console
 
-              cat << EOT > nginx-example.yaml
+              cat << EOT > nginx-example.yml && sudo kubectl apply -f nginx-example.yml
               apiVersion: v1
               kind: Pod
               metadata:
@@ -650,14 +651,14 @@ The deployment can be achieved either via Docker or via K3s, as follows:
                   ports:
                   - containerPort: 80
                     hostPort: 8082
-              EOT && kubectl apply -f nginx-example.yml
+              EOT
 
        2.2. Confirm that the K3s Pod hosting the container is running by
        checking that its ``STATUS`` is ``running``, using:
 
             .. code-block:: console
 
-              kubectl get pods -o wide
+              sudo kubectl get pods -o wide
 
   3. After the Nginx application workload has been successfully deployed, it can
      be interacted with on the network, via for example:
@@ -689,8 +690,7 @@ Guest VM via K3s orchestration. This example process is as follows:
 
   1. **Log-in to the Control VM**
 
-    Boot the virtualization distribution image and log-in as ``root``, with no
-    password.
+    Boot the virtualization distribution image and log-in as ``ewaol`` user.
 
   2. **Connect Guest VM K3s Agent**
 
@@ -704,13 +704,13 @@ Guest VM via K3s orchestration. This example process is as follows:
 
          .. code-block:: console
 
-           cat /var/lib/rancher/k3s/server/node-token
+           sudo cat /var/lib/rancher/k3s/server/node-token
 
-    2.3. Then, log in to the Guest VM as ``root`` with no password, via:
+    2.3. Then, log in to the Guest VM as ``ewaol`` user, via:
 
          .. code-block:: console
 
-           xl console ewaol-guest-vm1
+           sudo xl console ewaol-guest-vm1
 
     2.4. Denoting the IP address and node-token as ``[IP]`` and ``[TOKEN]``
     respectively, change the ``ExecStart=`` line in
@@ -724,7 +724,7 @@ Guest VM via K3s orchestration. This example process is as follows:
 
          .. code-block:: console
 
-           systemctl daemon-reload && systemctl start k3s-agent
+           sudo systemctl daemon-reload && sudo systemctl start k3s-agent
 
     2.6. Disconnect from the Guest VM and return to the Control VM via:
 
@@ -737,7 +737,7 @@ Guest VM via K3s orchestration. This example process is as follows:
 
          .. code-block:: console
 
-           kubectl get nodes
+           sudo kubectl get nodes
 
          The hostname of the Guest VM should appear as a node in the list, with a
          ``STATUS`` of ``ready``.
@@ -749,7 +749,7 @@ Guest VM via K3s orchestration. This example process is as follows:
 
          .. code-block:: console
 
-           cat << EOT > nginx-example.yaml
+           cat << EOT > nginx-example.yml && sudo kubectl apply -f nginx-example.yml
            apiVersion: v1
            kind: Pod
            metadata:
@@ -763,7 +763,7 @@ Guest VM via K3s orchestration. This example process is as follows:
                  hostPort: 8082
              nodeSelector:
                ewaol.node-type: guest-vm
-           EOT && kubectl apply -f nginx-example.yml
+           EOT
 
      3.2. Confirm that the K3s Pod hosting the container is running on the Guest
      VM by checking its ``STATUS`` is ``running``, and its ``NODE`` is the Guest
@@ -771,7 +771,7 @@ Guest VM via K3s orchestration. This example process is as follows:
 
           .. code-block:: console
 
-            kubectl get pods -o wide
+            sudo kubectl get pods -o wide
 
   4. **Access the Application Workload**
 

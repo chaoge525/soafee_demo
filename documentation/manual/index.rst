@@ -13,7 +13,9 @@ Developer Manual
    :caption: Contents
 
    architectures
+   user_accounts
    build_system
    yocto_layers
+   hardening
    sdk
    validation

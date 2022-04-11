@@ -77,6 +77,10 @@ default, and must instead be included explicitly. See
 :ref:`manual_build_system_run_time_integration_tests` within the Build System
 documentation for details on how to include the tests.
 
+The tests are executed as a ``test`` user, which has the ``sudo`` privileges.
+More information about user accounts is here:
+:ref:`User Accounts<manual/user_accounts:User Accounts>`.
+
 Running the Tests
 =================
 
