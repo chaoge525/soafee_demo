@@ -116,7 +116,8 @@ check_running_test_suite() {
 # Arg1: Path to the run-file
 begin_test_suite() {
     # shellcheck disable=SC2009
-    ps -o pid,pgid | grep -w "$$" | xargs | cut -d" " -f 2 > "${1}"
+    pgid="$(ps -o pid,pgid | grep -w "$$" | xargs | cut -d" " -f 2)"
+    sudo sh -c "echo ${pgid} > ${1}"
 }
 
 # Remove the run-file if it contains the appropriate PGID
@@ -132,7 +133,7 @@ finish_test_suite() {
         log "DEBUG" "When finishing test-suite execution, the PGID ${pgid}"
             " did not match the PGID within the run-file ${file_pgid}"
     else
-        rm "${1}"
+        sudo rm "${1}"
     fi
 
 }
@@ -154,6 +155,9 @@ test_suite_setup() {
     # Clear and rebuild the logs
     rm -f "${TEST_LOG_FILE}" "${TEST_STDERR_FILE}"
     mkdir -p "${TEST_LOG_DIR}"
+
+    # Create volatile runtime directory.
+    sudo mkdir -p "${TEST_RUNTIME_DIR}"
 
     _run check_running_test_suite "${TEST_RUN_FILE}"
     if [ "${status}" -ne 0 ]; then
