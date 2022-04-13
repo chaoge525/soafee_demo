@@ -33,12 +33,17 @@ web browser.
 
 ## Repository License
 
-The software is provided under an MIT license.
+The repository's standard licence is the MIT license, under which most of the
+repository's content is provided. Exceptions to this standard license relate to
+files that represent modifications to externally licensed works (for example,
+patch files). These files may therefore be included in the repository under
+alternative licenses in order to be compliant with the licensing requirements of
+the associated external works.
 
 License details may be found in the [local license file](license.rst), or as
 part of the project documentation.
 
-Contributions to the project should follow the same license.
+Contributions to the project should follow the same licensing arrangement.
 
 ## Contact
 
