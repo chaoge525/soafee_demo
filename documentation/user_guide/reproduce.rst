@@ -51,6 +51,7 @@ briefly introduced, classified into three ordered categories:
       architecture.
     * ``virtualization-sdk.yml`` to build an SDK image for the virtualization
       architecture.
+    * ``security.yml`` to build a security-hardened EWAOL distribution image.
 
   * **Target Platform Configs**: Set the target platform
 
@@ -161,10 +162,14 @@ hardware target platform:
   ``build/tmp_baremetal/deploy/images/n1sdp/ewaol-baremetal-sdk-image-n1sdp.*``
 
 EWAOL baremetal distribution images can be modified by adding run-time
-validation tests to the distribution by including the
-``meta-ewaol-config/kas/tests.yml`` kas configuration file as a Build Modifier.
+validation tests and security hardening to the distribution. This can be done
+by including ``meta-ewaol-config/kas/tests.yml`` and
+``meta-ewaol-config/kas/security.yml`` kas configuration file as a Build
+Modifier.
 See :ref:`manual_build_system_run_time_integration_tests` for more details on
-including run-time validation tests.
+including run-time validation tests and
+:ref:`manual_build_system_security_hardening` for more details on security
+hardening.
 
 Virtualization Distribution
 ===========================
@@ -190,10 +195,13 @@ hardware target platform:
   ``build/tmp_virtualization/deploy/images/n1sdp/ewaol-virtualization-sdk-image-n1sdp.*``
 
 As with the EWAOL baremetal guidance above, EWAOL virtualization distribution
-images can also be modified to include run-time validation tests by adding the
-``meta-ewaol-config/kas/tests.yml`` kas configuration file. See
-:ref:`manual_build_system_run_time_integration_tests` for more details on
-including run-time validation tests.
+images can also be modified to include run-time validation tests and security
+hardening by adding ``meta-ewaol-config/kas/tests.yml`` and
+``meta-ewaol-config/kas/security.yml`` kas configuration files respectively.
+See :ref:`manual_build_system_run_time_integration_tests` for more details on
+including run-time validation tests and
+:ref:`manual_build_system_security_hardening` for more details on security
+hardening.
 
 Customization
 -------------
