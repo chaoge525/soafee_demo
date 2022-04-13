@@ -31,10 +31,9 @@ modules:
         exclude_patterns:
             - GITIGNORE_CONTENTS
             - "/meta-ewaol-config/qa-checks/ewaol-dictionary"
+            - "/license.rst"
             - "*.git"
             - "*.gitignore"
-            - "*.md"
-            - "*.rst"
             - "*.pyc"
             - "*.png"
             - "*.cfg"

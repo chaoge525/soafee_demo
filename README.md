@@ -1,3 +1,9 @@
+<!--
+# Copyright (c) 2021-2022, Arm Limited.
+#
+# SPDX-License-Identifier: MIT
+-->
+
 # Edge Workload Abstraction and Orchestration Layer (EWAOL)
 
 EWAOL is the reference implementation for SOAFEE (Scalable Open Architecture
