@@ -236,7 +236,7 @@ follows:
 
   * ``meta-ewaol``:
 
-    * ``meta-ewaol-distro``:
+    * ``meta-ewaol-distro``
 
       Yocto distribution layer providing top-level and general policies for the
       EWAOL distribution images.
@@ -282,10 +282,10 @@ Repository License
 The repository's standard licence is the MIT license (more details in
 :ref:`license_link:License`), under which most of the repository's content is
 provided. Exceptions to this standard license relate to files that represent
-modifications to externally licensed works (such as, for example, patch files).
-These files may therefore be included in the repository under alternative
-licenses in order to be compliant with the licensing requirements of the
-associated external works.
+modifications to externally licensed works (for example, patch files). These
+files may therefore be included in the repository under alternative licenses in
+order to be compliant with the licensing requirements of the associated external
+works.
 
 Contributions to the project should follow the same licensing arrangement.
 
