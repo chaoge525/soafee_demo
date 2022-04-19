@@ -6,12 +6,12 @@
 # DISTRO_FEATURES
 
 # Force password change after user first log in for:
-# 'EWAOL_USER_ACCOUNT', 'EWAOL_ADMIN_ACCOUNT' & root
+# 'EWAOL_USER_ACCOUNT' & 'EWAOL_ADMIN_ACCOUNT',
+# and disable 'root' account login
 EXTRA_USERS_PARAMS:append = "\
-    usermod -p '' root; \
+    usermod -s /sbin/nologin root; \
     passwd-expire ${EWAOL_ADMIN_ACCOUNT}; \
     passwd-expire ${EWAOL_USER_ACCOUNT}; \
-    passwd-expire root; \
     ${@bb.utils.contains('DISTRO_FEATURES', 'ewaol-test', \
                         'passwd-expire ${EWAOL_TEST_ACCOUNT};', '', d)} \
     "

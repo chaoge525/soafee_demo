@@ -21,7 +21,7 @@ distribution to:
     ``meta-virtualization`` and ``poky`` layers are configured with:
     ``--with-libcap[-ng]``.
   * Remove ``debug-tweaks`` from ``IMAGE_FEATURES``.
-  * Disable SSH login using the ``root`` account.
+  * Disable all login access to the ``root`` account.
 
 Security hardening is not enabled by default, see
 :ref:`manual_build_system_security_hardening` for details on including the
