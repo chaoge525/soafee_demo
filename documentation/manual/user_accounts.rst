@@ -7,9 +7,10 @@
 User Accounts
 #############
 
-EWAOL distribution images contain following user accounts:
+EWAOL distribution images contain the following user accounts:
 
- * ``root`` with administrative privileges enabled by default.
+ * ``root`` with administrative privileges enabled by default. The login is
+   disabled if ``ewaol-security`` is included in ``DISTRO_FEATURES``.
  * ``ewaol`` with administrative privileges enabled with ``sudo``.
  * ``user``  without administrative privileges.
  * ``test`` with administrative privileges enabled with ``sudo``. This account
