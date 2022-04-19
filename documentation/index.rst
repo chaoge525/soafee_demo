@@ -17,7 +17,7 @@ Contents
    introduction
    user_guide/index
    manual/index
-   codeline-management
+   codeline_management
    contributing
    license_link
    changelog
