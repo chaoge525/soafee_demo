@@ -68,6 +68,7 @@ orchestration, as described in `EWAOL System Architectures`_ later in this
 introduction.
 
 .. image:: images/high_level_overview.png
+   :align: center
 
 .. _introduction_use_cases_overview:
 
@@ -160,7 +161,7 @@ The documentation is structured as follows:
     Provides more advanced developer-focused details of the EWAOL distribution,
     its implementation, and dependencies.
 
-  * :ref:`Codeline Management <codeline-management:Codeline Management>`
+  * :ref:`Codeline Management <codeline_management:Codeline Management>`
 
     Describes the branch and release process of EWAOL, and how this process
     aligns with that of the Yocto Project.
@@ -260,7 +261,8 @@ follows:
 
       Directory which contains the documentation sources, defined in
       ReStructuredText (``.rst``) format for rendering via ``sphinx``. See the
-      :ref:`Introduction <introduction:Introduction>` page for guidance on
+      :ref:`Documentation Build Validation
+      <contributing_documentation_build_validation>` page for guidance on
       building the documentation.
 
     * ``tools``

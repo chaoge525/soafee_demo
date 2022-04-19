@@ -135,6 +135,8 @@ With an appropriate Gitlab account, a contribution can be submitted to
    forked repository. Please include all information required by the project's
    Merge Request template.
 
+.. _contributing_documentation_build_validation:
+
 ******************************
 Documentation Build Validation
 ******************************

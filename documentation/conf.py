@@ -77,7 +77,8 @@ html_show_sphinx = False
 html_theme_options = {
     'collapse_navigation': False,
     'navigation_depth': 5,
-    'prev_next_buttons_location': "both"
+    'prev_next_buttons_location': "both",
+    'style_external_links': True
 }
 
 # -- Extension configuration -------------------------------------------------

@@ -17,6 +17,7 @@ Yocto Release Process Overview
 ******************************
 
 .. image:: images/ewaol_rel_yocto_overview.png
+   :align: center
 
 The diagram above gives an overview of the Yocto branch and release process:
 
@@ -38,6 +39,7 @@ EWAOL Branch and Release Process
 ********************************
 
 .. image:: images/ewaol_rel_dev_branches.png
+   :align: center
 
 EWAOL's branch and release process is based on the Yocto release process. The
 following sub-sections describe in more details the branch strategy for EWAOL's

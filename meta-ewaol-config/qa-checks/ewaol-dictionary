@@ -27,7 +27,7 @@ cgit.cgi
 changelog
 cmd
 codeline
-codeline-management
+codeline_management
 configs
 configurable
 configures
