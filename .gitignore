@@ -1,6 +1,8 @@
 /*artifacts*
 /*build*
+/meta-cassini/*build*
 /documentation/_build
 /layers
+/meta-cassini/layers
 /public
 __pycache__

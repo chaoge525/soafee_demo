@@ -5,7 +5,7 @@
 header:
   version: 11
   includes:
-    - meta-cassini-config/kas/include/cassini-release.yml
+    - meta-cassini/meta-cassini-config/kas/include/cassini-release.yml
 
 defaults:
   repos:
@@ -73,3 +73,5 @@ env:
     BB_GENERATE_MIRROR_TARBALLS: ""
     BB_NUMBER_THREADS: "${@os.cpu_count()}"
     CASSINI_ROOTFS_EXTRA_SPACE: "2000000"
+    CASSINI_GENERIC_ARM64_FILESYSTEM: "1"
+    CASSINI_GENERIC_ARM64_DEFAULTTUNE: "armv8a-crc"

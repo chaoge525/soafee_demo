@@ -5,8 +5,8 @@
 header:
   version: 11
   includes:
-    - meta-cassini-config/kas/baremetal.yml
-    - meta-cassini-config/kas/include/sdk.yml
+    - meta-cassini/meta-cassini-config/kas/cassini.yml
+    - meta-cassini/meta-cassini-config/kas/include/sdk.yml
 
 target:
-  - cassini-baremetal-sdk-image
+  - cassini-image-sdk

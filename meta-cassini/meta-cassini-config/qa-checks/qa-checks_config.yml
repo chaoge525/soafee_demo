@@ -32,10 +32,9 @@ modules:
             - GITIGNORE_CONTENTS
             - "/meta-cassini/meta-cassini-config/qa-checks/cassini-dictionary"
             - "meta-ewaol-config/qa-checks/ewaol-dictionary"
+            - "/license.rst"
             - "*.git"
             - "*.gitignore"
-            - "*.md"
-            - "*.rst"
             - "*.pyc"
             - "*.png"
             - "*.cfg"

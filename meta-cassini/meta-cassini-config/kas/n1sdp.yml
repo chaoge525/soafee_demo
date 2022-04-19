@@ -5,7 +5,7 @@
 header:
   version: 11
   includes:
-    - meta-cassini-config/kas/include/arm-machines.yml
+    - meta-cassini/meta-cassini-config/kas/include/arm-machines.yml
 
 local_conf_header:
   n1sdp: |
