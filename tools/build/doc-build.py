@@ -23,9 +23,11 @@ def generate_venv_script_args_from_opts(opts):
         processed options to a string array, and replace --venv with --no_venv.
         """
 
+    venv_arguments = {'venv', 'keep_venv', 'requirements'}
+
     args = []
     for opt, value in vars(opts).items():
-        if opt == "venv" or opt == "keep_venv":
+        if opt in venv_arguments:
             # remove the venv arguments
             continue
         elif opt == "no_venv":
@@ -63,29 +65,42 @@ def parse_options(logger):
         formatter_class=argparse.RawDescriptionHelpFormatter,
         description=f"{desc}\n{usage}\n{example}\n\n")
 
-    parser.add_argument("--venv",
-                        required=False,
-                        help=("Provide a Python virtual environment directory"
-                              " in which to run the build (default: auto"
-                              " generate a new virtual environment directory)."
-                              " Cannot be passed with --no_venv."))
+    venv_only_group = parser.add_argument_group("venv only arguments")
 
-    parser.add_argument("--no_venv",
-                        action="store_true",
-                        help=("Run the build directly in the calling context"
-                              " without using a Python virtual environment."
-                              " Cannot be passed with --venv."))
+    venv_only_group.add_argument(
+        "--venv",
+        required=False,
+        help=("Provide a Python virtual environment directory"
+              " in which to run the build (default: auto"
+              " generate a new virtual environment directory)."
+              " Cannot be passed with --no_venv."))
 
-    parser.add_argument("--keep_venv",
-                        action="store_true",
-                        default=False,
-                        help=("Do not delete the temporary Python virtual"
-                              " environment directory after the build has"
-                              " been completed (Default: False)"))
+    parser.add_argument(
+        "--no_venv",
+        action="store_true",
+        help=("Run the build directly in the calling context"
+              " without using a Python virtual environment."
+              " Cannot be passed with --venv."))
+
+    venv_only_group.add_argument(
+        "--keep_venv",
+        action="store_true",
+        default=False,
+        help=("Do not delete the temporary Python virtual"
+              " environment directory after the build has"
+              " been completed (Default: False)"))
 
     parser.add_argument("--log", default="info",
                         choices=["debug", "info", "warning"],
                         help="Set log level.")
+
+    venv_only_group.add_argument(
+        "--requirements",
+        default=None,
+        help=("Override the location of the file containing"
+              " the pip requirements for the Python virtual"
+              " environment. (Default"
+              " documentation/requirements.txt)"))
 
     opts = parser.parse_args()
 
@@ -99,6 +114,27 @@ def parse_options(logger):
     return opts
 
 
+def parse_requirements_file(requirements_file):
+
+    if not os.path.exists(requirements_file):
+        logger.error(f"Dependency file {requirements_file} does not exist.")
+        exit(1)
+    if not os.path.isfile(requirements_file):
+        logger.error(f"Dependency file {requirements_file} is not a file.")
+        exit(1)
+
+    requirements = []
+
+    with open(requirements_file, 'r') as f:
+        for line in f:
+            # Remove comments and leading/trailing whitespace
+            requirement = line.partition("#")[0].strip()
+            if requirement != "":
+                requirements.append(requirement)
+
+    return requirements
+
+
 def main(logger, opts):
     exit_code = 0
 
@@ -107,14 +143,8 @@ def main(logger, opts):
     project_root = os.path.normpath(
                          f"{os.path.dirname(script_path)}"
                          "/../../")
+    documentation_dir = "documentation"
 
-    pip_dependencies = dict()
-    pip_dependencies["documentation"] = [
-      "sphinx==4.0.2",
-      "sphinx-rtd-theme==0.5.2",
-      "docutils==0.16",
-      "sphinx-copybutton==0.4.0",
-      "sphinx-substitution-extensions==2022.2.16"]
     sphinx_path = None
 
     if opts.no_venv:
@@ -135,8 +165,8 @@ def main(logger, opts):
             exit(1)
 
         # cleaning and building the documentation
-        cmd = f"{sphinx_path} -a -E -W --keep-going -b html " \
-              "documentation public"
+        cmd = (f"{sphinx_path} -a -E -W --keep-going -b html "
+               f"{documentation_dir} public")
 
         process = subprocess.Popen(cmd,
                                    stdout=subprocess.PIPE,
@@ -153,12 +183,21 @@ def main(logger, opts):
             logger.info(f"Files generated in {project_root}/public")
 
     else:
+        if opts.requirements is not None:
+            requirement_file = os.path.abspath(opts.requirements)
+        else:
+            requirement_file = (f"{project_root}/{documentation_dir}/"
+                                "requirements.txt")
+
+        pip_requirements = {
+            "documentation": parse_requirements_file(requirement_file)}
+
         args = generate_venv_script_args_from_opts(opts)
         arg_str = " ".join(args)
 
         virt_env = modules_virtual_env.ModulesVirtualEnv(script_path,
                                                          arg_str,
-                                                         pip_dependencies,
+                                                         pip_requirements,
                                                          logger)
 
         venv_dirname = None
