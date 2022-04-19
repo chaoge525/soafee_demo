@@ -14,15 +14,3 @@ SRC_URI:append:ewaol = " file://ewaol-kmeta;type=kmeta;name=ewaol-kmeta;destsuff
 KERNEL_FEATURES:append:ewaol:aarch64 = "${@bb.utils.contains('DISTRO_FEATURES', \
         'ewaol-sdk', \
         ' features/ewaol/gator.scc', '', d)}"
-
-#
-# yocto kernel cache
-#
-
-# Add patch for kernel meta only for kernel recipes
-EWAOL_KERNEL_META_PATCHES:append:ewaol = "${@bb.utils.contains('PROVIDES', \
-        'virtual/kernel', \
-        ' file://0001-security-move-x86_64-configs-to-separate-file.patch;patchdir=kernel-meta', \
-        '', d)}"
-
-SRC_URI:append:ewaol = "${EWAOL_KERNEL_META_PATCHES}"
