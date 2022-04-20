@@ -289,14 +289,15 @@ works.
 
 Contributions to the project should follow the same licensing arrangement.
 
-*****************************
-Contributions and Bug Reports
-*****************************
+*********************************
+Contributions and Issue Reporting
+*********************************
 
 Guidance for contributing to the EWAOL project can be found at
 :ref:`Contributing <contributing:Contributing>`.
 
-For bug reports, please submit an Issue via GitLab, following the project's
+To report issues with the repository such as potential bugs, security concerns,
+or feature requests, please submit an Issue via GitLab, following the project's
 Issue template.
 
 ********************

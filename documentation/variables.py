@@ -42,7 +42,7 @@ external_links = {
 }
 
 layer_definitions = {
-  "meta-ewaol contributions branch": "honister-dev",
+  "meta-ewaol contributions branch": "``honister-dev``",
   "meta-ewaol repository": "https://gitlab.arm.com/ewaol/meta-ewaol",
   "meta-ewaol repository host": "https://gitlab.arm.com",
   "meta-ewaol remote": "https://git.gitlab.arm.com/ewaol/meta-ewaol.git",
