@@ -6,6 +6,7 @@
 
 import argparse
 import os
+import pathlib
 import logging
 import subprocess
 import shutil
@@ -43,6 +44,16 @@ def generate_venv_script_args_from_opts(opts):
     return args
 
 
+def resolve_path(path_string, opts):
+    """ Resolve a path passed from the commandline into a pathlib.Path object.
+        path_string is formatted with opts to allow references to other command
+        line options such as '{project_root}/documentation' converting to
+        '/path/to/root/documentation'. """
+
+    path_string_formatted = path_string.format_map(vars(opts))
+    return pathlib.Path(path_string_formatted).resolve()
+
+
 def parse_options(logger):
 
     loglevels = {
@@ -51,8 +62,9 @@ def parse_options(logger):
         "debug": logging.DEBUG
     }
 
-    desc = ("doc-build.py is used to build the ewaol documentation in the "
-            "meta-ewaol/public directory. By default, a virtual Python "
+    desc = ("doc-build.py is used to build documentation using the sphinx "
+            "tool. By default, documentation is built from ./documentation "
+            "into the ./public directory. By default, a virtual Python "
             "environment is created to install the Python packages necessary "
             "to build the documentation.")
     usage = ("Optional arguments can be found by passing --help to the script")
@@ -94,13 +106,31 @@ def parse_options(logger):
                         choices=["debug", "info", "warning"],
                         help="Set log level.")
 
+    requirements_default = "{documentation_dir}/requirements.txt"
     venv_only_group.add_argument(
         "--requirements",
-        default=None,
+        default=requirements_default,
         help=("Override the location of the file containing"
               " the pip requirements for the Python virtual"
-              " environment. (Default"
-              " documentation/requirements.txt)"))
+              f" environment (Default: {requirements_default})."))
+
+    project_root_default = pathlib.Path.cwd()
+    parser.add_argument("--project_root",
+                        default=project_root_default,
+                        help=("Set the root project directory (Default:"
+                              f" {project_root_default})."))
+
+    documentation_dir_default = "{project_root}/documentation"
+    parser.add_argument("--documentation_dir",
+                        default=documentation_dir_default,
+                        help=("Set the documentation directory (Default:"
+                              f" {documentation_dir_default})."))
+
+    output_dir_default = "{project_root}/public"
+    parser.add_argument("--output_dir",
+                        default=output_dir_default,
+                        help=("Set the output directory (Default:"
+                              f" {output_dir_default})."))
 
     opts = parser.parse_args()
 
@@ -110,6 +140,11 @@ def parse_options(logger):
         exit(1)
 
     logger.setLevel(loglevels.get(opts.log.lower()))
+
+    opts.project_root = pathlib.Path(opts.project_root).resolve()
+    opts.documentation_dir = resolve_path(opts.documentation_dir, opts)
+    opts.output_dir = resolve_path(opts.output_dir, opts)
+    opts.requirements = resolve_path(opts.requirements, opts)
 
     return opts
 
@@ -138,20 +173,14 @@ def parse_requirements_file(requirements_file):
 def main(logger, opts):
     exit_code = 0
 
-    old_path = os.getcwd()
     script_path = os.path.abspath(__file__)
-    project_root = os.path.normpath(
-                         f"{os.path.dirname(script_path)}"
-                         "/../../")
-    documentation_dir = "documentation"
-
     sphinx_path = None
 
     if opts.no_venv:
         try:
-            os.chdir(project_root)
+            os.chdir(opts.project_root)
         except OSError as e:
-            logger.error("Project root not found")
+            logger.error(f"Project root {opts.project_root} not found")
             exit(1)
 
         if "VENV_BIN" in os.environ:
@@ -166,7 +195,7 @@ def main(logger, opts):
 
         # cleaning and building the documentation
         cmd = (f"{sphinx_path} -a -E -W --keep-going -b html "
-               f"{documentation_dir} public")
+               f"{opts.documentation_dir} {opts.output_dir}")
 
         process = subprocess.Popen(cmd,
                                    stdout=subprocess.PIPE,
@@ -178,19 +207,14 @@ def main(logger, opts):
         exit_code = process.returncode
 
         if exit_code != 0:
-            logger.error(f"Error while building the documentation : {cmdout}")
+            logger.error("Error while building the documentation using"
+                         f" '{cmd}' : {cmdout}")
         else:
-            logger.info(f"Files generated in {project_root}/public")
+            logger.info(f"Files generated in {opts.output_dir}")
 
     else:
-        if opts.requirements is not None:
-            requirement_file = os.path.abspath(opts.requirements)
-        else:
-            requirement_file = (f"{project_root}/{documentation_dir}/"
-                                "requirements.txt")
-
         pip_requirements = {
-            "documentation": parse_requirements_file(requirement_file)}
+            "documentation": parse_requirements_file(opts.requirements)}
 
         args = generate_venv_script_args_from_opts(opts)
         arg_str = " ".join(args)
