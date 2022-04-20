@@ -7,23 +7,29 @@
 # as the rst_prolog (see the Sphinx Configuration documentation at
 # https://www.sphinx-doc.org/en/master/usage/configuration.html for more info).
 
+yocto_doc_version = "dev/"
+yocto_linux_version = "5.15"
+xen_version = "4.15"
+kas_version = "3.0.2"
+
 external_links = {
-  "Yocto Project Documentation": "https://docs.yoctoproject.org",
+  "Yocto Project Documentation": f"https://docs.yoctoproject.org/{yocto_doc_version}",
   "Yocto Release Process": "https://docs.yoctoproject.org/ref-manual/release-process.html",
-  "kernel module compilation": "https://docs.yoctoproject.org/kernel-dev/common.html#building-out-of-tree-modules-on-the-target",
-  "profiling and tracing": "https://docs.yoctoproject.org/profile-manual/index.html",
-  "runtime package management": "https://docs.yoctoproject.org/dev-manual/common-tasks.html#using-runtime-package-management",
-  "Multiple Configuration Build": "https://docs.yoctoproject.org/dev-manual/common-tasks.html#building-images-for-multiple-targets-using-multiple-configurations",
-  "list of essential packages": "https://docs.yoctoproject.org/singleindex.html#required-packages-for-the-build-host",
-  "Yocto Check Layer Script": "https://docs.yoctoproject.org/singleindex.html#yocto-check-layer-script",
-  "Yocto Docker config": "https://git.yoctoproject.org/yocto-kernel-cache/tree/features/docker/docker.cfg?h=yocto-5.15",
-  "Yocto K3s config": "http://git.yoctoproject.org/cgit/cgit.cgi/meta-virtualization/tree/recipes-kernel/linux/linux-yocto/kubernetes.cfg?h=yocto-5.15",
-  "Yocto Xen config": "http://git.yoctoproject.org/cgit/cgit.cgi/yocto-kernel-cache/tree/features/xen/xen.cfg?h=yocto-5.15",
-  "kas build tool": "https://kas.readthedocs.io/en/3.0.2/userguide.html",
-  "kas Dependencies & installation": "https://kas.readthedocs.io/en/3.0.2/userguide.html#dependencies-installation",
+  "kernel module compilation": f"https://docs.yoctoproject.org/{yocto_doc_version}kernel-dev/common.html#building-out-of-tree-modules-on-the-target",
+  "profiling and tracing": f"https://docs.yoctoproject.org/{yocto_doc_version}profile-manual/index.html",
+  "runtime package management": f"https://docs.yoctoproject.org/{yocto_doc_version}dev-manual/common-tasks.html#using-runtime-package-management",
+  "Multiple Configuration Build": f"https://docs.yoctoproject.org/{yocto_doc_version}dev-manual/common-tasks.html#building-images-for-multiple-targets-using-multiple-configurations",
+  "list of essential packages": f"https://docs.yoctoproject.org/{yocto_doc_version}singleindex.html#required-packages-for-the-build-host",
+  "Yocto Check Layer Script": f"https://docs.yoctoproject.org/{yocto_doc_version}singleindex.html#yocto-check-layer-script",
+  "DEFAULTTUNE": f"https://docs.yoctoproject.org/{yocto_doc_version}ref-manual/variables.html#term-DEFAULTTUNE",
+  "Yocto Docker config": f"https://git.yoctoproject.org/yocto-kernel-cache/tree/features/docker/docker.cfg?h=yocto-{yocto_linux_version}",
+  "Yocto K3s config": f"http://git.yoctoproject.org/cgit/cgit.cgi/meta-virtualization/tree/recipes-kernel/linux/linux-yocto/kubernetes.cfg?h=yocto-{yocto_linux_version}",
+  "Yocto Xen config": f"http://git.yoctoproject.org/cgit/cgit.cgi/yocto-kernel-cache/tree/features/xen/xen.cfg?h=yocto-{yocto_linux_version}",
+  "kas build tool": f"https://kas.readthedocs.io/en/{kas_version}/userguide.html",
+  "kas Dependencies & installation": f"https://kas.readthedocs.io/en/{kas_version}/userguide.html#dependencies-installation",
   "meta-arm-bsp": "https://git.yoctoproject.org/cgit/cgit.cgi/meta-arm/tree/meta-arm-bsp/documentation",
-  "xl domain configuration": "https://xenbits.xen.org/docs/4.15-testing/man/xl.cfg.5.html",
-  "xl documentation": "https://xenbits.xen.org/docs/4.15-testing/man/xl.1.html",
+  "xl domain configuration": f"https://xenbits.xen.org/docs/{xen_version}-testing/man/xl.cfg.5.html",
+  "xl documentation": f"https://xenbits.xen.org/docs/{xen_version}-testing/man/xl.1.html",
 
   "N1SDP Technical Reference Manual": "https://developer.arm.com/documentation/101489/0000",
   "PEP 8": "https://peps.python.org/pep-0008/",
@@ -38,7 +44,6 @@ external_links = {
   "Python Datetime Format Codes": "https://docs.python.org/3/library/datetime.html#strftime-and-strptime-format-codes",
   "Nginx": "https://www.nginx.com/",
   "Potential firmware damage notice": "https://community.arm.com/developer/tools-software/oss-platforms/w/docs/604/notice-potential-damage-to-n1sdp-boards-if-using-latest-firmware-release",
-  "DEFAULTTUNE": "https://docs.yoctoproject.org/3.4.3/ref-manual/variables.html#term-DEFAULTTUNE",
 }
 
 layer_definitions = {
@@ -59,7 +64,7 @@ layer_definitions = {
 }
 
 other_definitions = {
-  "kas version": "3.0.2",
+  "kas version": f"{kas_version}",
   "virtualization customization yaml":
       """
       EWAOL_GUEST_VM_INSTANCES: "1"                      # Number of Guest VM instances
