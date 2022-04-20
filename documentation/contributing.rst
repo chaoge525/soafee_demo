@@ -297,7 +297,8 @@ EWAOL provides a Python script to locally build and render the documentation,
 available at ``tools/build/doc-build.py``. This script will install all
 necessary Python packages into a temporary Python Virtual Environment, and
 generate an HTML version of the documentation under ``public/``. The script
-requires Python 3.8 or greater, and can be executed via:
+requires Python 3.8 or greater, and to build the EWAOL documentation should be
+called from the ``meta-ewaol`` directory via:
 
 .. code-block:: console
 
