@@ -54,4 +54,5 @@ Contributions to the project should follow the same licensing arrangement.
 ## Contact
 
 Please see the project documentation for the list of maintainers, as well as the
-process for contributions, bug reports, feedback and support.
+process for submitting contributions, raising issues, or receiving feedback and
+support.
