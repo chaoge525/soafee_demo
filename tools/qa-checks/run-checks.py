@@ -43,6 +43,7 @@ import venv
 
 import abstract_check
 import commit_msg_check
+import doc_build_check
 import header_check
 import layer_check
 import python_check
@@ -55,6 +56,7 @@ sys.path.append(path)
 import modules_virtual_env  # noqa: E402
 
 AVAILABLE_CHECKS = [commit_msg_check.CommitMsgCheck,
+                    doc_build_check.DocBuildCheck,
                     header_check.HeaderCheck,
                     layer_check.LayerCheck,
                     python_check.PythonCheck,
