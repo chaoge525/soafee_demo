@@ -86,7 +86,7 @@ teardown_file() {
     _run test_suite_teardown clean_test_environment
 }
 
-@test 'K3s orchestration of containerized web service' {
+@test 'K3s orchestration of containerized web service (%K3S_TEST_DESC%)' {
 
     subtest="Deploy workload"
     _run apply_workload "k3s-test-deployment.yaml"

@@ -36,12 +36,23 @@ require runtime-integration-tests.inc
 
 RDEPENDS:${PN}:ewaol-virtualization += "expect"
 
+K3S_TEST_DESC = "local deployment of K3s pods"
+K3S_TEST_DESC:ewaol-virtualization = "remote deployment of K3s pods on the Guest VM, from the Control VM"
+
+do_install:append() {
+    # Append a more informative architecture-specific description of the K3s
+    # test scenario
+    sed -i "s#%K3S_TEST_DESC%#${K3S_TEST_DESC}#g" \
+        "${D}/${TEST_DIR}/k3s-integration-tests.bats"
+}
+
 do_install:append:ewaol-virtualization() {
 
     # Load virtualization-specific overrides to the K3s functions
     sed -i "s#load k3s-funcs.sh#load k3s-funcs.sh\nload k3s-virtualization-funcs.sh#g" \
         "${D}/${TEST_DIR}/k3s-integration-tests.bats"
 
+    # Set the hostname of the Guest VM that should run the workload
     sed -i "s#%GUESTNAME%#${EWAOL_GUEST_VM_HOSTNAME}#g" \
         "${D}/${TEST_DIR}/k3s-virtualization-funcs.sh"
 
