@@ -77,8 +77,8 @@ default, and must instead be included explicitly. See
 :ref:`manual_build_system_run_time_integration_tests` within the Build System
 documentation for details on how to include the tests.
 
-The tests are executed as a ``test`` user, which has the ``sudo`` privileges.
-More information about user accounts is here:
+The tests are executed using the ``test`` user account, which has ``sudo``
+privileges. More information about user accounts can be found at
 :ref:`User Accounts<manual/user_accounts:User Accounts>`.
 
 Running the Tests
@@ -93,8 +93,9 @@ logging in:
    ptest-runner [test-suite-id]
 
 If the test suite identifier (``[test-suite-id]``) is omitted, all integration
-tests will be run.  For example, running ``ptest-runner`` on the Control VM of a
-virtualization distribution image produces output such as the following:
+tests will be run.  For example, running ``ptest-runner`` on the Control VM of
+an EWAOL virtualization distribution image produces output such as the
+following:
 
 .. code-block:: console
 
@@ -114,8 +115,8 @@ virtualization distribution image produces output such as the following:
   ``ptest-runner -l`` is a useful command to list the available test suites on
   the image.
 
-Alternatively, the tests may be run as a standalone BATS script, via a runner
-script included in the test suite directory:
+Alternatively, a single standalone test suite may be run via a runner script
+included in the test suite directory:
 
 .. code-block:: console
 
@@ -135,12 +136,19 @@ these results are described in `Test Logging`_.
 Test Logging
 ============
 
-Test suite execution will be logged to a ``[test-suite-id].log`` file within
-the log directory of the test suite, which by default is ``logs/`` within the
-test suite installation directory. The log is replaced on each new execution of
-a test suite.
+Test suite execution outputs results and debugging information into a log file.
+As the tests are executed using the ``test`` user account, this log file will be
+owned by the ``test`` user and located in the ``test`` user's home directory by
+default, at:
 
-This log file will record the results of each top-level integration test, as
+    ``/home/test/runtime-integration-tests-logs/[test-suite-id].log``
+
+Therefore, reading this file as another user will require ``sudo`` access. The
+location of the log file for each test suite is customizable, as described in
+the detailed documentation for each test suite below. The log file is replaced
+on each new execution of a test suite.
+
+The log file will record the results of each top-level integration test, as
 well as a result for each individual sub-test up until a failing sub-test is
 encountered.
 
@@ -188,7 +196,7 @@ on it, thereby reporting any test failures of the Guest VM as part of the
 Control VM's test suite execution.
 
 The test suite is built and installed in the image according to the following
-bitbake recipe within
+bitbake recipe:
 ``meta-ewaol-tests/recipes-tests/runtime-integration-tests/container-engine-integration-tests.bb``.
 
 Currently the test suite contains three top-level integration tests, which run
@@ -227,7 +235,7 @@ container engine tests:
 |  ``CE_TEST_IMAGE``: defines the container image
 |    Default: ``docker.io/library/alpine``
 |  ``CE_TEST_LOG_DIR``: defines the location of the log file
-|    Default: ``/usr/share/container-engine-integration-tests/logs``
+|    Default: ``/home/test/runtime-integration-tests-logs/``
 |    Directory will be created if it does not exist
 |    See `Test Logging`_
 |  ``CE_TEST_CLEAN_ENV``: enable test environment cleanup
@@ -284,13 +292,13 @@ validates the deployment and high-availability of a test workload based on the
 |Nginx|_ webserver. The test suite is dependent on the target EWAOL
 architecture, as follows.
 
-For baremetal distribution images, the K3s integration tests consider a
+For EWAOL baremetal distribution images, the K3s integration tests consider a
 single-node cluster, which runs a K3s server together with its built-in worker
 agent. The containerized test workload is therefore deployed to this node for
 scheduling and execution.
 
-For virtualization distribution images, the K3s integration tests consider a
-cluster comprised of two nodes: the Control VM running a K3s server, and the
+For EWAOL virtualization distribution images, the K3s integration tests consider
+a cluster comprised of two nodes: the Control VM running a K3s server, and the
 Guest VM running a K3s agent which is connected to the server. The containerized
 test workload is configured to only be schedulable on the Guest VM, meaning that
 the server on the Control VM orchestrates a test application which is deployed
@@ -338,7 +346,7 @@ each prefixed by ``K3S_`` to identify the variable as associated to the
 K3s orchestration tests:
 
 |  ``K3S_TEST_LOG_DIR``: defines the location of the log file
-|  Default: ``/usr/share/k3s-integration-tests/logs``
+|  Default: ``/home/test/runtime-integration-tests-logs/``
 |  Directory will be created if it does not exist
 |  See `Test Logging`_
 |  ``K3S_TEST_CLEAN_ENV``: enable test environment cleanup
@@ -423,7 +431,7 @@ each prefixed by ``VIRT_`` to identify the variable as associated to the
 virtualization integration tests:
 
 |  ``VIRT_TEST_LOG_DIR``: defines the location of the log file
-|  Default: ``/usr/share/virtualization-integration-tests/logs``
+|  Default: ``/home/test/runtime-integration-tests-logs/``
 |  Directory will be created if it does not exist
 |  See `Test Logging`_
 |  ``VIRT_TEST_GUEST_VM_NAME``: defines the name of the Guest VM to use for the
