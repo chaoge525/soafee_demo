@@ -34,6 +34,7 @@ to be reviewed and accepted by the EWAOL project:
   about the requirements:
 
     * `Commit Message`_
+    * `Documentation`_
     * `License and Copyright Header`_
     * `Python Code Quality`_
     * `Shell Script Code Quality`_
@@ -139,6 +140,18 @@ requirements:
 
 Please refer to the Git commit log of the repository for further examples of the
 expected format.
+
+Documentation
+=============
+
+The documentation should build successfully without errors or warnings.
+Validation of the documentation build is performed as part of the QA-check
+suite by default.
+
+The rendered documentation should be checked to ensure the formatting is as
+expected, and no new formatting problems have been introduced. See
+`Documentation Build Validation`_ tool for details on building the rendered
+documentation.
 
 License and Copyright Header
 =============================
@@ -304,13 +317,8 @@ called from the ``meta-ewaol`` directory via:
 
     ./tools/build/doc-build.py
 
-The documentation build should be used to validate each commit for contributions
-that update the project's documentation, to ensure that the contribution
-introduces no documentation build failures or warnings.
-
-The rendered documentation itself should be checked for formatting problems
-introduced by the contribution. To do this, simply open and explore the
-generated documentation by accessing ``public/index.html`` in a web browser.
+The generated documentation can be accessed by opening ``public/index.html`` in
+a web browser.
 
 For further information about the parameters, call the help function of the
 script:
