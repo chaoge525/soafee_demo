@@ -57,17 +57,20 @@ image depend on its target architecture, as follows:
 
 * Baremetal architecture:
     * `Container Engine Tests`_
-    * `K3s Orchestration Tests`_ (testing single K3s node)
+    * `K3s Orchestration Tests`_ (local deployment of K3s pods)
+    * `User Accounts Tests`_
 * Virtualization architecture:
     * Control VM:
 
       * `Container Engine Tests`_
-      * `K3s Orchestration Tests`_ (testing K3s server on the Control VM,
-        connected with a K3s agent on the Guest VM)
+      * `K3s Orchestration Tests`_ (remote deployment of K3s pods on a Guest
+        VM, from the Control VM)
+      * `User Accounts Tests`_
       * `Xen Virtualization Tests`_
     * Guest VM:
 
       * `Container Engine Tests`_
+      * `User Accounts Tests`_
 
 The tests are built as a |Yocto Package Test|_ (ptest), and implemented using
 the |Bash Automated Test System|_ (BATS).
@@ -77,7 +80,7 @@ default, and must instead be included explicitly. See
 :ref:`manual_build_system_run_time_integration_tests` within the Build System
 documentation for details on how to include the tests.
 
-The tests are executed using the ``test`` user account, which has ``sudo``
+The test suites are executed using the ``test`` user account, which has ``sudo``
 privileges. More information about user accounts can be found at
 :ref:`User Accounts<manual/user_accounts:User Accounts>`.
 
@@ -105,6 +108,8 @@ following:
    PASS:container-engine-integration-tests
    [...]
    PASS:k3s-integration-tests
+   [...]
+   PASS:user-accounts-integration-tests
    [...]
    PASS:virtualization-integration-tests
    [...]
@@ -137,9 +142,9 @@ Test Logging
 ============
 
 Test suite execution outputs results and debugging information into a log file.
-As the tests are executed using the ``test`` user account, this log file will be
-owned by the ``test`` user and located in the ``test`` user's home directory by
-default, at:
+As the test suites are executed using the ``test`` user account, this log file
+will be owned by the ``test`` user and located in the ``test`` user's home
+directory by default, at:
 
     ``/home/test/runtime-integration-tests-logs/[test-suite-id].log``
 
@@ -346,18 +351,19 @@ each prefixed by ``K3S_`` to identify the variable as associated to the
 K3s orchestration tests:
 
 |  ``K3S_TEST_LOG_DIR``: defines the location of the log file
-|  Default: ``/home/test/runtime-integration-tests-logs/``
-|  Directory will be created if it does not exist
-|  See `Test Logging`_
+|    Default: ``/home/test/runtime-integration-tests-logs/``
+|    Directory will be created if it does not exist
+|    See `Test Logging`_
 |  ``K3S_TEST_CLEAN_ENV``: enable test environment cleanup
-|  Default: ``1`` (enabled)
-|  See `K3s Environment Clean-Up`_
+|    Default: ``1`` (enabled)
+|    See `K3s Environment Clean-Up`_
 |  ``K3S_TEST_GUEST_VM_NAME``: defines the name of the Guest VM to use for the
    tests
-|  Only available when running the tests on a virtualization distribution image
-|  Default: ``${EWAOL_GUEST_VM_HOSTNAME}1``
-|  With standard configuration, the default Guest VM will therefore be
-   ``ewaol-guest-vm1``
+|    Only available when running the tests on a virtualization distribution
+     image
+|    Default: ``${EWAOL_GUEST_VM_HOSTNAME}1``
+|    With standard configuration, the default Guest VM will therefore be
+     ``ewaol-guest-vm1``
 
 K3s Environment Clean-Up
 ^^^^^^^^^^^^^^^^^^^^^^^^
@@ -387,6 +393,117 @@ performed:
 
 If enabled then the environment clean operations will always be run, regardless
 of test-suite success or failure.
+
+.. _manual_validation_user_accounts_tests:
+
+User Accounts Tests
+-------------------
+
+The User Accounts test suite is identified as:
+
+    ``user-accounts-integration-tests``
+
+for execution via ``ptest-runner`` or as a standalone BATS suite, as described
+in `Running the Tests`_.
+
+The test suite is built and installed in the image according to the following
+bitbake recipe within
+``meta-ewaol-tests/recipes-tests/runtime-integration-tests/user-accounts-integration-tests.bb``.
+
+The test suite validates that the user accounts described in
+:ref:`User Accounts<manual/user_accounts:User Accounts>` are correctly
+configured on the EWAOL distribution image. Therefore, the validation performed
+by the test suite is dependent on the target architecture, and on whether or not
+it has been configured with
+:ref:`EWAOL Security Hardening<manual/hardening:Security Hardening>`, as
+follows.
+
+For a baremetal image, the test suite validates that the expected user accounts
+are configured and appropriate access permissions are in place. For a
+virtualization image, the test suite is available on both the Control VM and the
+Guest VM(s), and includes the same validation as the baremetal test suite on the
+respective VM's local user accounts. However, as part of running the test suite
+on the Control VM, an extra test will be performed which logs into the Guest VM
+and runs the user accounts test suite on it, thereby reporting any test failures
+of the Guest VM as part of the Control VM's test suite execution.
+
+As the configuration of user accounts is modified for EWAOL distribution images
+that are built with EWAOL security hardening, additional security-related
+validation is included in the test suite for these images, both on EWAOL
+baremetal and virtualization distribution images. These additional tests
+validate that the appropriate password requirements and root-user access
+restrictions are correctly imposed.
+
+The test suite therefore contains three top-level integration tests, two of
+which are conditionally executed, as follows:
+
+| 1. ``user accounts management tests`` is composed of three sub-tests:
+|    1.1. Check home directory permissions are correct for the default
+          non-privileged EWAOL user account, via the filesystem ``stat`` utility
+|    1.2. Check the default privileged EWAOL user account has ``sudo`` command
+          access
+|    1.3. Check the default non-privileged EWAOL user account does not have
+          ``sudo`` command access
+| 2. ``user accounts management additional security tests`` is only included for
+     images configured with EWAOL security hardening, and is composed of three
+     sub-tests:
+|    2.1. Log-in to a local console using the non-privileged EWAOL user account
+|        - As part of the log-in procedure, validate the user is prompted to
+           set an account password
+|    2.2. Check that log-in to a local console using the root account fails
+|    2.3. Check that SSH log-in to localhost using the root account fails
+| 3. ``run user accounts integration tests on the Guest VM from the Control VM``
+     is only included for EWAOL virtualization distribution images, and is only
+     executed on the Control VM. On the Guest VM this test is skipped. The test
+     is composed of two sub-tests:
+|    3.1. Check that Xendomains is initialized and the Guest VM is running via
+          ``systemctl status`` and ``xendomains status``
+|    3.2. Run the user accounts integration tests on the Guest VM
+|        - Uses an Expect script to log-in and execute the
+           ``ptest-runner user-accounts-integration-tests`` command
+|        - This command will therefore run only the first and second
+           (if EWAOL security hardening is configured) top-level integration
+           tests of the user accounts integration test suite on the Guest VM
+
+The tests can be customized via environment variables passed to the execution,
+each prefixed by ``UA_`` to identify the variable as associated to the user
+accounts tests:
+
+|  ``UA_TEST_LOG_DIR``: defines the location of the log file
+|    Default: ``/home/test/runtime-integration-tests-logs/``
+|    Directory will be created if it does not exist
+|    See `Test Logging`_
+|  ``UA_TEST_CLEAN_ENV``: enable test environment cleanup
+|    Default: ``1`` (enabled)
+|    See `User Accounts Environment Clean-Up`_
+|  ``UA_TEST_GUEST_VM_NAME``: defines the Xen domain name and Hostname of the
+   Guest VM
+|    Only available when running the tests on an EWAOL virtualization
+     distribution image
+|    Represents the target Guest VM to test when executing the suite on the
+     Control VM
+|    Default: ``${EWAOL_GUEST_VM_HOSTNAME}1``
+|    With standard configuration, the default Guest VM will therefore be
+     ``ewaol-guest-vm1``
+
+User Accounts Environment Clean-Up
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+As the user accounts integration tests only modify the system for images built
+with EWAOL security hardening, clean-up operations are only performed when
+running the test suite on these images.
+
+In addition, the clean up operations will only occur if ``UA_TEST_CLEAN_ENV`` is
+set to ``1`` (as is default).
+
+The environment clean-up operations for images built with EWAOL security
+hardening are:
+
+    * Reset the password for the ``test`` user account
+    * Reset the password for the non-privileged EWAOL user account
+
+After the environment clean-up, the user accounts will return to their original
+state where the first log-in will prompt the user for a new account password.
 
 Xen Virtualization Tests
 ------------------------
@@ -431,14 +548,14 @@ each prefixed by ``VIRT_`` to identify the variable as associated to the
 virtualization integration tests:
 
 |  ``VIRT_TEST_LOG_DIR``: defines the location of the log file
-|  Default: ``/home/test/runtime-integration-tests-logs/``
-|  Directory will be created if it does not exist
-|  See `Test Logging`_
+|    Default: ``/home/test/runtime-integration-tests-logs/``
+|    Directory will be created if it does not exist
+|    See `Test Logging`_
 |  ``VIRT_TEST_GUEST_VM_NAME``: defines the name of the Guest VM to use for the
    tests
-|  Default: ``${EWAOL_GUEST_VM_HOSTNAME}1``
-|  With standard configuration, the default Guest VM will therefore be
-   ``ewaol-guest-vm1``
+|    Default: ``${EWAOL_GUEST_VM_HOSTNAME}1``
+|    With standard configuration, the default Guest VM will therefore be
+     ``ewaol-guest-vm1``
 
 Prior to execution, the Xen Virtualization test suite expects the
 ``xendomains.service`` Systemd service to be running or in the process of

@@ -242,3 +242,8 @@ yaml
 yocto
 yocto_layers
 yocto's
+localhost
+ua_test_clean_env
+ua_test_log_dir
+ua_test_guest_vm_name
+user-accounts-integration-tests.bb
