@@ -49,3 +49,16 @@ check_user_remote_access() {
         -console "ssh" \
         2>"${TEST_STDERR_FILE}"
 }
+
+EWAOL_SECURITY_UMASK="%EWAOL_SECURITY_UMASK%"
+
+check_umask() {
+    umask_val="$(umask 2>"${TEST_STDERR_FILE}")"
+    if [ "${umask_val}" = "${EWAOL_SECURITY_UMASK}" ]; then
+        return 0
+    else
+        echo "Wrong umask setting! current: '${umask_val}'," \
+             "expected: '${EWAOL_SECURITY_UMASK}'."
+        return 1
+    fi
+}

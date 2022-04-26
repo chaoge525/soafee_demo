@@ -27,6 +27,8 @@ DISTRO_FEATURES:append = " seccomp"
 
 KERNEL_FEATURES:append = " features/security/security.scc"
 
+EWAOL_SECURITY_UMASK = "0027"
+
 # Make sure that libcap[-ng] is enabled for all below packages:
 # meta-openembedded/meta-networking
 PACKAGECONFIG:append:pn-freeradius = " libcap"

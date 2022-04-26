@@ -432,7 +432,8 @@ that are built with EWAOL security hardening, additional security-related
 validation is included in the test suite for these images, both on EWAOL
 baremetal and virtualization distribution images. These additional tests
 validate that the appropriate password requirements and root-user access
-restrictions are correctly imposed.
+restrictions are correctly imposed, and that the mask configuration for
+permission control of newly created files and directories is applied correctly.
 
 The test suite therefore contains three top-level integration tests, two of
 which are conditionally executed, as follows:
@@ -445,13 +446,14 @@ which are conditionally executed, as follows:
 |    1.3. Check the default non-privileged EWAOL user account does not have
           ``sudo`` command access
 | 2. ``user accounts management additional security tests`` is only included for
-     images configured with EWAOL security hardening, and is composed of three
+     images configured with EWAOL security hardening, and is composed of four
      sub-tests:
 |    2.1. Log-in to a local console using the non-privileged EWAOL user account
 |        - As part of the log-in procedure, validate the user is prompted to
            set an account password
 |    2.2. Check that log-in to a local console using the root account fails
 |    2.3. Check that SSH log-in to localhost using the root account fails
+|    2.4. Check that the umask value is set correctly
 | 3. ``run user accounts integration tests on the Guest VM from the Control VM``
      is only included for EWAOL virtualization distribution images, and is only
      executed on the Control VM. On the Guest VM this test is skipped. The test

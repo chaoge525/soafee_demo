@@ -53,6 +53,9 @@ do_install:append:ewaol-security() {
         "${D}/${TEST_DIR}/user-accounts-additional-security-tests.bats" \
         >> "${D}/${TEST_DIR}/user-accounts-integration-tests.bats"
 
+    sed -i "s#%EWAOL_SECURITY_UMASK%#${EWAOL_SECURITY_UMASK}#g" \
+        "${D}/${TEST_DIR}/user-accounts-security-funcs.sh"
+
     rm "${D}/${TEST_DIR}/user-accounts-additional-security-tests.bats"
 }
 
