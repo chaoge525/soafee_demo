@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-# Copyright (c) 2021, Arm Limited.
+# Copyright (c) 2021-2022, Arm Limited.
 #
 # SPDX-License-Identifier: MIT
 
@@ -41,6 +41,7 @@ class LayerCheck(abstract_check.AbstractCheck):
     def get_vars():
         list_vars = {}
         plain_vars = {}
+        optional_var_names = []
 
         list_vars["kas_configs"] = (
             "Colon-separated string of kas config YAML files that provides the"
@@ -50,7 +51,7 @@ class LayerCheck(abstract_check.AbstractCheck):
         list_vars["test_layers"] = ("Yocto layers to be tested, given by their"
                                     " directory basenames.")
 
-        return list_vars, plain_vars
+        return list_vars, plain_vars, optional_var_names
 
     def __init__(self, logger, *args, **kwargs):
         self.logger = logger
