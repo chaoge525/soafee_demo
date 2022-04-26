@@ -7,7 +7,7 @@
 # as the rst_prolog (see the Sphinx Configuration documentation at
 # https://www.sphinx-doc.org/en/master/usage/configuration.html for more info).
 
-yocto_doc_version = "dev/"
+yocto_doc_version = "4.0/"
 yocto_linux_version = "5.15"
 xen_version = "4.15"
 kas_version = "3.0.2"
@@ -47,20 +47,20 @@ external_links = {
 }
 
 layer_definitions = {
-  "meta-ewaol contributions branch": "``honister-dev``",
+  "meta-ewaol contributions branch": "``kirkstone-dev``",
   "meta-ewaol repository": "https://gitlab.arm.com/ewaol/meta-ewaol",
   "meta-ewaol repository host": "https://gitlab.arm.com",
   "meta-ewaol remote": "https://git.gitlab.arm.com/ewaol/meta-ewaol.git",
-  "meta-ewaol branch": "main",
-  "poky branch": "master",
-  "meta-openembedded branch": "master",
+  "meta-ewaol branch": "kirkstone-dev",
+  "poky branch": "kirkstone",
+  "meta-openembedded branch": "kirkstone",
   "meta-virtualization branch": "master",
   "meta-arm branch": "master",
   "poky revision": "HEAD",
   "meta-virtualization revision": "HEAD",
   "meta-openembedded revision": "HEAD",
   "meta-arm revision": "HEAD",
-  "layer dependency statement": "The layer revisions are related to the EWAOL ``main`` branch.",
+  "layer dependency statement": "The layer revisions are related to the EWAOL ``kirkstone-dev`` branch.",
 }
 
 other_definitions = {
