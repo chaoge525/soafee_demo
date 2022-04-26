@@ -22,9 +22,15 @@ in ``meta-ewaol-distro/recipes-extended/sudo/files/ewaol_admin_group.in``.
 For virtualization images, above user accounts are created for Control VM and
 Guest VM domains.
 
-All :ref:`validation_run-time_integration_tests` are executed as the ``test``
-user.
-
 If ``ewaol-security`` is included in ``DISTRO_FEATURES``, each user is prompted
 to a set new password on first login. For more information about security see:
 :ref:`Security Hardening<manual/hardening:Security Hardening>`.
+
+All :ref:`validation_run-time_integration_tests` are executed as the ``test``
+user.
+
+An EWAOL distribution image can be configured to include run-time integration
+tests that validate successful configuration of the EWAOL user accounts. Details
+of the user accounts validation tests can be found in the
+:ref:`manual_validation_user_accounts_tests` section of the
+:ref:`Validation<manual/validation:Validation>` documentation.
