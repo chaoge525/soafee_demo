@@ -40,5 +40,14 @@ load user-accounts-security-funcs.sh
         log "PASS" "${subtest}"
     fi
 
+    subtest="Check umask setting for '${TEST_SUDO_USER}' account."
+    _run check_umask
+    if [ "${status}" -ne 0 ]; then
+        log "FAIL" "${subtest}"
+        return 1
+    else
+        log "PASS" "${subtest}"
+    fi
+
     log "PASS"
 }

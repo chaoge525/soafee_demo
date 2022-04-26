@@ -122,6 +122,7 @@ libpcre
 libpcre2
 licensees
 license.rst
+localhost
 loopback
 lts
 m
@@ -242,8 +243,8 @@ yaml
 yocto
 yocto_layers
 yocto's
-localhost
 ua_test_clean_env
 ua_test_log_dir
 ua_test_guest_vm_name
+umask
 user-accounts-integration-tests.bb

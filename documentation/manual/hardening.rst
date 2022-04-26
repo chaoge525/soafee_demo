@@ -22,6 +22,8 @@ distribution to:
     ``--with-libcap[-ng]``.
   * Remove ``debug-tweaks`` from ``IMAGE_FEATURES``.
   * Disable all login access to the ``root`` account.
+  * Sets the umask to ``0027`` (which translates permissions as ``640`` for
+    files and ``750`` for directories).
 
 Security hardening is not enabled by default, see
 :ref:`manual_build_system_security_hardening` for details on including the
