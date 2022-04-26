@@ -39,6 +39,7 @@ class PythonCheck(abstract_check.AbstractCheck):
     def get_vars():
         list_vars = {}
         plain_vars = {}
+        optional_var_names = []
 
         list_vars["paths"] = ("File paths to check, or directories to recurse."
                               " Relative paths will be considered relative to"
@@ -61,7 +62,7 @@ class PythonCheck(abstract_check.AbstractCheck):
                                           " interpretation as arguments for"
                                           " run-checks.py.")
 
-        return list_vars, plain_vars
+        return list_vars, plain_vars, optional_var_names
 
     def __init__(self, logger, *args, **kwargs):
         self.logger = logger

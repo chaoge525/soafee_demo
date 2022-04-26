@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-# Copyright (c) 2021, Arm Limited.
+# Copyright (c) 2021-2022, Arm Limited.
 #
 # SPDX-License-Identifier: MIT
 
@@ -47,6 +47,7 @@ class CommitMsgCheck(abstract_check.AbstractCheck):
     def get_vars():
         list_vars = {}
         plain_vars = {}
+        optional_var_names = []
 
         list_vars["paths"] = "File paths to target Git repositories."
         plain_vars["title_length"] = "Maximum number of characters in title."
@@ -61,7 +62,7 @@ class CommitMsgCheck(abstract_check.AbstractCheck):
                                  " example a commit SHA or a relative commit"
                                  " like HEAD~2.")
 
-        return list_vars, plain_vars
+        return list_vars, plain_vars, optional_var_names
 
     def __init__(self, logger, *args, **kwargs):
         self.logger = logger

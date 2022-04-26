@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-# Copyright (c) 2021, Arm Limited.
+# Copyright (c) 2021-2022, Arm Limited.
 #
 # SPDX-License-Identifier: MIT
 
@@ -39,6 +39,7 @@ class ShellCheck(abstract_check.AbstractCheck):
     def get_vars():
         list_vars = {}
         plain_vars = {}
+        optional_var_names = []
 
         list_vars["paths"] = ("File paths to check, or directories to recurse."
                               " Relative paths will be considered relative to"
@@ -54,7 +55,7 @@ class ShellCheck(abstract_check.AbstractCheck):
                                    " utility) that contain at least one as a"
                                    " substring will be checked.")
 
-        return list_vars, plain_vars
+        return list_vars, plain_vars, optional_var_names
 
     def __init__(self, logger, *args, **kwargs):
         self.logger = logger

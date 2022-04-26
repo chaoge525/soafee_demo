@@ -202,7 +202,7 @@ def parse_options():
     for check in AVAILABLE_CHECKS:
 
         name = check.name
-        list_args, args = check.get_vars()
+        list_args, args, _ = check.get_vars()
 
         for arg, msg in {**list_args, **args}.items():
             prefix = ""
@@ -371,12 +371,17 @@ def load_param_from_config(config_filename, check_name, param, list_param):
     return value
 
 
-def load_check_params(opts, check_name, req_list_vars, req_vars):
-    """ For each required variable, we check if we already have a value from
-        the command line arguments. If we do, we either append it to or replace
-        the default in the configuration YAML file, depending on whether or not
-        it is a list variable. If no value can be found for a required
-        variable, then the check will be skipped, by removing it from the opts.
+def load_check_params(
+        opts,
+        check_name,
+        list_vars,
+        plain_vars,
+        optional_var_names):
+    """ For each variable, we check if we already have a value from the command
+        line arguments. If we do, we either append it to or replace the default
+        in the configuration YAML file, depending on whether or not it is a
+        list variable. If no value can be found and the variable is not
+        optional, then the check will be skipped, by removing it from the opts.
 
         If --no_config was supplied, the YAML file is not read at all, and
         only the user-supplied arguments considered. """
@@ -384,12 +389,12 @@ def load_check_params(opts, check_name, req_list_vars, req_vars):
     params = dict()
     missing_params = list()
 
-    combined_list = req_list_vars + req_vars
+    combined_list = list_vars + plain_vars
 
     for param in combined_list:
         key = f"{check_name}_{param}"
 
-        is_list = param in req_list_vars
+        is_list = param in list_vars
 
         # Get value from config file
         config_value = None
@@ -461,7 +466,16 @@ def load_check_params(opts, check_name, req_list_vars, req_vars):
             params[param] = value
             setattr(opts, key, value)
         else:
-            missing_params.append(param)
+            # Nothing supplied for this parameter
+
+            if param in optional_var_names:
+                # Optional, so pass it through to the check module as None
+                value = None
+                params[param] = value
+                setattr(opts, key, value)
+            else:
+                # Required, set as missing
+                missing_params.append(param)
 
     if missing_params:
         logger.warning((f"Missing parameters for {check_name} check:"
@@ -483,12 +497,13 @@ def build_check_modules(opts):
         name = check_module.name
         if name in opts.checks and name not in opts.skip_checks:
 
-            list_vars, plain_vars = check_module.get_vars()
+            list_vars, plain_vars, optional_var_names = check_module.get_vars()
 
             params = load_check_params(opts,
                                        name,
                                        list(list_vars.keys()),
-                                       list(plain_vars.keys()))
+                                       list(plain_vars.keys()),
+                                       optional_var_names)
 
             if params:
                 # All check modules have a project_root variable
