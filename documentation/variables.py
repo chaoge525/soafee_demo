@@ -9,7 +9,7 @@
 
 yocto_doc_version = "dev/"
 yocto_linux_version = "5.15"
-xen_version = "4.15"
+xen_version = "4.16"
 kas_version = "3.0.2"
 
 external_links = {
