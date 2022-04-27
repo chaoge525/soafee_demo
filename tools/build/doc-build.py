@@ -250,6 +250,9 @@ def main(logger, opts):
 
 
 if __name__ == "__main__":
+    if sys.version_info < (3, 8):
+        raise ValueError("This script requires Python 3.8 or later")
+
     log_format = "%(levelname)-8s:%(filename)-24s:%(message)s"
     logging.basicConfig(format=log_format)
     logger = logging.getLogger(__name__)
