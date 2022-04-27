@@ -14,27 +14,9 @@ LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/MIT;md5=0835ade698e0bcf8506ecda
 inherit features_check
 REQUIRED_DISTRO_FEATURES += "ewaol-virtualization"
 
-TEST_SUITE_NAME = "virtualization-integration-tests"
-TEST_SUITE_PREFIX = "VIRT"
-
 TEST_FILES = "file://virtualization-integration-tests.bats \
               file://virtualization-funcs.sh \
-              file://login-console-funcs.expect \
-              file://run-command.expect \
-              file://integration-tests-common-virtual-funcs.sh \
-              file://integration-tests-common-funcs.sh"
+              "
 
-SRC_URI = "${TEST_FILES} \
-           file://run-test-suite \
-           file://run-ptest"
-
+inherit runtime-integration-tests
 require runtime-integration-tests.inc
-
-RDEPENDS:${PN} += "expect"
-
-do_install:append() {
-
-    sed -i "s#%GUESTNAME%#${EWAOL_GUEST_VM_HOSTNAME}#g" \
-        "${D}/${TEST_DIR}/virtualization-integration-tests.bats"
-
-}

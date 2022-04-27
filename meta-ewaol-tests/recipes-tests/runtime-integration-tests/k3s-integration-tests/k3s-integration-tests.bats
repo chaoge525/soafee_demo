@@ -24,9 +24,9 @@ export TEST_RUN_FILE="${TEST_RUNTIME_DIR}/k3s-integration-tests.pgid"
 
 export TEST_CLEAN_ENV="${K3S_TEST_CLEAN_ENV:=1}"
 
-load integration-tests-common-funcs.sh
-load k3s-funcs.sh
-
+load "${TEST_COMMON_DIR}/integration-tests-common-funcs.sh"
+load "${TEST_DIR}/k3s-funcs.sh"
+${K3S_LOAD_VIRT_FUNCS}
 # Ensure that the state of the orchestration service is reset to its
 # out-of-the-box state, not polluted by a previous test suite execution
 clean_test_environment() {
@@ -86,10 +86,11 @@ teardown_file() {
     _run test_suite_teardown clean_test_environment
 }
 
-@test 'K3s orchestration of containerized web service (%K3S_TEST_DESC%)' {
+# shellcheck disable=SC2016
+@test 'K3s orchestration of containerized web service ${K3S_TEST_DESC}' {
 
     subtest="Deploy workload"
-    _run apply_workload "k3s-test-deployment.yaml"
+    _run apply_workload "${TEST_DIR}/k3s-test-deployment.yaml"
     if [ "${status}" -ne 0 ]; then
         log "FAIL" "${subtest}"
         return 1

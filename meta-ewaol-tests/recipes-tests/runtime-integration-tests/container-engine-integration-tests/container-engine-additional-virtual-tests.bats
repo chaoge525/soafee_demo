@@ -7,8 +7,8 @@
 # Additional tests to be added to the container engine test suite, if running on
 # a virtualization image
 
-load integration-tests-common-virtual-funcs.sh
-load container-engine-virtualization-funcs.sh
+load "${TEST_COMMON_DIR}/integration-tests-common-virtual-funcs.sh"
+load "${TEST_DIR}/container-engine-virtualization-funcs.sh"
 
 @test 'run container engine integration tests on the Guest VM from the Control VM' {
 

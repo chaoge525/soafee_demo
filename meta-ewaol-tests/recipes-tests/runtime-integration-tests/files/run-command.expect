@@ -127,7 +127,7 @@ if {"${logon_func}" == "guest_vm_logon"} {
 
 puts "Setting timeout to '${timeout}' seconds."
 
-source "login-console-funcs.expect"
+source "${TEST_COMMON_DIR}/login-console-funcs.expect"
 
 # Default timeout handler logs that a time out occured, but allows the script
 # to continue. This may be overriden by adding a timeout handler to a particular

@@ -9,7 +9,7 @@
 
 export ROOT_USER="root"
 
-load user-accounts-security-funcs.sh
+load "${TEST_DIR}/user-accounts-security-funcs.sh"
 
 @test 'user accounts management additional security tests' {
 

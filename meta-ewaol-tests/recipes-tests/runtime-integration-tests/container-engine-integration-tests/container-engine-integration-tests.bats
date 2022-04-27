@@ -28,8 +28,8 @@ fi
 
 export TEST_CLEAN_ENV="${CE_TEST_CLEAN_ENV:=1}"
 
-load integration-tests-common-funcs.sh
-load container-engine-funcs.sh
+load "${TEST_COMMON_DIR}/integration-tests-common-funcs.sh"
+load "${TEST_DIR}/container-engine-funcs.sh"
 
 # Ensure that the state of the container environment is ready for the test
 # suite

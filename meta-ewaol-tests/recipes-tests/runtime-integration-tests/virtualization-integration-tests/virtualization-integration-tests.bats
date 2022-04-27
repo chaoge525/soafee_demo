@@ -24,12 +24,12 @@ export TEST_RUN_FILE="${TEST_RUNTIME_DIR}/virtualization-integration-tests.pgid"
 # Set test-suite specific configuration
 
 if [ -z "${VIRT_TEST_GUEST_VM_NAME}" ]; then
-    VIRT_TEST_GUEST_VM_NAME="%GUESTNAME%1"
+    VIRT_TEST_GUEST_VM_NAME="${EWAOL_GUEST_VM_HOSTNAME}1"
 fi
 
-load integration-tests-common-funcs.sh
-load integration-tests-common-virtual-funcs.sh
-load virtualization-funcs.sh
+load "${TEST_COMMON_DIR}/integration-tests-common-funcs.sh"
+load "${TEST_COMMON_DIR}/integration-tests-common-virtual-funcs.sh"
+load "${TEST_DIR}/virtualization-funcs.sh"
 
 # Runs once before the first test
 setup_file() {

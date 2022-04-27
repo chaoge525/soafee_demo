@@ -33,7 +33,7 @@ teardown_file() {
 
 # run ${1} command as ${2} user
 check_user_local_access() {
-    expect run-command.expect \
+    expect "${TEST_COMMON_DIR}/run-command.expect" \
         -user "${1}" \
         -command "echo OK" \
         -console "local" \
@@ -42,7 +42,7 @@ check_user_local_access() {
 
 # run ${1} command as ${2} user at ${3} remote via ssh
 check_user_remote_access() {
-    expect run-command.expect \
+    expect "${TEST_COMMON_DIR}/run-command.expect" \
         -hostname "${2}" \
         -user "${1}" \
         -command "echo OK" \
@@ -50,15 +50,15 @@ check_user_remote_access() {
         2>"${TEST_STDERR_FILE}"
 }
 
-EWAOL_SECURITY_UMASK="%EWAOL_SECURITY_UMASK%"
+EWAOL_UMASK="${EWAOL_SECURITY_UMASK}"
 
 check_umask() {
     umask_val="$(umask 2>"${TEST_STDERR_FILE}")"
-    if [ "${umask_val}" = "${EWAOL_SECURITY_UMASK}" ]; then
+    if [ "${umask_val}" = "${EWAOL_UMASK}" ]; then
         return 0
     else
         echo "Wrong umask setting! current: '${umask_val}'," \
-             "expected: '${EWAOL_SECURITY_UMASK}'."
+             "expected: '${EWAOL_UMASK}'."
         return 1
     fi
 }

@@ -7,8 +7,8 @@
 # Additional tests to be added to the user accounts test suite, if running on
 # a virtualization image
 
-load integration-tests-common-virtual-funcs.sh
-load user-accounts-virtualization-funcs.sh
+load "${TEST_COMMON_DIR}/integration-tests-common-virtual-funcs.sh"
+load "${TEST_DIR}/user-accounts-virtualization-funcs.sh"
 
 @test 'run user accounts integration tests on the Guest VM from the Control VM' {
 

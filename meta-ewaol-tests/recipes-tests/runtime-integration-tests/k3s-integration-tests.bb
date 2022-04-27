@@ -13,48 +13,32 @@ LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/MIT;md5=0835ade698e0bcf8506ecda
 
 OVERRIDES:append = "${EWAOL_OVERRIDES}"
 
-TEST_SUITE_NAME = "k3s-integration-tests"
-TEST_SUITE_PREFIX = "K3S"
-
 TEST_FILES = "file://k3s-integration-tests.bats \
               file://k3s-funcs.sh \
-              file://k3s-test-deployment.yaml \
-              file://integration-tests-common-funcs.sh"
+              file://k3s-test-deployment.yaml"
 
 TEST_FILES:append:ewaol-virtualization = " \
-    file://integration-tests-common-virtual-funcs.sh \
-    file://login-console-funcs.expect \
-    file://run-command.expect \
     file://k3s-virtualization-funcs.sh \
     "
 
-SRC_URI = "${TEST_FILES} \
-           file://run-test-suite \
-           file://run-ptest"
-
+inherit runtime-integration-tests
 require runtime-integration-tests.inc
-
-RDEPENDS:${PN}:ewaol-virtualization += "expect"
 
 K3S_TEST_DESC = "local deployment of K3s pods"
 K3S_TEST_DESC:ewaol-virtualization = "remote deployment of K3s pods on the Guest VM, from the Control VM"
 
-do_install:append() {
-    # Append a more informative architecture-specific description of the K3s
-    # test scenario
-    sed -i "s#%K3S_TEST_DESC%#${K3S_TEST_DESC}#g" \
-        "${D}/${TEST_DIR}/k3s-integration-tests.bats"
+K3S_LOAD_VIRT_FUNCS = ""
+K3S_LOAD_VIRT_FUNCS:ewaol-virtualization = 'load \"${TEST_DIR}/k3s-virtualization-funcs.sh\"${@"\n"}'
+
+export K3S_TEST_DESC
+ENVSUBST_VARS:append = " \$K3S_TEST_DESC \$K3S_LOAD_VIRT_FUNCS"
+
+do_install:prepend() {
+    # export variable here to keep multiline string
+    export K3S_LOAD_VIRT_FUNCS="${K3S_LOAD_VIRT_FUNCS}"
 }
 
 do_install:append:ewaol-virtualization() {
-
-    # Load virtualization-specific overrides to the K3s functions
-    sed -i "s#load k3s-funcs.sh#load k3s-funcs.sh\nload k3s-virtualization-funcs.sh#g" \
-        "${D}/${TEST_DIR}/k3s-integration-tests.bats"
-
-    # Set the hostname of the Guest VM that should run the workload
-    sed -i "s#%GUESTNAME%#${EWAOL_GUEST_VM_HOSTNAME}#g" \
-        "${D}/${TEST_DIR}/k3s-virtualization-funcs.sh"
 
     # Add a condition to the deployment to make it only schedulable on the Guest
     # VM
@@ -62,5 +46,4 @@ do_install:append:ewaol-virtualization() {
       nodeSelector:
         ewaol.node-type: guest-vm
 EOF
-
 }

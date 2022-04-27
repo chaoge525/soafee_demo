@@ -4,12 +4,10 @@
 #
 # SPDX-License-Identifier: MIT
 
-SCRIPT_DIR=$(dirname "$(readlink -f "${0}")")
-
-if sudo -HEnu "TESTUSER" bats "${SCRIPT_DIR}/TESTNAME.bats"; then
-    echo "PASS:TESTNAME"
+if sudo -HEnu "${EWAOL_TEST_ACCOUNT}" bats "${TEST_DIR}/${TEST_SUITE_NAME}.bats"; then
+    echo "PASS:${TEST_SUITE_NAME}"
     exit 0
 else
-    echo "FAIL:TESTNAME"
+    echo "FAIL:${TEST_SUITE_NAME}"
     exit 1
 fi
