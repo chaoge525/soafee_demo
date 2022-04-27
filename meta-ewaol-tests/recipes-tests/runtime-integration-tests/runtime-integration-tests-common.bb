@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: MIT
 
 SUMMARY = "Creates an 'EWAOL_TEST_ACCOUNT' account used for running EWAOL \
-           runtime integration tests"
+           runtime integration tests and installs common include files."
 LICENSE = "MIT"
 LIC_FILES_CHKSUM = "file://${COREBASE}/meta/COPYING.MIT;md5=3da9cfbcb788c80a0384361b4de20420"
 
@@ -16,6 +16,7 @@ EWAOL_ADMIN_GROUP ??= "sudo"
 EWAOL_TEST_GROUPS = "${EWAOL_ADMIN_GROUP}"
 
 inherit allarch useradd
+require runtime-integration-tests.inc
 
 USERADD_PACKAGES = "${PN}"
 USERADD_PARAM:${PN} = "--create-home \
@@ -23,11 +24,33 @@ USERADD_PARAM:${PN} = "--create-home \
                        --groups ${EWAOL_TEST_GROUPS} \
                        --user-group ${EWAOL_TEST_ACCOUNT};"
 
-ALLOW_EMPTY:${PN} = "1"
+OVERRIDES:append = "${EWAOL_OVERRIDES}"
+RDEPENDS:${PN}:append:ewaol-virtualization = " expect"
+RDEPENDS:${PN}:append:ewaol-security = " expect"
+DEPENDS:append = " gettext-native"
 
-do_fetch[noexec] = "1"
-do_unpack[noexec] = "1"
-do_patch[noexec] = "1"
+SRC_URI = "file://integration-tests-common-funcs.sh \
+           file://integration-tests-common-virtual-funcs.sh \
+           file://login-console-funcs.expect \
+           file://run-command.expect"
+
 do_configure[noexec] = "1"
 do_compile[noexec] = "1"
-do_install[noexec] = "1"
+
+do_install() {
+    install -d "${D}/${TEST_COMMON_DIR}"
+
+    install --mode="644" "${WORKDIR}/integration-tests-common-funcs.sh" \
+        "${D}/${TEST_COMMON_DIR}"
+
+    install --mode="644" "${WORKDIR}/integration-tests-common-virtual-funcs.sh" \
+        "${D}/${TEST_COMMON_DIR}"
+
+    install --mode="644" "${WORKDIR}/login-console-funcs.expect" \
+        "${D}/${TEST_COMMON_DIR}"
+
+    envsubst '$TEST_COMMON_DIR' < "${WORKDIR}/run-command.expect" \
+        > "${D}/${TEST_COMMON_DIR}/run-command.expect"
+}
+
+FILES:${PN} += "${TEST_COMMON_DIR}"

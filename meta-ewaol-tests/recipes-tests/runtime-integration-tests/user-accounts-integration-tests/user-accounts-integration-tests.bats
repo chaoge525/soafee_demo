@@ -26,8 +26,8 @@ export NORMAL_USER="user"
 
 export TEST_CLEAN_ENV="${UA_TEST_CLEAN_ENV:=1}"
 
-load integration-tests-common-funcs.sh
-load user-accounts-funcs.sh
+load "${TEST_COMMON_DIR}/integration-tests-common-funcs.sh"
+load "${TEST_DIR}/user-accounts-funcs.sh"
 
 # Runs once before the first test
 setup_file() {

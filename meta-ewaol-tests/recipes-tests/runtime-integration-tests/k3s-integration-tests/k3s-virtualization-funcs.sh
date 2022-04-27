@@ -4,10 +4,10 @@
 #
 # SPDX-License-Identifier: MIT
 
-load integration-tests-common-virtual-funcs.sh
+load "${TEST_COMMON_DIR}/integration-tests-common-virtual-funcs.sh"
 
 if [ -z "${K3S_TEST_GUEST_VM_NAME}" ]; then
-    K3S_TEST_GUEST_VM_NAME="%GUESTNAME%1"
+    K3S_TEST_GUEST_VM_NAME="${EWAOL_GUEST_VM_HOSTNAME}1"
 fi
 
 K3S_AGENT_OVERRIDE_FILENAME="/lib/systemd/system/k3s-agent.service.d/01-test-connect.conf"
@@ -62,14 +62,14 @@ get_target_node_ip() {
 cleanup_k3s_agent_on_guest_vm() {
 
     # Stop the agent
-    expect run-command.expect \
+    expect "${TEST_COMMON_DIR}/run-command.expect" \
         -hostname "${K3S_TEST_GUEST_VM_NAME}" \
         -command "sudo -n systemctl stop k3s-agent" \
         -console "guest_vm" \
         2>"${TEST_STDERR_FILE}"
 
     # Remove the systemd override if it exists
-    expect run-command.expect \
+    expect "${TEST_COMMON_DIR}/run-command.expect" \
         -hostname "${K3S_TEST_GUEST_VM_NAME}" \
         -command "sudo -n rm -f ${K3S_AGENT_OVERRIDE_FILENAME} && \
              sudo -n systemctl daemon-reload" \
@@ -103,7 +103,7 @@ ExecStart=/usr/local/bin/k3s agent --server=https://${ip}:6443 --token=${token} 
 | sudo -n tee ${K3S_AGENT_OVERRIDE_FILENAME} > /dev/null \
 && sudo -n systemctl daemon-reload"
 
-    expect run-command.expect \
+    expect "${TEST_COMMON_DIR}/run-command.expect" \
         -hostname "${K3S_TEST_GUEST_VM_NAME}" \
         -command "${cmd}" \
         -console "guest_vm" \
@@ -113,7 +113,7 @@ ExecStart=/usr/local/bin/k3s agent --server=https://${ip}:6443 --token=${token} 
 
 start_k3s_agent_on_guest_vm() {
 
-    expect run-command.expect \
+    expect "${TEST_COMMON_DIR}/run-command.expect" \
         -hostname "${K3S_TEST_GUEST_VM_NAME}" \
         -command "sudo -n systemctl start k3s-agent" \
         -console "guest_vm" \
@@ -156,7 +156,7 @@ extra_cleanup() {
 extra_setup() {
 
     # Check if the agent is already running
-    _run expect run-command.expect \
+    _run expect "${TEST_COMMON_DIR}/run-command.expect" \
         -hostname "${K3S_TEST_GUEST_VM_NAME}" \
         -command "systemctl is-active k3s-agent" \
         -console "guest_vm" \
