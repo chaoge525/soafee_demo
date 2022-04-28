@@ -4,11 +4,36 @@
 #
 # SPDX-License-Identifier: MIT
 #
-# Additional tests to be added to the container engine test suite, if running on
-# a virtualization image
+# Additional BATS code to be added to the container engine test suite, if
+# running on a virtualization image
+
+if [ -z "${CE_TEST_GUEST_VM_NAME}" ]; then
+    CE_TEST_GUEST_VM_NAME="${EWAOL_GUEST_VM_HOSTNAME}1"
+fi
+
+TEST_GUEST_VM_NAME="${CE_TEST_GUEST_VM_NAME}"
 
 load "${TEST_COMMON_DIR}/integration-tests-common-virtual-funcs.sh"
 load "${TEST_DIR}/container-engine-virtualization-funcs.sh"
+
+# Override the clean_test_environment call for the virtualization case to
+# include an optional extra clean-up in addition to the normal base clean-up
+clean_test_environment() {
+
+    export BATS_TEST_NAME="clean_test_environment"
+
+    _run base_cleanup
+    if [ "${status}" -ne 0 ]; then
+        log "FAIL"
+        exit 1
+    fi
+
+    _run extra_cleanup
+    if [ "${status}" -ne 0 ]; then
+        log "FAIL"
+        exit 1
+    fi
+}
 
 @test 'run container engine integration tests on the Guest VM from the Control VM' {
 
@@ -23,14 +48,13 @@ load "${TEST_DIR}/container-engine-virtualization-funcs.sh"
     else
 
         subtest="Xendomains and Guest VM is initialized"
-        _run xendomains_and_guest_vm_is_initialized "${CE_TEST_GUEST_VM_NAME}"
+        _run xendomains_and_guest_vm_is_initialized "${TEST_GUEST_VM_NAME}"
         if [ "${status}" -ne 0 ]; then
             log "FAIL" "${subtest}"
             return 1
         else
             log "PASS" "${subtest}"
         fi
-        log "PASS"
 
         subtest="Run tests on Guest VM"
         _run run_tests_on_guest_vm
@@ -40,6 +64,7 @@ load "${TEST_DIR}/container-engine-virtualization-funcs.sh"
         else
             log "PASS" "${subtest}"
         fi
+
         log "PASS"
 
     fi

@@ -228,3 +228,14 @@ wait_for_success() {
     fi
 
 }
+
+# By default, the extra_* functions are not implemented
+# Conditionally included files may define implementations by overriding them
+
+extra_cleanup() {
+  return 0
+}
+
+extra_setup() {
+  return 0
+}

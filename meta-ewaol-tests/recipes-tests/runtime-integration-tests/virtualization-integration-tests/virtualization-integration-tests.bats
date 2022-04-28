@@ -27,31 +27,39 @@ if [ -z "${VIRT_TEST_GUEST_VM_NAME}" ]; then
     VIRT_TEST_GUEST_VM_NAME="${EWAOL_GUEST_VM_HOSTNAME}1"
 fi
 
+export TEST_CLEAN_ENV="${VIRT_TEST_CLEAN_ENV:=1}"
+TEST_GUEST_VM_NAME="${VIRT_TEST_GUEST_VM_NAME}"
+
 load "${TEST_COMMON_DIR}/integration-tests-common-funcs.sh"
 load "${TEST_COMMON_DIR}/integration-tests-common-virtual-funcs.sh"
 load "${TEST_DIR}/virtualization-funcs.sh"
 
+# There are no base clean-up activities required
+# Function is defined and called so that it can be conditionally overridden
+clean_test_environment() {
+  :
+}
+
 # Runs once before the first test
 setup_file() {
-    _run test_suite_setup
+    _run test_suite_setup clean_test_environment
 
-    _run xendomains_and_guest_vm_is_initialized "${VIRT_TEST_GUEST_VM_NAME}"
+    _run xendomains_and_guest_vm_is_initialized "${TEST_GUEST_VM_NAME}"
     if [ "${status}" -ne 0 ]; then
         log "FAIL"
         exit 1
     fi
-
 }
 
 # Runs after the final test
 teardown_file() {
-    _run test_suite_teardown
+    _run test_suite_teardown clean_test_environment
 }
 
 @test 'validate Guest VM is running' {
 
     subtest="Guest VM is running"
-    _run guest_vm_is_running "${VIRT_TEST_GUEST_VM_NAME}"
+    _run guest_vm_is_running "${TEST_GUEST_VM_NAME}"
     if [ "${status}" -ne 0 ]; then
         log "FAIL" "${subtest}"
         return 1
@@ -60,7 +68,7 @@ teardown_file() {
     fi
 
     subtest="Log-in to Guest VM and check external network is accessible"
-    _run test_guest_vm_login_and_network_access "${VIRT_TEST_GUEST_VM_NAME}"
+    _run test_guest_vm_login_and_network_access "${TEST_GUEST_VM_NAME}"
     if [ "${status}" -ne 0 ]; then
         log "FAIL" "${subtest}"
         return 1
@@ -74,7 +82,7 @@ teardown_file() {
 @test 'validate Guest VM management' {
 
     subtest="Guest VM is running"
-    _run guest_vm_is_running "${VIRT_TEST_GUEST_VM_NAME}"
+    _run guest_vm_is_running "${TEST_GUEST_VM_NAME}"
     if [ "${status}" -ne 0 ]; then
         log "FAIL" "${subtest}"
         return 1
@@ -92,7 +100,7 @@ teardown_file() {
     fi
 
     subtest="Guest VM is not running after shutdown"
-    _run wait_for_success 300 10 guest_vm_is_not_running "${VIRT_TEST_GUEST_VM_NAME}"
+    _run wait_for_success 300 10 guest_vm_is_not_running "${TEST_GUEST_VM_NAME}"
     if [ "${status}" -ne 0 ]; then
         log "FAIL" "${subtest}"
         return 1
@@ -110,7 +118,7 @@ teardown_file() {
     fi
 
     subtest="Guest VM is running after being restarted"
-    _run wait_for_success 300 10 guest_vm_is_running "${VIRT_TEST_GUEST_VM_NAME}"
+    _run wait_for_success 300 10 guest_vm_is_running "${TEST_GUEST_VM_NAME}"
     if [ "${status}" -ne 0 ]; then
         log "FAIL" "${subtest}"
         return 1

@@ -35,25 +35,7 @@ clean_test_environment() {
     # to the clean-up activities.
     export BATS_TEST_NAME="clean_test_environment"
 
-    _run wait_for_k3s_to_be_running
-    if [ "${status}" -ne 0 ]; then
-        log "FAIL"
-        exit 1
-    fi
-
-    _run remove_k3s_test_service
-    if [ "${status}" -ne 0 ]; then
-        log "FAIL"
-        exit 1
-    fi
-
-    _run remove_k3s_test_deployment
-    if [ "${status}" -ne 0 ]; then
-        log "FAIL"
-        exit 1
-    fi
-
-    _run extra_cleanup
+    _run base_cleanup
     if [ "${status}" -ne 0 ]; then
         log "FAIL"
         exit 1

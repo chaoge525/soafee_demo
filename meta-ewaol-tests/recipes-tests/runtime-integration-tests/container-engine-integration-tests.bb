@@ -17,8 +17,13 @@ TEST_FILES = "file://container-engine-integration-tests.bats \
               file://container-engine-funcs.sh"
 
 TEST_FILES:append:ewaol-virtualization = " \
-    file://container-engine-additional-virtual-tests.bats \
+    file://container-engine-append-virtualization.bats \
     file://container-engine-virtualization-funcs.sh \
+    "
+
+TEST_FILES:append:ewaol-security = " \
+    file://container-engine-append-security.bats \
+    file://container-engine-security-funcs.sh \
     "
 
 inherit runtime-integration-tests

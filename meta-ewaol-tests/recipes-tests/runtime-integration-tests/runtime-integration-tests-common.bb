@@ -30,9 +30,12 @@ RDEPENDS:${PN}:append:ewaol-security = " expect"
 DEPENDS:append = " gettext-native"
 
 SRC_URI = "file://integration-tests-common-funcs.sh \
-           file://integration-tests-common-virtual-funcs.sh \
            file://login-console-funcs.expect \
            file://run-command.expect"
+
+SRC_URI:append:ewaol-virtualization = " \
+    file://integration-tests-common-virtual-funcs.sh \
+    "
 
 do_configure[noexec] = "1"
 do_compile[noexec] = "1"
@@ -43,14 +46,19 @@ do_install() {
     install --mode="644" "${WORKDIR}/integration-tests-common-funcs.sh" \
         "${D}/${TEST_COMMON_DIR}"
 
-    install --mode="644" "${WORKDIR}/integration-tests-common-virtual-funcs.sh" \
-        "${D}/${TEST_COMMON_DIR}"
-
     install --mode="644" "${WORKDIR}/login-console-funcs.expect" \
         "${D}/${TEST_COMMON_DIR}"
 
     envsubst '$TEST_COMMON_DIR' < "${WORKDIR}/run-command.expect" \
         > "${D}/${TEST_COMMON_DIR}/run-command.expect"
+}
+
+do_install:append:ewaol-virtualization() {
+
+    envsubst '$TEST_COMMON_DIR' \
+        < "${WORKDIR}/integration-tests-common-virtual-funcs.sh" \
+        > "${D}/${TEST_COMMON_DIR}/integration-tests-common-virtual-funcs.sh"
+
 }
 
 FILES:${PN} += "${TEST_COMMON_DIR}"

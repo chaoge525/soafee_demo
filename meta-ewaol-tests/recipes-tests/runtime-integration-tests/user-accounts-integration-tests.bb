@@ -18,12 +18,12 @@ TEST_FILES = "file://user-accounts-integration-tests.bats \
               "
 
 TEST_FILES:append:ewaol-virtualization = " \
-    file://user-accounts-additional-virtualization-tests.bats \
+    file://user-accounts-append-virtualization.bats \
     file://user-accounts-virtualization-funcs.sh \
     "
 
 TEST_FILES:append:ewaol-security = " \
-    file://user-accounts-additional-security-tests.bats \
+    file://user-accounts-append-security.bats \
     file://user-accounts-security-funcs.sh \
     "
 

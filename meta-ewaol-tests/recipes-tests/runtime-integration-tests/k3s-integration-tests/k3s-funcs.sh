@@ -203,17 +203,25 @@ remove_k3s_test_deployment() {
 
     return 0
 }
-# The standard k3s integration tests do not require extra activities on test
-# suite start/end, so define empty functions here
 
-extra_cleanup() {
-    return 0
-}
+base_cleanup() {
 
-extra_setup() {
-    return 0
-}
+    _run wait_for_k3s_to_be_running
+    if [ "${status}" -ne 0 ]; then
+        echo "${output}"
+        return "${status}"
+    fi
 
-extra_teardown() {
-    return 0
+    _run remove_k3s_test_service
+    if [ "${status}" -ne 0 ]; then
+        echo "${output}"
+        return "${status}"
+    fi
+
+    _run remove_k3s_test_deployment
+    if [ "${status}" -ne 0 ]; then
+        echo "${output}"
+        return "${status}"
+    fi
+
 }
