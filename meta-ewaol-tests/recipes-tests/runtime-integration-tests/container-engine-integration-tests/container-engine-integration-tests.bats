@@ -39,15 +39,11 @@ clean_test_environment() {
     # to the clean-up activities.
     export BATS_TEST_NAME="clean_test_environment"
 
-    # Remove any dangling containers based on the image
-    _run clean_and_remove_image "${CE_TEST_IMAGE}"
+    _run base_cleanup
     if [ "${status}" -ne 0 ]; then
-        log "FAIL" "Remove test image and dangling containers"
+        log "FAIL"
         exit 1
-    else
-        log "PASS" "Remove test image and dangling containers"
     fi
-
 }
 
 # Runs once before the first test

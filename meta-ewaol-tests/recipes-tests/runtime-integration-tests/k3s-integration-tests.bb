@@ -18,7 +18,13 @@ TEST_FILES = "file://k3s-integration-tests.bats \
               file://k3s-test-deployment.yaml"
 
 TEST_FILES:append:ewaol-virtualization = " \
+    file://k3s-append-virtualization.bats \
     file://k3s-virtualization-funcs.sh \
+    "
+
+TEST_FILES:append:ewaol-security = " \
+    file://k3s-append-security.bats \
+    file://k3s-security-funcs.sh \
     "
 
 inherit runtime-integration-tests
@@ -26,17 +32,9 @@ require runtime-integration-tests.inc
 
 K3S_TEST_DESC = "local deployment of K3s pods"
 K3S_TEST_DESC:ewaol-virtualization = "remote deployment of K3s pods on the Guest VM, from the Control VM"
-
-K3S_LOAD_VIRT_FUNCS = ""
-K3S_LOAD_VIRT_FUNCS:ewaol-virtualization = 'load \"${TEST_DIR}/k3s-virtualization-funcs.sh\"${@"\n"}'
-
 export K3S_TEST_DESC
-ENVSUBST_VARS:append = " \$K3S_TEST_DESC \$K3S_LOAD_VIRT_FUNCS"
 
-do_install:prepend() {
-    # export variable here to keep multiline string
-    export K3S_LOAD_VIRT_FUNCS="${K3S_LOAD_VIRT_FUNCS}"
-}
+ENVSUBST_VARS:append = " \$K3S_TEST_DESC"
 
 do_install:append:ewaol-virtualization() {
 

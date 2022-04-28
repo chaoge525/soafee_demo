@@ -156,3 +156,14 @@ clean_and_remove_image() {
 
     return "${rc}"
 }
+
+base_cleanup() {
+
+    # Remove any dangling containers based on the image
+    _run clean_and_remove_image "${CE_TEST_IMAGE}"
+    if [ "${status}" -ne 0 ]; then
+        echo "Failed to remove test image and dangling containers"
+    fi
+
+    return "${status}"
+}

@@ -29,14 +29,20 @@ export TEST_CLEAN_ENV="${UA_TEST_CLEAN_ENV:=1}"
 load "${TEST_COMMON_DIR}/integration-tests-common-funcs.sh"
 load "${TEST_DIR}/user-accounts-funcs.sh"
 
+# There are no base clean-up activities required
+# Function is defined and called so that it can be conditionally overridden
+clean_test_environment() {
+  :
+}
+
 # Runs once before the first test
 setup_file() {
-    _run test_suite_setup
+    _run test_suite_setup clean_test_environment
 }
 
 # Runs after the final test
 teardown_file() {
-    _run test_suite_teardown
+    _run test_suite_teardown clean_test_environment
 }
 
 @test 'user accounts management tests' {

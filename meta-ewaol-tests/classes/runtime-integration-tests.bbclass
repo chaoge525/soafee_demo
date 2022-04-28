@@ -53,7 +53,7 @@ do_install() {
         > "${WORKDIR}/run-ptest"
 
     additional_tests="$(find "${WORKDIR}" -maxdepth 1 \
-                       -name *additional-*-tests.bats -printf "%f ")"
+                       -name *append-*.bats -printf "%f ")"
 
 
     for test in ${additional_tests}; do

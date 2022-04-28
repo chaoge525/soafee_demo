@@ -4,13 +4,9 @@
 #
 # SPDX-License-Identifier: MIT
 
-# Ensure that the state of the container environment is ready for the test
-# suite
-clean_test_environment() {
-
-    # Use the BATS_TEST_NAME env var to categorise all logging messages relating
-    # to the clean-up activities.
-    export BATS_TEST_NAME="clean_test_environment"
+# Should only be called by virtualization-specific version of the environment
+# clean-up
+extra_cleanup() {
 
     # reset the password for '${TEST_SUDO_USER}' user
     sudo usermod -p '' "${TEST_SUDO_USER}"
@@ -19,16 +15,6 @@ clean_test_environment() {
     # reset the password for '${NORMAL_USER}' user
     sudo usermod -p '' "${NORMAL_USER}"
     sudo passwd -e "${NORMAL_USER}"
-}
-
-# Runs once before the first test
-setup_file() {
-    _run test_suite_setup clean_test_environment
-}
-
-# Runs after the final test
-teardown_file() {
-    _run test_suite_teardown clean_test_environment
 }
 
 # run ${1} command as ${2} user
