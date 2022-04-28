@@ -832,10 +832,11 @@ Guest VM via K3s orchestration. This example process is as follows:
          following example:
 
          .. code-block:: console
+           :substitutions:
 
            NAME              STATUS   ROLES                  AGE     VERSION
            ewaol-guest-vm1   Ready    <none>                 22s     v1.22.6-k3s1
-           n1sdp             Ready    control-plane,master   6m40s   v1.22.6-k3s1
+           |inclusivity-exception|n1sdp             Ready    control-plane,master   6m40s   v1.22.6-k3s1
 
   3. **Schedule Application Workload**
 

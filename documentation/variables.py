@@ -5,6 +5,7 @@
 # This file centralizes the variables and links used throughout the EWAOL
 # documentation. The dictionaries are converted to a single string that is used
 # as the rst_prolog (see the Sphinx Configuration documentation at
+# [inclusivity-exception]
 # https://www.sphinx-doc.org/en/master/usage/configuration.html for more info).
 
 # There are two types of key-value substitutions:
@@ -95,6 +96,7 @@ other_definitions = {
       EWAOL_CONTROL_VM_MEMORY_SIZE: "2048"               # Memory size for Control VM (MB)
       EWAOL_CONTROL_VM_ROOTFS_EXTRA_SPACE: "1000000"     # Extra storage space for Control VM (KB)
       """,
+  "inclusivity-exception": "\ ",
 }
 
 # Potentially old definitions required for documenting migrations, changelog

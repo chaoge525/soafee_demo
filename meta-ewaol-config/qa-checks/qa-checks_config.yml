@@ -36,6 +36,7 @@ modules:
         exclude_patterns:
             - GITIGNORE_CONTENTS
             - "/meta-ewaol-config/qa-checks/ewaol-dictionary"
+            - "/tools/qa-checks/non-inclusive-language.txt"
             - "/license.rst"
             - "*.git"
             - "*.gitignore"
@@ -45,6 +46,15 @@ modules:
             - "*.css"
             - "*.scc"
             - "*.patch"
+
+    inclusivity:
+        exclude_patterns:
+            - GITIGNORE_CONTENTS
+            - "/tools/qa-checks/non-inclusive-language.txt"
+            - "*.git"
+            - "*.gitignore"
+            - "*.pyc"
+            - "*.png"
 
     layer:
         kas_configs:

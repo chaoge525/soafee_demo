@@ -35,6 +35,7 @@ to be reviewed and accepted by the EWAOL project:
 
     * `Commit Message`_
     * `Documentation`_
+    * `Inclusive Language`_
     * `License and Copyright Header`_
     * `Python Code Quality`_
     * `Shell Script Code Quality`_
@@ -153,6 +154,28 @@ The rendered documentation should be checked to ensure the formatting is as
 expected, and no new formatting problems have been introduced. See
 `Documentation Build Validation`_ tool for details on building the rendered
 documentation.
+
+Inclusive Language
+==================
+
+The project aims to promote usage of inclusive language wherever possible, and
+so it is expected that contributions avoid introducing non-inclusive language
+into the repository.
+
+To help identify potential usage of non-inclusive language, a check is performed
+as part of the QA check suite to highlight occurrences within the repository,
+so that alternatives may be considered. To support this automated check, a list
+of potentially non-inclusive terminology is maintained in the project
+configuration files at
+``meta-ewaol-config/qa-checks/non-inclusive-language.txt``.
+
+As there are situations in which the terminology highlighted by the check is not
+used in a non-inclusive manner, or its usage is otherwise unavoidable, a usage
+can be tagged as excluded from the check by adding the text
+``inclusivity-exception`` prior to the occurrence (either in the previous line
+or in the same line). So that this tag is not considered as part of the file's
+normal contents, it should be commented or otherwise excluded from the file's
+expected usage.
 
 License and Copyright Header
 =============================
