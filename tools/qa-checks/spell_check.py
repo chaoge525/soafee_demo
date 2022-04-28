@@ -144,8 +144,8 @@ class SpellCheck(abstract_check.AbstractCheck):
                         errors.add(word)
 
         except UnicodeDecodeError as e:
-            file_errors[rel_path] = ("Couldn't process file due to"
-                                     " UnicodeDecodeError")
+            file_errors[rel_path] = [("Couldn't process file due to"
+                                     " UnicodeDecodeError")]
             return
 
         # Map words to a set of lines

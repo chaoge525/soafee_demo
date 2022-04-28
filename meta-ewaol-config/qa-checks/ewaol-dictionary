@@ -109,6 +109,7 @@ hypervisor
 image_features
 image_rootfs_extra_space
 implementations
+inclusivity-exception
 independently-configurable
 index.html
 initializes
@@ -159,6 +160,7 @@ n1sdp.yml
 neoverse
 nginx
 nodeport
+non-inclusive-language.txt
 oci
 optionally
 ostree

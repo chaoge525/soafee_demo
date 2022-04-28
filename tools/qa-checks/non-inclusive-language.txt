@@ -1,0 +1,14 @@
+master
+slave
+man-month
+man month
+blacklist
+black-list
+whitelist
+white-list
+she
+he
+his
+hers
+him
+her
