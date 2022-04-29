@@ -39,6 +39,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import traceback
 import venv
 
 import abstract_check
@@ -208,12 +209,14 @@ def parse_options():
         name = check.name
         list_args, args, _ = check.get_vars()
 
+        group = parser.add_argument_group(f"{name} check arguments")
+
         for arg, msg in {**list_args, **args}.items():
             prefix = ""
             if arg in list_args:
                 prefix = "Comma-separated list: "
-            parser.add_argument(f"--{name}_{arg}", required=False,
-                                help=(f"{prefix}{msg}"))
+            group.add_argument(f"--{name}_{arg}", required=False,
+                               help=(f"{prefix}{msg}"))
 
     default_config_file = "meta-ewaol-config/qa-checks/qa-checks_config.yml"
     parser.add_argument("--config",
@@ -615,7 +618,8 @@ def main():
             except Exception as e:
                 logger.error(("Caught exception when executing the"
                               f" {checker.name} check:"))
-                logger.error(e)
+                logger.error(''.join(traceback.format_exception(
+                    etype=type(e), value=e, tb=e.__traceback__)))
                 failed_modules.add(checker.name)
                 rc = 1
 
