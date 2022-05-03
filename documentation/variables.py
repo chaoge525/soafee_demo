@@ -27,7 +27,7 @@ external_links = {
   "Yocto Xen config": f"http://git.yoctoproject.org/cgit/cgit.cgi/yocto-kernel-cache/tree/features/xen/xen.cfg?h=yocto-{yocto_linux_version}",
   "kas build tool": f"https://kas.readthedocs.io/en/{kas_version}/userguide.html",
   "kas Dependencies & installation": f"https://kas.readthedocs.io/en/{kas_version}/userguide.html#dependencies-installation",
-  "meta-arm-bsp": "https://git.yoctoproject.org/cgit/cgit.cgi/meta-arm/tree/meta-arm-bsp/documentation",
+  "meta-arm-bsp": "https://git.yoctoproject.org/meta-arm/tree/meta-arm-bsp/documentation?h=kirkstone",
   "xl domain configuration": f"https://xenbits.xen.org/docs/{xen_version}-testing/man/xl.cfg.5.html",
   "xl documentation": f"https://xenbits.xen.org/docs/{xen_version}-testing/man/xl.1.html",
 
@@ -55,7 +55,7 @@ layer_definitions = {
   "poky branch": "kirkstone",
   "meta-openembedded branch": "kirkstone",
   "meta-virtualization branch": "master",
-  "meta-arm branch": "master",
+  "meta-arm branch": "kirkstone",
   "poky revision": "HEAD",
   "meta-virtualization revision": "HEAD",
   "meta-openembedded revision": "HEAD",
