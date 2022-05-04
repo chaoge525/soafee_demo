@@ -60,15 +60,16 @@ do_install() {
     envsubst "${ENVSUBST_VARS}" < "${WORKDIR}/run-ptest.in" \
         > "${WORKDIR}/run-ptest"
 
-    additional_tests="$(find "${WORKDIR}" -maxdepth 1 \
+    additional_tests="$(find ${D}/${TEST_DIR} -maxdepth 1 \
                        -name *append-*.bats -printf "%f ")"
 
-
     for test in ${additional_tests}; do
+
         # Append the additional tests to the deployed test suite
         # Skip the first 2 lines to omit the shebang
         tail -n +3 "${D}/${TEST_DIR}/${test}" \
             >> "${D}/${TEST_DIR}/${TEST_SUITE_NAME}.bats"
         rm -fv "${D}/${TEST_DIR}/${test}"
+
     done
 }
