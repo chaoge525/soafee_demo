@@ -32,3 +32,7 @@ require runtime-integration-tests.inc
 
 export EWAOL_SECURITY_UMASK
 ENVSUBST_VARS:append:ewaol-security = " \$EWAOL_SECURITY_UMASK"
+
+do_install[vardeps] += "\
+    EWAOL_SECURITY_UMASK \
+    "
