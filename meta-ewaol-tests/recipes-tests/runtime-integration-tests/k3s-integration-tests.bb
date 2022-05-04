@@ -36,6 +36,10 @@ export K3S_TEST_DESC
 
 ENVSUBST_VARS:append = " \$K3S_TEST_DESC"
 
+do_install[vardeps] += "\
+    K3S_TEST_DESC \
+    "
+
 do_install:append:ewaol-virtualization() {
 
     # Add a condition to the deployment to make it only schedulable on the Guest

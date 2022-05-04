@@ -4,3 +4,7 @@
 
 export TEST_COMMON_DIR = "${datadir}/runtime-integration-tests-common"
 ENVSUBST_VARS:append = " \$TEST_COMMON_DIR"
+
+do_install[vardeps] += "\
+    TEST_COMMON_DIR \
+    "

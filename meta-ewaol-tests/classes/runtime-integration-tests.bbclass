@@ -33,6 +33,14 @@ export EWAOL_TEST_ACCOUNT
 export TEST_DIR
 export EWAOL_GUEST_VM_HOSTNAME
 
+do_install[vardeps] += "\
+    ENVSUBST_VARS \
+    TEST_SUITE_NAME \
+    EWAOL_TEST_ACCOUNT \
+    TEST_DIR \
+    EWAOL_GUEST_VM_HOSTNAME \
+    "
+
 do_install() {
 
     install -d "${D}/${TEST_DIR}"
