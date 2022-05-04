@@ -63,8 +63,9 @@ EWAOL depends on the following layer dependency sources:
     branch: |meta-virtualization branch|
     revision: |meta-virtualization revision|
 
-When building for the N1SDP hardware target platform, the following additional
-layer dependency source is required:
+An additional layer dependency source is conditionally required, depending on
+the specific EWAOL distribution image being built. This layer dependency source
+is the ``meta-arm`` repository, which provides three Yocto layers:
 
   .. code-block:: yaml
     :substitutions:
@@ -74,7 +75,16 @@ layer dependency source is required:
     branch: |meta-arm branch|
     revision: |meta-arm revision|
 
-The ``meta-arm`` repository provides:
+The layers required from ``meta-arm`` depend on the EWAOL distribution image:
+
+  * An EWAOL virtualization distribution image requires ``meta-arm`` and
+    ``meta-arm-toolchain``, as by default a bundled Guest VM image based on the
+    ``generic-arm64`` ``MACHINE`` is built.
+
+  * An EWAOL distribution image built for the N1SDP hardware target platform
+    requires ``meta-arm``, ``meta-arm-bsp``, and ``meta-arm-toolchain``.
+
+These layers are described as follows:
 
   * ``meta-arm``:
 
