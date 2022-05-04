@@ -19,7 +19,7 @@ clean_test_environment() {
     _run extra_cleanup
     if [ "${status}" -ne 0 ]; then
         log "FAIL"
-        exit 1
+        return 1
     fi
 
 }

@@ -37,12 +37,22 @@ clean_test_environment() {
 
 # Runs once before the first test
 setup_file() {
+
     _run test_suite_setup clean_test_environment
+    if [ "${status}" -ne 0 ]; then
+        log "FAIL"
+        return 1
+    fi
 }
 
 # Runs after the final test
 teardown_file() {
+
     _run test_suite_teardown clean_test_environment
+    if [ "${status}" -ne 0 ]; then
+        log "FAIL"
+        return 1
+    fi
 }
 
 @test 'user accounts management tests' {

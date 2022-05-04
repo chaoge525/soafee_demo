@@ -38,34 +38,44 @@ clean_test_environment() {
     _run base_cleanup
     if [ "${status}" -ne 0 ]; then
         log "FAIL"
-        exit 1
+        return 1
     fi
 
 }
 
 # Runs once before the first test
 setup_file() {
+
     _run test_suite_setup clean_test_environment
+    if [ "${status}" -ne 0 ]; then
+        log "FAIL"
+        return 1
+    fi
 
     # If the environment clean option is disabled, we should still wait for K3s
     # to be fully initialized (e.g. after booting) before running the tests
     _run wait_for_k3s_to_be_running
     if [ "${status}" -ne 0 ]; then
         log "FAIL"
-        exit 1
+        return 1
     fi
 
     _run extra_setup
     if [ "${status}" -ne 0 ]; then
         log "FAIL"
-        exit 1
+        return 1
     fi
 
 }
 
 # Runs after the final test
 teardown_file() {
+
     _run test_suite_teardown clean_test_environment
+    if [ "${status}" -ne 0 ]; then
+        log "FAIL"
+        return 1
+    fi
 }
 
 # shellcheck disable=SC2016
