@@ -16,6 +16,6 @@ clean_test_environment() {
     _run guest_vm_reset_password
     if [ "${status}" -ne 0 ]; then
         log "FAIL"
-        exit 1
+        return 1
     fi
 }

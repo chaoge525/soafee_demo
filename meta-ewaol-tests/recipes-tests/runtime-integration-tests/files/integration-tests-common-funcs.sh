@@ -161,25 +161,39 @@ test_suite_setup() {
 
     _run check_running_test_suite "${TEST_RUN_FILE}"
     if [ "${status}" -ne 0 ]; then
-        exit 1
+        echo "${output}"
+        return "${status}"
     fi
 
     _run begin_test_suite "${TEST_RUN_FILE}"
+    if [ "${status}" -ne 0 ]; then
+        echo "${output}"
+        return "${status}"
+    fi
 
     if [ "${TEST_CLEAN_ENV}" = "1" ] && [ -n "${1}" ]; then
         _run "${1}"
+        if [ "${status}" -ne 0 ]; then
+            echo "${output}"
+            return "${status}"
+        fi
     fi
 
 }
 
 test_suite_teardown() {
 
+    status=0
+
     if [ "${TEST_CLEAN_ENV}" = "1" ] && [ -n "${1}" ]; then
         _run "${1}"
     fi
 
-    _run finish_test_suite "${TEST_RUN_FILE}"
+    # Always finish, even if the clean-up operations failed
+    finish_test_suite "${TEST_RUN_FILE}"
 
+    echo "${output}"
+    return "${status}"
 }
 
 # Helper function to wait for some condition until a given timeout, probing the

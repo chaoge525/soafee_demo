@@ -42,18 +42,28 @@ clean_test_environment() {
     _run base_cleanup
     if [ "${status}" -ne 0 ]; then
         log "FAIL"
-        exit 1
+        return 1
     fi
 }
 
 # Runs once before the first test
 setup_file() {
+
     _run test_suite_setup clean_test_environment
+    if [ "${status}" -ne 0 ]; then
+        log "FAIL"
+        return 1
+    fi
 }
 
 # Runs after the final test
 teardown_file() {
+
     _run test_suite_teardown clean_test_environment
+    if [ "${status}" -ne 0 ]; then
+        log "FAIL"
+        return 1
+    fi
 }
 
 @test 'run container' {
