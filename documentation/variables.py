@@ -9,7 +9,7 @@
 
 yocto_doc_version = "4.0/"
 yocto_linux_version = "5.15"
-xen_version = "4.15"
+xen_version = "4.16"
 kas_version = "3.0.2"
 
 external_links = {
@@ -54,7 +54,7 @@ layer_definitions = {
   "meta-ewaol branch": "kirkstone-dev",
   "poky branch": "kirkstone",
   "meta-openembedded branch": "kirkstone",
-  "meta-virtualization branch": "master",
+  "meta-virtualization branch": "kirkstone",
   "meta-arm branch": "kirkstone",
   "poky revision": "HEAD",
   "meta-virtualization revision": "HEAD",
