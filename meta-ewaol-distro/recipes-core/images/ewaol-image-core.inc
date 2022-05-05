@@ -28,7 +28,7 @@ IMAGE_INSTALL += " \
     bash \
     bash-completion-extra \
     ca-certificates \
-    docker-moby \
+    docker-ce \
     k3s-server \
     procps \
     sudo \
