@@ -27,6 +27,9 @@ modules:
         body_length: 80
         commits: "-1"
 
+    doc_build:
+        output_dir: "" # Use temporary directory
+
     header:
         exclude_patterns:
             - GITIGNORE_CONTENTS

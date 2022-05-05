@@ -7,13 +7,13 @@ header:
 
 repos:
   meta-arm:
-    refspec: honister
+    refspec: kirkstone
 
   meta-openembedded:
-    refspec: honister
+    refspec: kirkstone
 
   meta-virtualization:
-    refspec: honister
+    refspec: kirkstone
 
   poky:
-    refspec: honister
+    refspec: kirkstone
