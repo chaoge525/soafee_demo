@@ -244,7 +244,12 @@ compatibility check. For example:
 
     ./tools/qa-checks/run-checks.py --check=layer
 
-Details for running the QA checks are given at `Quality Assurance Checks`_.
+The layer compatibility QA check runs as a containerized application using
+Docker. Docker must therefore be installed on the host environment to perform
+this QA check. See the |Docker documentation|_ for installation instructions.
+
+Further details for running the QA checks are given at
+`Quality Assurance Checks`_.
 
 ********************
 Contribution Process
