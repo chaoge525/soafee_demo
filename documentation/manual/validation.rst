@@ -243,7 +243,7 @@ container engine tests:
 |    Default: ``/home/test/runtime-integration-tests-logs/``
 |    Directory will be created if it does not exist
 |    See `Test Logging`_
-|  ``CE_TEST_CLEAN_ENV``: enable test environment cleanup
+|  ``CE_TEST_CLEAN_ENV``: enable test environment clean-up
 |    Default: ``1`` (enabled)
 |    See `Container Engine Environment Clean-Up`_
 |  ``CE_TEST_GUEST_VM_NAME``: defines the Xen domain name and Hostname of the
@@ -274,6 +274,10 @@ The environment clean operation involves:
     * Determination and removal of all running containers of the image given by
       ``CE_TEST_IMAGE``
     * Removal of the image given by ``CE_TEST_IMAGE``, if it exists
+    * Clearing the password set when the tests accessed the Guest VM, performed
+      only when running the test suite on a virtualization distribution image
+      with :ref:`Security Hardening<manual/hardening:Security Hardening>`
+      enabled.
 
 If enabled then the environment clean operations will always be run, regardless
 of test-suite success or failure.
@@ -354,7 +358,7 @@ K3s orchestration tests:
 |    Default: ``/home/test/runtime-integration-tests-logs/``
 |    Directory will be created if it does not exist
 |    See `Test Logging`_
-|  ``K3S_TEST_CLEAN_ENV``: enable test environment cleanup
+|  ``K3S_TEST_CLEAN_ENV``: enable test environment clean-up
 |    Default: ``1`` (enabled)
 |    See `K3s Environment Clean-Up`_
 |  ``K3S_TEST_GUEST_VM_NAME``: defines the name of the Guest VM to use for the
@@ -384,12 +388,16 @@ The environment clean operation involves:
     * Deleting any previous K3s test Deployment, ensuring corresponding Pods
       are also deleted
 
-For virtualization distribution images, additional clean up operations are
+For virtualization distribution images, additional clean-up operations are
 performed:
 
     * Deleting the Guest VM node from the K3s cluster
     * Stopping the K3s agent running on the Guest VM, and deleting any test
       Systemd service override on the Guest VM
+    * Clearing the password set when the tests accessed the Guest VM, performed
+      only when running the test suite on a virtualization distribution image
+      with :ref:`Security Hardening<manual/hardening:Security Hardening>`
+      enabled.
 
 If enabled then the environment clean operations will always be run, regardless
 of test-suite success or failure.
@@ -475,7 +483,7 @@ accounts tests:
 |    Default: ``/home/test/runtime-integration-tests-logs/``
 |    Directory will be created if it does not exist
 |    See `Test Logging`_
-|  ``UA_TEST_CLEAN_ENV``: enable test environment cleanup
+|  ``UA_TEST_CLEAN_ENV``: enable test environment clean-up
 |    Default: ``1`` (enabled)
 |    See `User Accounts Environment Clean-Up`_
 |  ``UA_TEST_GUEST_VM_NAME``: defines the Xen domain name and Hostname of the
@@ -495,7 +503,7 @@ As the user accounts integration tests only modify the system for images built
 with EWAOL security hardening, clean-up operations are only performed when
 running the test suite on these images.
 
-In addition, the clean up operations will only occur if ``UA_TEST_CLEAN_ENV`` is
+In addition, the clean-up operations will only occur if ``UA_TEST_CLEAN_ENV`` is
 set to ``1`` (as is default).
 
 The environment clean-up operations for images built with EWAOL security
@@ -503,9 +511,16 @@ hardening are:
 
     * Reset the password for the ``test`` user account
     * Reset the password for the non-privileged EWAOL user account
+    * Clearing the password set when the tests accessed the Guest VM, performed
+      only when running the test suite on a virtualization distribution image
+      with :ref:`Security Hardening<manual/hardening:Security Hardening>`
+      enabled.
 
 After the environment clean-up, the user accounts will return to their original
 state where the first log-in will prompt the user for a new account password.
+
+If enabled then the environment clean operations will always be run, regardless
+of test-suite success or failure.
 
 Xen Virtualization Tests
 ------------------------
@@ -553,6 +568,9 @@ virtualization integration tests:
 |    Default: ``/home/test/runtime-integration-tests-logs/``
 |    Directory will be created if it does not exist
 |    See `Test Logging`_
+|  ``VIRT_TEST_CLEAN_ENV``: enable test environment clean-up
+|    Default: ``1`` (enabled)
+|    See `Xen Virtualization Environment Clean-Up`_
 |  ``VIRT_TEST_GUEST_VM_NAME``: defines the name of the Guest VM to use for the
    tests
 |    Default: ``${EWAOL_GUEST_VM_HOSTNAME}1``
@@ -561,4 +579,27 @@ virtualization integration tests:
 
 Prior to execution, the Xen Virtualization test suite expects the
 ``xendomains.service`` Systemd service to be running or in the process of
-initializing. The test suite performs no environment clean-up operations.
+initializing.
+
+Xen Virtualization Environment Clean-Up
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The Xen Virtualization integration tests only modify the system environment when
+the test suite is executed on an image with
+:ref:`Security Hardening<manual/hardening:Security Hardening>` enabled, as
+accessing the Guest VM on a security hardened image requires setting the user
+account password.
+
+There is therefore only a single environment clean operation performed for this
+test suite:
+
+    * Clearing the password set when the tests accessed the Guest VM, performed
+      only when running the test suite with
+      :ref:`Security Hardening<manual/hardening:Security Hardening>` enabled.
+
+Cleaning up the account password will only occur if ``VIRT_TEST_CLEAN_ENV`` is
+set to ``1`` (as is default), in which case the environment clean will run
+before and after the suite execution.
+
+If enabled then the environment clean operation will always be run, regardless
+of test-suite success or failure.
