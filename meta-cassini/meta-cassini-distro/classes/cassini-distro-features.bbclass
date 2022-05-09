@@ -13,18 +13,6 @@ CASSINI_DISTRO_FEATURES = " \
                          cassini-security \
                          "
 
-# Default must be an item from CASSINI_DISTRO_FEATURES
-CASSINI_DISTRO_FEATURES_DEFAULT ?= "cassini-devel"
-
-# Set CASSINI_DISTRO_FEATURES_FALLBACK to CASSINI_DISTRO_FEATURES_DEFAULT only if
-# none of CASSINI_DISTRO_FEATURES are found in DISTRO_FEATURES.
-CASSINI_DISTRO_FEATURES_FALLBACK := "${@\
-bb.utils.contains_any('DISTRO_FEATURES', d.getVar('CASSINI_DISTRO_FEATURES'),\
-'', d.getVar('CASSINI_DISTRO_FEATURES_DEFAULT'), d)}"
-
-# Add CASSINI_DISTRO_FEATURES_FALLBACK to DISTRO_FEATURES, could be empty.
-DISTRO_FEATURES:append = " ${CASSINI_DISTRO_FEATURES_FALLBACK}"
-
 # Require inc file for development DISTRO_FEATURE
 require ${@bb.utils.contains(\
 'DISTRO_FEATURES','cassini-devel','conf/distro/include/cassini-devel.inc', '', d)}
