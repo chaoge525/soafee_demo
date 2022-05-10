@@ -65,8 +65,8 @@ do_install() {
         envsubst < ${EWAOL_GUEST_VM_CFG_SRC} > ${D}${EWAOL_GUEST_VM_CFG_DST}
 
         install -d ${D}${EWAOL_GUEST_VM_DATA}/${GUEST_VM_HOSTNAME}
-        install -Dm 0644 ${EWAOL_GUEST_VM_DISK_SRC} ${D}${EWAOL_GUEST_VM_DISK_DST}
-        install -Dm 0644 ${EWAOL_GUEST_VM_KERNEL_SRC} ${D}${EWAOL_GUEST_VM_KERNEL_DST}
+        install -Dm 0640 ${EWAOL_GUEST_VM_DISK_SRC} ${D}${EWAOL_GUEST_VM_DISK_DST}
+        install -Dm 0640 ${EWAOL_GUEST_VM_KERNEL_SRC} ${D}${EWAOL_GUEST_VM_KERNEL_DST}
     done
 }
 

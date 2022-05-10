@@ -76,7 +76,7 @@ do_install() {
         DISK_NAME=$(echo "${PREBUILT_GUEST_VM_LIST_DISK}" | cut -d " " -f $guest_vm_instance)
 
         install -d ${D}${sysconfdir}/xen/auto
-        install -Dm 0644 ${WORKDIR}/${CFG_NAME} ${D}${sysconfdir}/xen/auto/${CFG_NAME}
+        install -Dm 0640 ${WORKDIR}/${CFG_NAME} ${D}${sysconfdir}/xen/auto/${CFG_NAME}
 
         KERNEL_DST=$(grep -oP '(?<=kernel = ")[^"]*' ${WORKDIR}/${CFG_NAME})
         DISK_DST=$(grep -oP "(?<=target=)[^'\] ]*" ${WORKDIR}/${CFG_NAME})
@@ -96,7 +96,7 @@ do_install() {
         esac
 
         install -d ${D}${DISK_DIRNAME}
-        install -Dm 0644 ${WORKDIR}/${DISK_NAME} ${D}${DISK_DST}
+        install -Dm 0640 ${WORKDIR}/${DISK_NAME} ${D}${DISK_DST}
 
         KERNEL_DIRNAME=$(dirname ${KERNEL_DST})
         case "${KERNEL_DIRNAME}" in
@@ -113,7 +113,7 @@ do_install() {
         esac
 
         install -d ${D}${KERNEL_DIRNAME}
-        install -Dm 0644 ${WORKDIR}/${KERNEL_NAME} ${D}${KERNEL_DST}
+        install -Dm 0640 ${WORKDIR}/${KERNEL_NAME} ${D}${KERNEL_DST}
     done
 
     if [ ${error} -ne 0 ]; then

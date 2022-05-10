@@ -15,6 +15,9 @@ do_install:append:ewaol() {
     sed -i '/PS1/d' ${D}${sysconfdir}/skel/.bashrc
 
     install -d ${D}${sysconfdir}/profile.d
+
+    # Others are given 'read' permission so that profile env vars are passed
+    # through to other user accounts correctly
     install -m 0644 ${WORKDIR}/ewaol_profile.sh \
         ${D}${sysconfdir}/profile.d/ewaol_profile.sh
 }

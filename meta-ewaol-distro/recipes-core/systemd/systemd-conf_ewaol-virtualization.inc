@@ -22,6 +22,10 @@ SRC_URI:append= "\
                  "
 
 do_install:append() {
+
+    # Services are not executed as root, so all users need 'read' permission to
+    # the config
+
     if ${@bb.utils.contains('PACKAGECONFIG', 'dhcp-ethernet', 'true', 'false', d)}; then
             NETWORK_CONF_DIR="${sysconfdir}/systemd/network/80-wired.network.d"
             install -Dm 0644 ${WORKDIR}/${NETWORK_CONF_FILE} \
