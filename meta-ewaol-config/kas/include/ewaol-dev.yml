@@ -7,13 +7,13 @@ header:
 
 repos:
   meta-arm:
-    refspec: master
+    refspec: kirkstone
 
   meta-openembedded:
-    refspec: master
+    refspec: kirkstone
 
   meta-virtualization:
-    refspec: master
+    refspec: kirkstone
 
   poky:
-    refspec: master
+    refspec: kirkstone
