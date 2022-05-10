@@ -2,6 +2,7 @@
 #
 # SPDX-License-Identifier: MIT
 
+---
 version: 2
 sphinx:
   configuration: documentation/conf.py
@@ -9,4 +10,4 @@ formats:
   - pdf
 python:
   install:
-  - requirements: documentation/requirements.txt
+    - requirements: documentation/requirements.txt

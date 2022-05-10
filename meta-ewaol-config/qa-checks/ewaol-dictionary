@@ -122,6 +122,7 @@ libpcre
 libpcre2
 licensees
 license.rst
+linter
 localhost
 loopback
 lts
@@ -246,6 +247,7 @@ xendomains.service
 xen_kernelcfg_check.bbclass
 xl
 yaml
+yamllint
 yocto
 yocto_layers
 yocto's

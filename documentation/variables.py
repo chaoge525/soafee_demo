@@ -39,6 +39,7 @@ external_links = {
   "Docker documentation": "https://docs.docker.com",
   "K3s documentation": "https://rancher.com/docs/k3s/latest/en",
   "Xen documentation": "https://wiki.xenproject.org/wiki/Main_Page",
+  "yamllint documentation": "https://yamllint.readthedocs.io/en/stable/",
   "Yocto Package Test": "https://wiki.yoctoproject.org/wiki/Ptest",
   "Bash Automated Test System": "https://github.com/bats-core/bats-core",
   "Python Datetime Format Codes": "https://docs.python.org/3/library/datetime.html#strftime-and-strptime-format-codes",
