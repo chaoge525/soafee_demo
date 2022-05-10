@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-# Copyright (c) 2021, Arm Limited.
+# Copyright (c) 2021-2022, Arm Limited.
 #
 # SPDX-License-Identifier: MIT
 
@@ -49,11 +49,18 @@ def recursively_apply_check(
         check_fn,
         file_errors,
         exclude_patterns=None,
-        file_types=None):
-    """ Recursive function to descend into all non-excluded directories and
-        find all non-excluded files, relative to the given path. Run the
-        check function on each file that we encounter that matches the
-        optionally-defined file types. """
+        file_types=None,
+        include_patterns=None):
+    """ Recursive function to descend the file tree relative to the given path
+        and run the check function on each applicable files encountered.
+        A file is applicable if all of the following apply:
+         * Exclude patterns not provided or the file does not match an exclude
+           pattern and the file is not inside a directory that is excluded.
+           (Note: excluded directories will not be descended further.)
+         * Include patterns not provided or the file matches an include pattern
+           or the file is inside a directory that matches an include pattern.
+         * File types not provided or the magic file type of the file
+           matches one of the file types provided. """
 
     if not os.path.isabs(path):
         file_errors[path] = [("Internal error: invalid path for the"
@@ -67,14 +74,24 @@ def recursively_apply_check(
 
         # Don't descend into any excluded directories or check any excluded
         # files
-        if exclude_patterns and any([re.fullmatch(pat, path)
-                                    for pat in exclude_patterns]):
+        if exclude_patterns and any((re.fullmatch(pat, path)
+                                    for pat in exclude_patterns)):
             return
 
         if os.path.isfile(path):
+
+            # Only check files included or in directories included.
+            # This needs to match any subpart of the path instead of just the
+            # full path so re.fullmatch which always matches to the end of the
+            # path cannot be used. Instead the pattern is extended with (/|$)
+            # to match / the end of the dir or $ the end of the path.
+            if include_patterns and not any((re.match(f"{pat}(/|$)", path)
+                                            for pat in include_patterns)):
+                return
+
             if (not file_types or
-                any([ft.lower() in magic.from_file(path, mime=False).lower()
-                    for ft in file_types])):
+                any((ft.lower() in magic.from_file(path, mime=False).lower()
+                    for ft in file_types))):
 
                 check_fn(path, file_errors)
 
@@ -87,7 +104,8 @@ def recursively_apply_check(
                     check_fn,
                     file_errors,
                     exclude_patterns,
-                    file_types)
+                    file_types,
+                    include_patterns)
 
     except ImportError:
         file_errors[path] = ["Failed to load the Python 'magic' module."]
