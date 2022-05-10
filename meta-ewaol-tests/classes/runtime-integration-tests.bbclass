@@ -11,9 +11,6 @@ RDEPENDS:${PN}:append = " bats runtime-integration-tests-common"
 
 DEPENDS:append = " gettext-native"
 
-# ptest aborts if it cannot find libgcc for pthread_cancel
-RDEPENDS:${PN}-ptest += "libgcc"
-
 EWAOL_TEST_ACCOUNT ??= "test"
 
 TEST_DIR = "${datadir}/${BPN}"
