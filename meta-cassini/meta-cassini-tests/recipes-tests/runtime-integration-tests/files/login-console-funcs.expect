@@ -1,0 +1,169 @@
+#!/usr/bin/env expect
+#
+# Copyright (c) 2022 Arm Limited or its affiliates. All rights reserved.
+#
+# SPDX-License-Identifier: MIT
+
+proc console_logon {console hostname} {
+    global expect_out
+    global spawn_id
+    global login_prompt
+    global prompt
+    global clean_console
+    global timeout
+    global user
+
+    # In TCL '{*}' is special syntax for argument expansion:
+    # https://www.tcl.tk/man/tcl8.5/TclCmd/Tcl.html#M9
+    spawn {*}${console}
+    send "${clean_console}"
+    sleep 0.5
+
+    set username_regex {[a-z0-9_-]{1,32}}
+    set password "cassini123\r"
+
+    # The deafault scenerio is no password prompt for '${user}' user.
+    # However, if there is a prompt to set a new password, then use the
+    # 'cassini123' password.
+    # Maximum 10 tries
+    for {set x 0} {$x<10} {incr x} {
+        # Grab console and log on
+        expect {
+            "${login_prompt}" {
+                send "${user}\r"
+                set password "cassini123\r"
+                sleep 1
+                exp_continue
+            }
+            "${prompt} Permission denied (publickey,password)." {
+                # wrong username or password for ssh connection
+                sleep 0.5
+                return 1
+            }
+            "${prompt}" {
+                send "${clean_console}"
+                sleep 0.5
+                return 0
+            }
+            -re ${username_regex}@${hostname} {
+                # wrong user logged in, exit and login as '${user}' user
+                send "${clean_console}"
+                sleep 0.5
+                send "exit\r"
+                sleep 0.5
+                exp_continue
+            }
+            -nocase "password:" {
+                # send the ${password} if the following prompts are matched:
+                # 'Password:', 'New password:' or 'Re-enter new password:'
+                send "${password}"
+                sleep 1
+                exp_continue
+            }
+            "Kernel panic" {
+                puts "'${hostname}' encountered a kernel panic"
+                return 1
+            }
+            "${hostname} is an invalid domain" {
+                puts "'${hostname}' is an invalid domain"
+                return 1
+            }
+            timeout {
+                puts "Log-in to '${hostname}' timed out"
+                return 124
+            }
+            eof {
+                puts "Console closed!"
+                return 1
+            }
+        }
+    }
+
+    return 1
+}
+
+proc run_cmd {cmd} {
+    global expect_out
+    global spawn_id
+    global prompt
+    global clean_console
+    global timeout
+
+    send "${cmd}\r"
+    sleep 0.5
+
+    expect {
+        "${prompt}" {
+        }
+        timeout {
+            puts "Executing '${cmd}' exceeded the ${timeout}s time out."
+            return 124
+        }
+    }
+
+    send "echo Exit status: \$?\r"
+    sleep 0.5
+
+    # Set the return code of this process to that of the command
+    set rc 1
+    expect {
+        {Exit status: 0} {
+            set rc 0
+        }
+        -re {Exit status: [1-9]+} {
+        }
+    }
+
+    expect "${prompt}"
+
+    return $rc
+}
+
+proc console_logoff {} {
+    global expect_out
+    global spawn_id
+    global login_prompt
+    global clean_console
+    global timeout
+
+    # Exit the login session
+    send "exit\r"
+    sleep 0.5
+
+    return 0
+}
+
+proc force_prompt {} {
+    global expect_out
+    global spawn_id
+    global clean_console
+
+    set timeout 5
+    expect {
+        -re {.} {
+            exp_continue
+        }
+        timeout {
+            send "${clean_console}"
+            sleep 0.5
+        }
+    }
+}
+
+proc local_logon {} {
+
+    global user
+    global hostname
+    set console "su - ${user}"
+
+    console_logon "${console}" "${hostname}"
+}
+
+proc ssh_logon {} {
+
+    global user
+    global hostname
+    set console "ssh -o StrictHostKeyChecking=no ${user}@${hostname}"
+
+    console_logon "${console}" "${hostname}"
+}
