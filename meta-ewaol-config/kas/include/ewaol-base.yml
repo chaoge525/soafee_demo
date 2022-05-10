@@ -2,6 +2,7 @@
 #
 # SPDX-License-Identifier: MIT
 
+---
 header:
   version: 11
   includes:
@@ -67,11 +68,11 @@ target: unset
 machine: unset
 
 env:
-    SSTATE_MIRRORS: ""
-    SOURCE_MIRROR_URL: ""
-    INHERIT: ""
-    BB_GENERATE_MIRROR_TARBALLS: ""
-    BB_NUMBER_THREADS: "${@os.cpu_count()}"
-    EWAOL_ROOTFS_EXTRA_SPACE: "2000000"
-    EWAOL_GENERIC_ARM64_FILESYSTEM: "1"
-    EWAOL_GENERIC_ARM64_DEFAULTTUNE: "armv8a-crc"
+  SSTATE_MIRRORS: ""
+  SOURCE_MIRROR_URL: ""
+  INHERIT: ""
+  BB_GENERATE_MIRROR_TARBALLS: ""
+  BB_NUMBER_THREADS: "${@os.cpu_count()}"
+  EWAOL_ROOTFS_EXTRA_SPACE: "2000000"
+  EWAOL_GENERIC_ARM64_FILESYSTEM: "1"
+  EWAOL_GENERIC_ARM64_DEFAULTTUNE: "armv8a-crc"

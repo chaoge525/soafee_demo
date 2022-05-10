@@ -14,6 +14,7 @@
 # If a required variable is not defined for a particular QA-check module, a
 # value from the defaults section will be used.
 
+---
 defaults:
     paths:
         - ROOT
@@ -28,7 +29,8 @@ modules:
         commits: "-1"
 
     doc_build:
-        output_dir: "" # Use temporary directory
+        # Use temporary directory
+        output_dir: ""
 
     header:
         exclude_patterns:
@@ -83,3 +85,12 @@ modules:
             - "/documentation/index.rst"
             - "/documentation/requirements.txt"
         dict_path: "meta-ewaol-config/qa-checks/ewaol-dictionary"
+
+    yaml:
+        include_patterns:
+            - "*.yml"
+            - "*.yaml"
+        exclude_patterns:
+            - GITIGNORE_CONTENTS
+            - "*.git"
+        yamllint_args: "--strict"

@@ -49,6 +49,7 @@ import layer_check
 import python_check
 import shell_check
 import spell_check
+import yaml_check
 
 path = f'{os.path.dirname(os.path.abspath(__file__))}/../common'
 sys.path.append(path)
@@ -61,7 +62,8 @@ AVAILABLE_CHECKS = [commit_msg_check.CommitMsgCheck,
                     layer_check.LayerCheck,
                     python_check.PythonCheck,
                     shell_check.ShellCheck,
-                    spell_check.SpellCheck
+                    spell_check.SpellCheck,
+                    yaml_check.YamlCheck,
                     ]
 
 # All checks except these will be run by default if specific checkers are not

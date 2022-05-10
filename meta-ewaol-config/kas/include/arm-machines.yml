@@ -2,6 +2,7 @@
 #
 # SPDX-License-Identifier: MIT
 
+---
 header:
   version: 11
 
@@ -13,4 +14,3 @@ repos:
       meta-arm: included
       meta-arm-bsp: included
       meta-arm-toolchain: included
-

@@ -39,6 +39,7 @@ to be reviewed and accepted by the EWAOL project:
     * `Python Code Quality`_
     * `Shell Script Code Quality`_
     * `Spelling`_
+    * `YAML Formatting`_
     * `Yocto Layer Compatibility`_
 
   A set of QA checks are provided by the project to help automatically validate
@@ -226,6 +227,15 @@ As many project files are technical in nature with non-standard English words, a
 file containing a list of additional valid words exists at
 ``meta-ewaol-config/qa-checks/ewaol-dictionary`` which may be modified if the
 QA check erroneously highlights valid technical terminology.
+
+YAML Formatting
+===============
+
+All YAML files contributed to the project must pass validation as evaluated by
+the ``yamllint`` Python-based linter for YAML files, which should report no warnings or
+errors. This is run by default as part of the QA checks.
+
+For more details on ``yamllint`` see |yamllint documentation|_.
 
 Yocto Layer Compatibility
 =========================

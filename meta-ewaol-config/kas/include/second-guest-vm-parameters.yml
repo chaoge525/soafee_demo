@@ -6,6 +6,7 @@
 # we need to explicitly list three customizable variables per each additional
 # Guest VM.
 
+---
 header:
   version: 11
 
