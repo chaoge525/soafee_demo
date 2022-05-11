@@ -15,7 +15,7 @@ defaults:
 repos:
 
   # Since in ewaol-release.yml we pin meta-arm repo, we exclude its layers in
-  # here and eneable them in arm-machines.yml when included by specific kas
+  # here and enable them in arm-machines.yml when included by specific kas
   # configs (e.g. n1sdp.yml)
   meta-arm:
     layers:

@@ -77,6 +77,10 @@ is the ``meta-arm`` repository, which provides three Yocto layers:
 
 The layers required from ``meta-arm`` depend on the EWAOL distribution image:
 
+  * EWAOL SDK distribution images require ``meta-arm`` and
+    ``meta-arm-toolchain``, as the gator-daemon package is installed on the
+    rootfs.
+
   * An EWAOL virtualization distribution image requires ``meta-arm`` and
     ``meta-arm-toolchain``, as by default a bundled Guest VM image based on the
     ``generic-arm64`` ``MACHINE`` is built.
