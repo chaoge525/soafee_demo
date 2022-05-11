@@ -1,6 +1,0 @@
-# Copyright (c) 2022, Arm Limited.
-#
-# SPDX-License-Identifier: MIT
-
-%${ADMIN_GROUP}	ALL=(ALL) ${ADMIN_GROUP_OPTIONS} ALL
-Defaults lecture="never"

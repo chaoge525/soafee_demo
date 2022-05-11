@@ -1,3 +1,0 @@
-define KFEATURE_DESCRIPTION "Gator daemon feature"
-
-kconf non-hardware gator.cfg

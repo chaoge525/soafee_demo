@@ -27,6 +27,11 @@ repos:
     layers:
       meta-ewaol-distro:
 
+  meta-cassini:
+    path: meta-cassini
+    layers:
+      meta-cassini-distro:
+
   meta-openembedded:
     url: https://git.openembedded.org/meta-openembedded
     path: layers/meta-openembedded
