@@ -6,6 +6,14 @@
 header:
   version: 11
 
+repos:
+  meta-arm:
+    url: https://git.yoctoproject.org/git/meta-arm
+    path: layers/meta-arm
+    layers:
+      meta-arm: included
+      meta-arm-toolchain: included
+
 local_conf_header:
   ewaol-sdk: |
     DISTRO_FEATURES:append = " ewaol-sdk"
