@@ -8,6 +8,131 @@ Changelog & Release Notes
 #########################
 
 ******
+v1.0
+******
+
+New Features
+============
+
+* Updated the EWAOL software stack to provide two system architectures:
+  baremetal and virtualization
+* Introduced EWAOL User Accounts with multi-level privileges
+* Introduced EWAOL Security Hardening to reduce potential sources or attack
+  vectors of security vulnerabilities
+
+Changed
+=======
+
+Third-party Yocto layers used to build the software stack:
+
+.. code-block:: yaml
+
+    URL: https://git.yoctoproject.org/git/poky
+    layers: meta, meta-poky
+    branch: kirkstone
+    revision: 453be4d258f71855205f45599eea04589eb4a369
+
+    URL: https://git.openembedded.org/meta-openembedded
+    layers: meta-filesystems, meta-networking, meta-oe, meta-python
+    branch: kirkstone
+    revision: 166ef8dbb14ad98b2094a77fcf352f6c63d5abf2
+
+    URL: https://git.yoctoproject.org/git/meta-virtualization
+    layers: meta-virtualization
+    branch: kirkstone
+    revision: 2fae71cdf0e8c6f398f51219bdf31eac76c662ec
+
+    URL: https://git.yoctoproject.org/git/meta-arm
+    layers: meta-arm, meta-arm-bsp, meta-arm-toolchain
+    branch: kirkstone
+    revision: fc09cc0e8db287600625e64905170a6de24f2686
+
+Main software components versions:
+
+  * Systemd (version: ``250.5``) as init system
+  * K3s container orchestration engine (version: ``v1.22.6+k3s1+git4262c6b``)
+  * Docker (version: ``20.10.12+ce+git906f57f``) as container engine
+  * runc-opencontainers (version: ``1.1.0+git0+b9460f26b4``) as the OCI
+    container runtime
+  * Xen (version: ``4.16+stable0+f265444922``) as the type-1 hypervisor
+
+Configs:
+
+  * Refactored kas configuration files, and separated into three ordered
+    categories: "Architecture", "Build Modifier" and "Target Platform" Configs
+
+Distro:
+
+  * Introduced EWAOL Baremetal and Virtualization Distribution images
+  * Introduced Xen as type-1 hypervisor for EWAOL Virtualization Distribution
+    images
+  * Introduced optional EWAOL Security Hardening distro feature
+  * Introduced EWAOL User Accounts (``ewaol``, ``user`` and ``test``) with
+    various privilege levels
+  * Introduced Filesystem Compilation Tuning where EWAOL root filesystems by
+    default use the generic ``armv8a-crc`` tune for ``aarch64`` based target
+    platforms
+  * Introduced ``meta-ewaol-bsp`` Yocto BSP layer with target platform specific
+    extensions for particular EWAOL distribution images
+  * Introduced the following build-time kernel configuration checks:
+
+    * K3s orchestration support
+    * Xen virtualization support
+  * Added the installation of docker-ce instead of docker-moby on EWAOL root
+    filesystems
+  * Added build information inclusion on EWAOL root filesystems
+
+Documentation:
+
+  * Refactored the documentation structure to improve readability
+  * Introduced the Contribution Guidelines instructions
+
+Tools:
+
+  * Expanded QA checks to also validate:
+
+    * Documentation build
+    * Yocto layer compatibility
+    * YAML files formatting
+
+  * Generalized the documentation build tooling to allow building independent
+    projects
+  * Updated Python minimal required version to ``3.8``
+  * Updated Git minimal required version to ``2.25``
+  * Updated kas minimal required version to ``3.0.2``
+  * Updated kas configuration format version to ``11``
+  * Added various fixes and improvements to QA checks tooling
+  * Dropped the deprecated CI-specific build tool
+
+Tests:
+
+  * Introduced "Xen Virtualization Tests" and "User Accounts Tests" test suites
+  * Expanded appropriate test suites to also include validations of both
+    Control and Guest VMs on EWAOL virtualization distribution images
+  * Configured all tests suites to be run as the ``test`` user account
+  * Added extra security checks for all test suites, performed when the
+    Security Hardening distro feature is enabled
+  * Changed filesystem storage directories for test suite logs and temporary
+    run-time files
+  * Refactored test recipes to share common code installed on the root
+    filesystem
+
+Limitations
+===========
+
+None.
+
+Resolved and Known Issues
+=========================
+
+Known Issues:
+
+  * The K3s recipe build involves fetching a substantial amount of source code
+    which might fail due to connection timeout. If a similar error message as
+    ``ERROR: Task (/<...>/layers/meta-virtualization/recipes-containers/k3s/k3s_git.bb:do_fetch) failed with exit code '1'``
+    is displayed, try re-running the build command until it completes.
+
+******
 v0.2.4
 ******
 
