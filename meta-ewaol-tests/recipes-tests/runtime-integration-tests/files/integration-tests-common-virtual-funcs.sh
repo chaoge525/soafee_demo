@@ -62,7 +62,7 @@ xendomains_is_running() {
     systemctl is-active xendomains 2>"${TEST_STDERR_FILE}"
 }
 
-xendomains_and_guest_vm_is_initialized() {
+xendomains_is_initialized() {
 
     _run wait_for_success 300 10 xendomains_is_running
     if [ "${status}" -ne 0 ]; then
@@ -70,9 +70,14 @@ xendomains_and_guest_vm_is_initialized() {
         return "${status}"
     fi
 
+    return 0
+}
+
+guest_vm_is_initialized() {
+
     _run wait_for_success 300 10 guest_vm_is_running "${1}"
     if [ "${status}" -ne 0 ]; then
-        echo "Timeout reached before Guest VM is running"
+        echo "Timeout reached before Guest VM '${1}' is running"
         return "${status}"
     fi
 
@@ -86,14 +91,20 @@ guest_vm_reset_password() {
     _run systemd-detect-virt
     if [ "${status}" -ne 0 ]; then
 
-        _run xendomains_and_guest_vm_is_initialized "${TEST_GUEST_VM_NAME}"
+        _run xendomains_is_initialized
+        if [ "${status}" -ne 0 ]; then
+            echo "${output}"
+            return "${status}"
+        fi
+
+        _run guest_vm_is_initialized "${1}"
         if [ "${status}" -ne 0 ]; then
             echo "${output}"
             return "${status}"
         fi
 
         _run expect "${TEST_COMMON_DIR}/run-command.expect" \
-            -hostname "${TEST_GUEST_VM_NAME}" \
+            -hostname "${1}" \
             -command "sudo usermod -p '' ${USER} && \
                 sudo passwd -e ${USER}" \
             -console "guest_vm" \
@@ -107,4 +118,45 @@ guest_vm_reset_password() {
     fi
 
     return 0
+}
+
+# Output a filtered list of Guest VMs (given by `xl list`), with names that
+# begin with the first argument to this function
+# To output all Guest VMs, pass an empty string to this function
+get_guest_vm_names() {
+
+    vm_basename="${1}"
+
+    # tail +3 removes the column headings
+    # cut selects the first column (Name)
+    sudo -n xl list |\
+        tail +3 |\
+        cut -d" " -f1 |\
+        grep "^${vm_basename}" |\
+        xargs \
+        2>"${TEST_STDERR_FILE}"
+}
+
+# Populate the environment variables (TEST_GUEST_VM_NAMES, TEST_GUEST_VM_COUNT)
+# needed to perform actions on the Guest VM(s)
+# If the variables already exist, do nothing
+load_guest_vm_vars() {
+
+    if [ -z "${TEST_GUEST_VM_NAMES}" ]; then
+
+      # Determine the list of Guest VMs that the test suite will target
+      _run get_guest_vm_names "${TEST_GUEST_VM_BASENAME}"
+      if [ "${status}" -ne 0 ]; then
+          log "FAIL"
+          echo "${output}"
+          return "${status}"
+      fi
+      export TEST_GUEST_VM_NAMES="${output}"
+
+    fi
+
+    if [ -z "${TEST_GUEST_VM_COUNT}" ]; then
+      count=$(echo "${TEST_GUEST_VM_NAMES}" | wc -w)
+      export TEST_GUEST_VM_COUNT="${count}"
+    fi
 }

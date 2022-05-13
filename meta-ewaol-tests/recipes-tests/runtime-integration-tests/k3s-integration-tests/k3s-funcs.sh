@@ -54,7 +54,7 @@ pod_does_not_exist() {
 
 }
 
-get_target_node_ip() {
+get_target_node_ips() {
     echo "localhost"
 }
 
@@ -62,12 +62,21 @@ wait_for_deployment_to_be_running() {
     kubectl_wait "deployment" "${1}" "Available"
 }
 
+# First argument is space-separated list of IP addresses
+# Second argument is the port to use to query each IP
 check_service_is_accessible() {
-    wait_for_success 60 10 get_from_url "http://${1}" "${2}"
+    for ip in ${1}; do
+        _run wait_for_success 60 10 get_from_url "http://${ip}" "${2}"
+        if [ "${status}" -ne 0 ]; then
+            echo "${output}"
+            echo "Timeout reached before http://${ip} responded on port ${2}"
+            return "${status}"
+        fi
+    done
 }
 
 get_random_pod_name_from_application() {
-    pod_index="$((RANDOM % 3))"
+    pod_index=0
     query_kubectl "pod" "--selector=app=${1}" \
         "{.items[${pod_index}].metadata.name}"
 }
@@ -86,7 +95,7 @@ test_application_pod_image() {
 
 confirm_image_of_application_pods() {
 
-    pod_index="$((RANDOM % 3))"
+    pod_index=0
     wait_for_success 60 10 test_application_pod_image "${1}" "${2}" \
         "${pod_index}"
 

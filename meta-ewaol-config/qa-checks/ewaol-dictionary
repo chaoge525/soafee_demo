@@ -23,7 +23,7 @@ build_system
 build-time
 c
 ce_test_clean_env
-ce_test_guest_vm_name
+ce_test_guest_vm_basename
 ce_test_image
 ce_test_log_dir
 cgit
@@ -120,7 +120,7 @@ k3s_kernelcfg_check.bbclass
 k3s-killall.sh
 k3s.service
 k3s_test_clean_env
-k3s_test_guest_vm_name
+k3s_test_guest_vm_basename
 k3s_test_log_dir
 kb
 kernel_features
@@ -223,7 +223,7 @@ titlesonly
 toctree
 top_level_test_name
 ua_test_clean_env
-ua_test_guest_vm_name
+ua_test_guest_vm_basename
 ua_test_log_dir
 ubuntu
 ubuntu-based
@@ -239,7 +239,7 @@ v1.20.11+k3s2
 v1.22.6+k3s1+git4262c6b
 validations
 virt_test_clean_env
-virt_test_guest_vm_name
+virt_test_guest_vm_basename
 virt_test_log_dir
 virtualization
 virtualization_architecture.png

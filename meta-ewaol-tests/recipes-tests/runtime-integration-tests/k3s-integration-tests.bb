@@ -30,14 +30,14 @@ TEST_FILES:append:ewaol-security = " \
 inherit runtime-integration-tests
 require runtime-integration-tests.inc
 
-K3S_TEST_DESC = "local deployment of K3s pods"
-K3S_TEST_DESC:ewaol-virtualization = "remote deployment of K3s pods on the Guest VM, from the Control VM"
-export K3S_TEST_DESC
+K3S_TEST_TYPE = "local deployment"
+K3S_TEST_TYPE:ewaol-virtualization = "remote deployment on Guest VMs"
+export K3S_TEST_TYPE
 
-ENVSUBST_VARS:append = " \$K3S_TEST_DESC"
+ENVSUBST_VARS:append = " \$K3S_TEST_TYPE"
 
 do_install[vardeps] += "\
-    K3S_TEST_DESC \
+    K3S_TEST_TYPE \
     "
 
 do_install:append:ewaol-virtualization() {

@@ -21,12 +21,13 @@ export TEST_RUN_FILE="${TEST_RUNTIME_DIR}/virtualization-integration-tests.pgid"
 
 # Set test-suite specific configuration
 
-if [ -z "${VIRT_TEST_GUEST_VM_NAME}" ]; then
-    VIRT_TEST_GUEST_VM_NAME="${EWAOL_GUEST_VM_HOSTNAME}1"
+if [ -z "${VIRT_TEST_GUEST_VM_BASENAME}" ]; then
+    VIRT_TEST_GUEST_VM_BASENAME="${EWAOL_GUEST_VM_HOSTNAME}"
 fi
 
+export TEST_GUEST_VM_BASENAME="${VIRT_TEST_GUEST_VM_BASENAME}"
+
 export TEST_CLEAN_ENV="${VIRT_TEST_CLEAN_ENV:=1}"
-TEST_GUEST_VM_NAME="${VIRT_TEST_GUEST_VM_NAME}"
 
 load "${TEST_COMMON_DIR}/integration-tests-common-funcs.sh"
 load "${TEST_COMMON_DIR}/integration-tests-common-virtual-funcs.sh"
@@ -47,11 +48,24 @@ setup_file() {
         return 1
     fi
 
-    _run xendomains_and_guest_vm_is_initialized "${TEST_GUEST_VM_NAME}"
+    _run xendomains_is_initialized
     if [ "${status}" -ne 0 ]; then
         log "FAIL"
         return 1
     fi
+
+    load_guest_vm_vars
+
+    guest_vm_idx=0
+    for guest_vm in ${TEST_GUEST_VM_NAMES}; do
+        guest_vm_idx=$((guest_vm_idx+1))
+
+        _run guest_vm_is_initialized "${TEST_GUEST_VM_NAME}"
+        if [ "${status}" -ne 0 ]; then
+            log "FAIL"
+            return 1
+        fi
+    done
 }
 
 # Runs after the final test
@@ -64,75 +78,89 @@ teardown_file() {
     fi
 }
 
-@test 'validate Guest VM is running' {
+@test 'validate Guest VMs are running' {
 
-    subtest="Guest VM is running"
-    _run guest_vm_is_running "${TEST_GUEST_VM_NAME}"
-    if [ "${status}" -ne 0 ]; then
-        log "FAIL" "${subtest}"
-        return 1
-    else
-        log "PASS" "${subtest}"
-    fi
+    guest_vm_idx=0
+    for guest_vm in ${TEST_GUEST_VM_NAMES}; do
+        guest_vm_idx=$((guest_vm_idx+1))
 
-    subtest="Log-in to Guest VM and check external network is accessible"
-    _run test_guest_vm_login_and_network_access "${TEST_GUEST_VM_NAME}"
-    if [ "${status}" -ne 0 ]; then
-        log "FAIL" "${subtest}"
-        return 1
-    else
-        log "PASS" "${subtest}"
-    fi
+        vm_description="Guest VM ${guest_vm_idx}/${TEST_GUEST_VM_COUNT} (${guest_vm})"
+
+        subtest="${vm_description} is running"
+        _run guest_vm_is_running "${guest_vm}"
+        if [ "${status}" -ne 0 ]; then
+            log "FAIL" "${subtest}"
+            return 1
+        else
+            log "PASS" "${subtest}"
+        fi
+
+        subtest="Log-in to ${vm_description} and check external network is accessible"
+        _run test_guest_vm_login_and_network_access "${guest_vm}"
+        if [ "${status}" -ne 0 ]; then
+            log "FAIL" "${subtest}"
+            return 1
+        else
+            log "PASS" "${subtest}"
+        fi
+    done
 
     log "PASS"
 }
 
 @test 'validate Guest VM management' {
 
-    subtest="Guest VM is running"
-    _run guest_vm_is_running "${TEST_GUEST_VM_NAME}"
-    if [ "${status}" -ne 0 ]; then
-        log "FAIL" "${subtest}"
-        return 1
-    else
-        log "PASS" "${subtest}"
-    fi
+    guest_vm_idx=0
+    for guest_vm in ${TEST_GUEST_VM_NAMES}; do
+        guest_vm_idx=$((guest_vm_idx+1))
 
-    subtest="Shutdown Guest VM"
-    _run shutdown_guest_vm
-    if [ "${status}" -ne 0 ]; then
-        log "FAIL" "${subtest}"
-        return 1
-    else
-        log "PASS" "${subtest}"
-    fi
+        vm_description="Guest VM ${guest_vm_idx}/${TEST_GUEST_VM_COUNT} (${guest_vm})"
 
-    subtest="Guest VM is not running after shutdown"
-    _run wait_for_success 300 10 guest_vm_is_not_running "${TEST_GUEST_VM_NAME}"
-    if [ "${status}" -ne 0 ]; then
-        log "FAIL" "${subtest}"
-        return 1
-    else
-        log "PASS" "${subtest}"
-    fi
+        subtest="${vm_description} is running"
+        _run guest_vm_is_running "${guest_vm}"
+        if [ "${status}" -ne 0 ]; then
+            log "FAIL" "${subtest}"
+            return 1
+        else
+            log "PASS" "${subtest}"
+        fi
 
-    subtest="Start Guest VM"
-    _run start_guest_vm
-    if [ "${status}" -ne 0 ]; then
-        log "FAIL" "${subtest}"
-        return 1
-    else
-        log "PASS" "${subtest}"
-    fi
+        subtest="Shutdown ${vm_description}"
+        _run shutdown_guest_vm
+        if [ "${status}" -ne 0 ]; then
+            log "FAIL" "${subtest}"
+            return 1
+        else
+            log "PASS" "${subtest}"
+        fi
 
-    subtest="Guest VM is running after being restarted"
-    _run wait_for_success 300 10 guest_vm_is_running "${TEST_GUEST_VM_NAME}"
-    if [ "${status}" -ne 0 ]; then
-        log "FAIL" "${subtest}"
-        return 1
-    else
-        log "PASS" "${subtest}"
-    fi
+        subtest="${vm_description} is not running after shutdown"
+        _run wait_for_success 300 10 guest_vm_is_not_running "${guest_vm}"
+        if [ "${status}" -ne 0 ]; then
+            log "FAIL" "${subtest}"
+            return 1
+        else
+            log "PASS" "${subtest}"
+        fi
+
+        subtest="Start ${vm_description}"
+        _run start_guest_vm
+        if [ "${status}" -ne 0 ]; then
+            log "FAIL" "${subtest}"
+            return 1
+        else
+            log "PASS" "${subtest}"
+        fi
+
+        subtest="${vm_description} is running after being restarted"
+        _run wait_for_success 300 10 guest_vm_is_running "${guest_vm}"
+        if [ "${status}" -ne 0 ]; then
+            log "FAIL" "${subtest}"
+            return 1
+        else
+            log "PASS" "${subtest}"
+        fi
+    done
 
     log "PASS"
 }

@@ -4,15 +4,10 @@
 #
 # SPDX-License-Identifier: MIT
 
-if [ -z "${UA_TEST_GUEST_VM_NAME}" ]; then
-    UA_TEST_GUEST_VM_NAME="${EWAOL_GUEST_VM_HOSTNAME}1"
-fi
-
-TEST_GUEST_VM_NAME="${UA_TEST_GUEST_VM_NAME}"
-
+# First argument is the Guest VM name
 run_tests_on_guest_vm() {
     expect "${TEST_COMMON_DIR}/run-command.expect" \
-        -hostname "${TEST_GUEST_VM_NAME}" \
+        -hostname "${1}" \
         -command "ptest-runner user-accounts-integration-tests" \
         -console "guest_vm" \
         2>"${TEST_STDERR_FILE}"
