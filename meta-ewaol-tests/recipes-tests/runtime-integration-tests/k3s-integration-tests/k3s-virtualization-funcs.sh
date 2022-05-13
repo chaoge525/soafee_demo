@@ -4,6 +4,25 @@
 #
 # SPDX-License-Identifier: MIT
 
+get_random_pod_name_from_application() {
+    pod_index="$((RANDOM % TEST_GUEST_VM_COUNT))"
+    query_kubectl "pod" "--selector=app=${1}" \
+        "{.items[${pod_index}].metadata.name}"
+}
+
+confirm_image_of_application_pods() {
+    pod_index="$((RANDOM % TEST_GUEST_VM_COUNT))"
+    wait_for_success 60 10 test_application_pod_image "${1}" "${2}" \
+        "${pod_index}"
+}
+
+# Override this function to ensure that we deploy one Pod per Guest VM
+apply_workload() {
+  echo -e "  replicas: ${TEST_GUEST_VM_COUNT}" | sudo -n tee -a "${1}" \
+    > /dev/null
+  sudo -n kubectl apply -f "${1}"  2>"${TEST_STDERR_FILE}"
+}
+
 # Override this test to validate that the pods are executed on the correct node
 # (i.e. the agent on the Guest VM)
 wait_for_deployment_to_be_running() {
@@ -22,8 +41,8 @@ wait_for_deployment_to_be_running() {
     if [ -n "${output}" ]; then
         mapfile -t pod_names < <(echo "${output}" | tr ':' '\n')
 
-        # The below ensures all the pods are running on the Guest VM (and not on
-        # the Control VM)
+        # The below ensures all the pods are running on the Guest VMs (and not
+        # on the Control VM)
         for pod_name in "${pod_names[@]}"; do
             if [ -z "${pod_name}" ]; then
                 continue
@@ -33,8 +52,10 @@ wait_for_deployment_to_be_running() {
             if [ "${status}" -ne 0 ]; then
                 echo "Could not find the node running pod '${pod_name}'"
                 return 1
-            elif [ "${output}" != "${TEST_GUEST_VM_NAME}" ]; then
-                echo "Node running pod '${pod_name}' was '${output}'"
+            elif [ "$(echo "${TEST_GUEST_VM_NAMES}" \
+                    | grep -w -q "${output}")" -ne 0 ]; then
+                echo "Node running pod '${pod_name}' was '${output}'."
+                echo "The target nodes were: ${TEST_GUEST_VM_NAMES}."
                 return 1
             fi
 
@@ -44,31 +65,54 @@ wait_for_deployment_to_be_running() {
     return 0
 }
 
-get_target_node_ip() {
-    sudo -n kubectl get node "${TEST_GUEST_VM_NAME}" \
-        -o jsonpath="{.status.addresses[?(@.type=='InternalIP')].address}"
+get_target_node_ips() {
+
+    ips=""
+
+    echo "" > "${TEST_STDERR_FILE}"
+
+    guest_vm_idx=0
+    for guest_vm in ${TEST_GUEST_VM_NAMES}; do
+        guest_vm_idx=$((guest_vm_idx+1))
+
+        ip=$(sudo -n kubectl get node "${guest_vm}"\
+             -o jsonpath="{.status.addresses[?(@.type=='InternalIP')].address}"\
+             2>> "${TEST_STDERR_FILE}")
+
+        ips="${ips} ${ip}"
+    done
+
+    echo "${ips}"
 }
 
 # Revert the environment to a state where the Guest VM is idle (its agent is not
 # connected to the server)
 cleanup_k3s_agent_on_guest_vm() {
 
-    # Stop the agent
-    expect "${TEST_COMMON_DIR}/run-command.expect" \
-        -hostname "${TEST_GUEST_VM_NAME}" \
-        -command "sudo -n systemctl stop k3s-agent" \
-        -console "guest_vm" \
-        2>"${TEST_STDERR_FILE}"
+    load_guest_vm_vars
 
-    # Remove the systemd override if it exists
-    expect "${TEST_COMMON_DIR}/run-command.expect" \
-        -hostname "${TEST_GUEST_VM_NAME}" \
-        -command "sudo -n rm -f ${K3S_AGENT_OVERRIDE_FILENAME} && \
-             sudo -n systemctl daemon-reload" \
-        -console "guest_vm" \
-        2>"${TEST_STDERR_FILE}"
+    guest_vm_idx=0
+    for guest_vm in ${TEST_GUEST_VM_NAMES}; do
+        guest_vm_idx=$((guest_vm_idx+1))
 
-    kubectl_delete "node" "${TEST_GUEST_VM_NAME}"
+        # Stop the agent
+        expect "${TEST_COMMON_DIR}/run-command.expect" \
+            -hostname "${guest_vm}" \
+            -command "sudo -n systemctl stop k3s-agent" \
+            -console "guest_vm" \
+            2>"${TEST_STDERR_FILE}"
+
+        # Remove the systemd override if it exists
+        expect "${TEST_COMMON_DIR}/run-command.expect" \
+            -hostname "${guest_vm}" \
+            -command "sudo -n rm -f ${K3S_AGENT_OVERRIDE_FILENAME} && \
+                 sudo -n systemctl daemon-reload" \
+            -console "guest_vm" \
+            2>"${TEST_STDERR_FILE}"
+
+        kubectl_delete "node" "${guest_vm}"
+
+    done
 
     return 0
 }
@@ -83,8 +127,9 @@ get_server_ip() {
 
 configure_k3s_agent_on_guest_vm() {
 
-    ip="${1}"
-    token="${2}"
+    guest_vm="${1}"
+    ip="${2}"
+    token="${3}"
     override_dir=$(dirname "${K3S_AGENT_OVERRIDE_FILENAME}")
 
     cmd="\
@@ -96,7 +141,7 @@ ExecStart=/usr/local/bin/k3s agent --server=https://${ip}:6443 --token=${token} 
 && sudo -n systemctl daemon-reload"
 
     expect "${TEST_COMMON_DIR}/run-command.expect" \
-        -hostname "${TEST_GUEST_VM_NAME}" \
+        -hostname "${1}" \
         -command "${cmd}" \
         -console "guest_vm" \
         2>"${TEST_STDERR_FILE}"
@@ -106,21 +151,19 @@ ExecStart=/usr/local/bin/k3s agent --server=https://${ip}:6443 --token=${token} 
 start_k3s_agent_on_guest_vm() {
 
     expect "${TEST_COMMON_DIR}/run-command.expect" \
-        -hostname "${TEST_GUEST_VM_NAME}" \
+        -hostname "${1}" \
         -command "sudo -n systemctl start k3s-agent" \
         -console "guest_vm" \
         2>"${TEST_STDERR_FILE}"
 
 }
 
-# Additional activities are required to run the k3s integration tests on a
-# virtualized k3s cluster (Control VM server + Guest VM agent). Those functions
-# are implemented by overriding those function calls here.
+# Override this function to ensure virtualization-specific Control VM
+# initialization is complete
 wait_for_k3s_to_be_running() {
 
-    # The overridden function also ensures that xendomains and the target Guest
-    # VM is running
-    _run xendomains_and_guest_vm_is_initialized "${TEST_GUEST_VM_NAME}"
+    # Ensure the xendomains service is initialized
+    _run xendomains_is_initialized
     if [ "${status}" -ne 0 ]; then
         echo "${output}"
         return "${status}"
@@ -137,54 +180,4 @@ wait_for_k3s_to_be_running() {
         echo "Timeout reached before k3s system pods were initialized"
     fi
     return "${status}"
-}
-
-# Start the agent (if it is not running)
-extra_setup() {
-
-    # Check if the agent is already running
-    _run expect "${TEST_COMMON_DIR}/run-command.expect" \
-        -hostname "${TEST_GUEST_VM_NAME}" \
-        -command "systemctl is-active k3s-agent" \
-        -console "guest_vm" \
-        2>"${TEST_STDERR_FILE}"
-
-    if [ "${status}" -eq 0 ]; then
-        # The agent is already running
-        return 0
-    fi
-
-    # 1. Get the token
-    # 2. Get the IP
-    # 3. Add an override on the Guest VM
-    # 4. Reload the daemon on the Guest VM
-    # 5. Start the k3s-agent service on the Guest VM
-
-    _run get_server_token
-    if [ "${status}" -ne 0 ]; then
-        echo "Could not get the k3s cluster token."
-        return 1
-    fi
-    token="${output}"
-
-    _run get_server_ip
-    if [ "${status}" -ne 0 ]; then
-        echo "Could not get the k3s Control VM IP address."
-        return 1
-    fi
-    ip="${output}"
-
-    _run configure_k3s_agent_on_guest_vm "${ip}" "${token}"
-    if [ "${status}" -ne 0 ]; then
-        echo "Failed to configure the k3s agent systemd override on the Guest VM."
-        return 1
-    fi
-
-    _run start_k3s_agent_on_guest_vm
-    if [ "${status}" -ne 0 ]; then
-        echo "Failed to start the k3s agent on the Guest VM."
-        return 1
-    fi
-
-    return 0
 }

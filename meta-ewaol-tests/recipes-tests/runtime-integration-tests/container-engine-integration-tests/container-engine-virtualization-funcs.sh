@@ -4,9 +4,10 @@
 #
 # SPDX-License-Identifier: MIT
 
+# First argument is the Guest VM name
 run_tests_on_guest_vm() {
     expect "${TEST_COMMON_DIR}/run-command.expect" \
-        -hostname "${TEST_GUEST_VM_NAME}" \
+        -hostname "${1}" \
         -command "ptest-runner container-engine-integration-tests" \
         -timeout "120" \
         -console "guest_vm" \

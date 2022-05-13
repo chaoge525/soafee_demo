@@ -57,14 +57,14 @@ image depend on its target architecture, as follows:
 
 * Baremetal architecture:
     * `Container Engine Tests`_
-    * `K3s Orchestration Tests`_ (local deployment of K3s pods)
+    * `K3s Orchestration Tests`_ (local deployment of a K3s pod)
     * `User Accounts Tests`_
 * Virtualization architecture:
     * Control VM:
 
       * `Container Engine Tests`_
-      * `K3s Orchestration Tests`_ (remote deployment of K3s pods on a Guest
-        VM, from the Control VM)
+      * `K3s Orchestration Tests`_ (remote deployment of K3s pods on the Guest
+        VMs, from the Control VM)
       * `User Accounts Tests`_
       * `Xen Virtualization Tests`_
     * Guest VM:
@@ -196,8 +196,8 @@ in `Running the Tests`_.
 On an EWAOL virtualization distribution image, the container engine test suite
 is available for execution on both the Control VM and the Guest VM. In addition,
 as part of running the test suite on the Control VM, an extra test will be
-performed which logs into the Guest VM and runs the container engine test suite
-on it, thereby reporting any test failures of the Guest VM as part of the
+performed which logs into each Guest VM and runs the container engine test suite
+on it, thereby reporting any test failures of a Guest VM as part of the
 Control VM's test suite execution.
 
 The test suite is built and installed in the image according to the following
@@ -221,12 +221,13 @@ consecutively in the following order.
          via the ``docker run`` command
 |        - Create and start a container, re-using the existing image
 |        - Update package lists within container from external network
-| 3. ``run container engine integration tests on the Guest VM from the Control VM``
-     is only executed on the Control VM. On the Guest VM this test is skipped.
-     The test is composed of two sub-tests:
-|    3.1. Check that Xendomains is initialized and the Guest VM is running via
-          ``systemctl status`` and ``xendomains status``
-|    3.2. Run the container engine integration tests on the Guest VM
+| 3. ``run container engine integration tests on Guest VMs from the Control VM``
+     is only executed on the Control VM. On a Guest VM this test is skipped.
+     The test is composed of the following sub-tests:
+|    3.1. Check that Xendomains is initialized ``systemctl status``
+|    For each Guest VM:
+|      3.2. Check the Guest VM is running via ``xendomains status``
+|      3.3. Run the container engine integration tests on the Guest VM
 |        - Uses an Expect script to log-in and execute the
            ``ptest-runner container-engine-integration-tests`` command
 |        - This command will therefore run only the first and second top-level
@@ -246,15 +247,15 @@ container engine tests:
 |  ``CE_TEST_CLEAN_ENV``: enable test environment clean-up
 |    Default: ``1`` (enabled)
 |    See `Container Engine Environment Clean-Up`_
-|  ``CE_TEST_GUEST_VM_NAME``: defines the Xen domain name and Hostname of the
-    Guest VM
+|  ``CE_TEST_GUEST_VM_BASENAME``: defines the base Xen domain name (hostname) to
+   determine which Guest VMs to include as part of the test suite execution
 |    Only available when running the tests on an EWAOL virtualization
      distribution image
-|    Represents the target Guest VM to test when executing the suite on the
-     Control VM
-|    Default: ``${EWAOL_GUEST_VM_HOSTNAME}1``
-|    With standard configuration, the default Guest VM will therefore be
-     ``ewaol-guest-vm1``
+|    Any Guest VMs that have a Xen domain name starting with this value will be
+     tested as part of executing the suite on the Control VM
+|    Default: ``${EWAOL_GUEST_VM_HOSTNAME}``
+|    With standard configuration, the default Guest VMs will therefore be all
+     Guest VMs with domain names which start with ``ewaol-guest-vm``
 
 Container Engine Environment Clean-Up
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -274,10 +275,10 @@ The environment clean operation involves:
     * Determination and removal of all running containers of the image given by
       ``CE_TEST_IMAGE``
     * Removal of the image given by ``CE_TEST_IMAGE``, if it exists
-    * Clearing the password set when the tests accessed the Guest VM, performed
-      only when running the test suite on a virtualization distribution image
-      with :ref:`Security Hardening<manual/hardening:Security Hardening>`
-      enabled.
+    * Clearing the passwords set when the test suite accessed each Guest VM,
+      performed only when running the test suite on a virtualization
+      distribution image with
+      :ref:`Security Hardening<manual/hardening:Security Hardening>` enabled.
 
 If enabled then the environment clean operations will always be run, regardless
 of test-suite success or failure.
@@ -307,48 +308,46 @@ agent. The containerized test workload is therefore deployed to this node for
 scheduling and execution.
 
 For EWAOL virtualization distribution images, the K3s integration tests consider
-a cluster comprised of two nodes: the Control VM running a K3s server, and the
-Guest VM running a K3s agent which is connected to the server. The containerized
-test workload is configured to only be schedulable on the Guest VM, meaning that
-the server on the Control VM orchestrates a test application which is deployed
-and executed on the Guest VM. In addition to the same initialization procedure
-that is carried out when running the tests on a baremetal distribution image,
-initialization for virtualization distribution images includes connecting the
-Guest VM's K3s agent to the Control VM's K3s server (if it is not already
-connected). To do this, before the tests run, the Systemd service that provides
-the K3s agent on the Guest VM is configured with a Systemd service unit override
-that provides the IP and authentication token of the Control VM's K3s server,
-and this service is then started. The K3s integration test suite therefore
-expects that the target Guest VM is available when running on a virtualization
-distribution image, and will not create one if it does not exist.
+a cluster comprised of multiple nodes: the Control VM running a K3s server, and
+each target Guest VM running a K3s agent which is connected to the server. The
+containerized test workload is configured to only be schedulable on the Guest
+VMs, meaning that the server on the Control VM orchestrates a test application
+with replicas that are deployed and executed on each of the target Guest VMs. In
+addition to the same initialization procedure that is carried out when running
+the tests on a baremetal distribution image, initialization for virtualization
+distribution images includes connecting a K3s agent running on each target Guest
+VM to the Control VM's K3s server (if it is not already connected). To do this,
+before the tests run, the Systemd service that provides the K3s agent on each
+Guest VM is configured with a Systemd service unit override that provides the IP
+and authentication token of the Control VM's K3s server, and this service is
+then started. The K3s integration test suite therefore expects that there are
+target Guest VMs available when running on a virtualization distribution image,
+and will not create any if they are not found.
 
 In both cases, the test suite will not be run until the appropriate K3s services
 are in the 'active' state, and all 'kube-system' pods are either running, or
 have completed their workload.
 
-| 1. ``K3s orchestration of containerized web service`` is composed of many
-     sub-tests, grouped here by test area:
+| 1. ``K3s container orchestration`` is composed of many sub-tests, grouped here
+     by test area:
 |    **Workload Deployment:**
 |    1.1. Deploy test Nginx workload from YAML file via ``kubectl apply``
-|    1.2. Ensure Pod replicas are initialized via ``kubectl wait``
+|    1.2. Ensure Pods are initialized via ``kubectl wait``
 |    1.3. Create NodePort Service to expose Deployment via
           ``kubectl create service``
-|    1.4. Get the IP of the node running the Deployment via ``kubectl get``
-|    1.5. Ensure web service is accessible on the node via ``wget``
-|    **Pod Failure Tolerance:**
-|    1.6. Get random Pod name from Deployment name via ``kubectl get``
-|    1.7. Delete random Pod via ``kubectl delete``
-|    1.8. Ensure web service is still accessible via ``wget``
+|    1.4. Get the IP of the node(s) running the Deployment via ``kubectl get``
+|    1.5. Ensure web service is accessible on the node(s) via ``wget``
 |    **Deployment Upgrade:**
-|    1.9. Get image version of random Pod via ``kubectl get``
-|    1.10. Upgrade image version of Deployment via ``kubectl set``
-|    1.11. Ensure web service is still accessible via ``wget``
-|    1.12. Get upgraded image version of random Pod via ``kubectl get``
+|    1.6. Get old image version of random Pod via ``kubectl get``
+|    1.7. Upgrade image version of Deployment via ``kubectl set``
+|    1.8. Ensure upgraded Pods are running via ``kubectl wait``
+|    1.9. Get upgraded image version of random Pod via ``kubectl get``
+|    1.10. Ensure web service is still accessible on the node(s) via ``wget``
 |    **Server Failure Tolerance:**
-|    1.13. Stop K3s server Systemd service via ``systemctl stop``
-|    1.14. Ensure web service is still accessible via ``wget``
-|    1.15. Restart the Systemd service via ``systemctl start``
-|    1.16. Check K3S server is again responding to ``kubectl get``
+|    1.11. Stop K3s server Systemd service via ``systemctl stop``
+|    1.12. Ensure web service is still accessible on the node(s) via ``wget``
+|    1.13. Restart the Systemd service via ``systemctl start``
+|    1.14. Check K3S server is again responding to ``kubectl get``
 
 The tests can be customized via environment variables passed to the execution,
 each prefixed by ``K3S_`` to identify the variable as associated to the
@@ -361,13 +360,15 @@ K3s orchestration tests:
 |  ``K3S_TEST_CLEAN_ENV``: enable test environment clean-up
 |    Default: ``1`` (enabled)
 |    See `K3s Environment Clean-Up`_
-|  ``K3S_TEST_GUEST_VM_NAME``: defines the name of the Guest VM to use for the
-   tests
-|    Only available when running the tests on a virtualization distribution
-     image
-|    Default: ``${EWAOL_GUEST_VM_HOSTNAME}1``
-|    With standard configuration, the default Guest VM will therefore be
-     ``ewaol-guest-vm1``
+|  ``K3S_TEST_GUEST_VM_BASENAME``: defines the base Xen domain name (hostname)
+   to determine which Guest VMs to include in the test suite execution
+|    Only available when running the tests on an EWAOL virtualization
+     distribution image
+|    Any Guest VMs that have a Xen domain name starting with this value will be
+     connected to the K3s server, to form a cluster
+|    Default: ``${EWAOL_GUEST_VM_HOSTNAME}``
+|    With standard configuration, the default Guest VMs are therefore all
+     Guest VMs which have a domain name starting with ``ewaol-guest-vm``
 
 K3s Environment Clean-Up
 ^^^^^^^^^^^^^^^^^^^^^^^^
@@ -391,13 +392,13 @@ The environment clean operation involves:
 For virtualization distribution images, additional clean-up operations are
 performed:
 
-    * Deleting the Guest VM node from the K3s cluster
-    * Stopping the K3s agent running on the Guest VM, and deleting any test
-      Systemd service override on the Guest VM
-    * Clearing the password set when the tests accessed the Guest VM, performed
-      only when running the test suite on a virtualization distribution image
-      with :ref:`Security Hardening<manual/hardening:Security Hardening>`
-      enabled.
+    * Deleting each Guest VM node from the K3s cluster
+    * Stopping the K3s agent running on each Guest VM, and deleting any test
+      Systemd service override on each Guest VM
+    * Clearing the passwords set when the test suite accessed each Guest VM,
+      performed only when running the test suite on a virtualization
+      distribution image with
+      :ref:`Security Hardening<manual/hardening:Security Hardening>` enabled.
 
 If enabled then the environment clean operations will always be run, regardless
 of test-suite success or failure.
@@ -431,9 +432,9 @@ are configured and appropriate access permissions are in place. For a
 virtualization image, the test suite is available on both the Control VM and the
 Guest VM(s), and includes the same validation as the baremetal test suite on the
 respective VM's local user accounts. However, as part of running the test suite
-on the Control VM, an extra test will be performed which logs into the Guest VM
-and runs the user accounts test suite on it, thereby reporting any test failures
-of the Guest VM as part of the Control VM's test suite execution.
+on the Control VM, an extra test will be performed which logs into the Guest VMs
+and runs the user accounts test suite on them, thereby reporting any test
+failures of a Guest VM as part of the Control VM's test suite execution.
 
 As the configuration of user accounts is modified for EWAOL distribution images
 that are built with EWAOL security hardening, additional security-related
@@ -464,16 +465,17 @@ which are conditionally executed, as follows:
 |    2.4. Check that the umask value is set correctly
 | 3. ``run user accounts integration tests on the Guest VM from the Control VM``
      is only included for EWAOL virtualization distribution images, and is only
-     executed on the Control VM. On the Guest VM this test is skipped. The test
-     is composed of two sub-tests:
-|    3.1. Check that Xendomains is initialized and the Guest VM is running via
-          ``systemctl status`` and ``xendomains status``
-|    3.2. Run the user accounts integration tests on the Guest VM
-|        - Uses an Expect script to log-in and execute the
-           ``ptest-runner user-accounts-integration-tests`` command
-|        - This command will therefore run only the first and second
-           (if EWAOL security hardening is configured) top-level integration
-           tests of the user accounts integration test suite on the Guest VM
+     executed on the Control VM. On a Guest VM this test is skipped. The test
+     is composed of the following sub-tests:
+|    3.1. Check that Xendomains is initialized ``systemctl status``
+|    For each Guest VM:
+|      3.2. Check the Guest VM is running via ``xendomains status``
+|      3.3. Run the user accounts integration tests on the Guest VM
+|          - Uses an Expect script to log-in and execute the
+             ``ptest-runner user-accounts-integration-tests`` command
+|          - This command will therefore run only the first and second
+             (if EWAOL security hardening is configured) top-level integration
+             tests of the user accounts integration test suite on the Guest VM
 
 The tests can be customized via environment variables passed to the execution,
 each prefixed by ``UA_`` to identify the variable as associated to the user
@@ -486,15 +488,15 @@ accounts tests:
 |  ``UA_TEST_CLEAN_ENV``: enable test environment clean-up
 |    Default: ``1`` (enabled)
 |    See `User Accounts Environment Clean-Up`_
-|  ``UA_TEST_GUEST_VM_NAME``: defines the Xen domain name and Hostname of the
-   Guest VM
+|  ``UA_TEST_GUEST_VM_BASENAME``: defines the base Xen domain name (hostname) to
+   determine which Guest VMs to include as part of the test suite execution
 |    Only available when running the tests on an EWAOL virtualization
      distribution image
-|    Represents the target Guest VM to test when executing the suite on the
-     Control VM
-|    Default: ``${EWAOL_GUEST_VM_HOSTNAME}1``
-|    With standard configuration, the default Guest VM will therefore be
-     ``ewaol-guest-vm1``
+|    Any Guest VMs that have a Xen domain name starting with this value will be
+     tested as part of executing the suite on the Control VM
+|    Default: ``${EWAOL_GUEST_VM_HOSTNAME}``
+|    With standard configuration, the default Guest VMs will therefore be all
+     Guest VMs with domain names which start with ``ewaol-guest-vm``
 
 User Accounts Environment Clean-Up
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -511,10 +513,10 @@ hardening are:
 
     * Reset the password for the ``test`` user account
     * Reset the password for the non-privileged EWAOL user account
-    * Clearing the password set when the tests accessed the Guest VM, performed
-      only when running the test suite on a virtualization distribution image
-      with :ref:`Security Hardening<manual/hardening:Security Hardening>`
-      enabled.
+    * Clearing the passwords set when the test suite accessed each Guest VM,
+      performed only when running the test suite on a virtualization
+      distribution image with
+      :ref:`Security Hardening<manual/hardening:Security Hardening>` enabled.
 
 After the environment clean-up, the user accounts will return to their original
 state where the first log-in will prompt the user for a new account password.
@@ -540,25 +542,26 @@ The test suite is only available for images that target the virtualization
 architecture.
 
 Currently the test suite contains two top-level integration tests, which
-validate a correctly running Guest VM, and validate that it can be managed
-successfully from the Control VM. These tests are as follows:
+validate that the target Guest VMs are correctly running, and validate that they
+can be managed successfully from the Control VM. These tests are as follows:
 
-| 1. ``validate Guest VM is running`` is composed of two sub-tests:
-|    1.1. Check that Xen reports the Guest VM as running via
-          ``xendomains status``
-|    1.2. Check that the Guest VM is operational and has external network access
-|        - Log-in to the Guest VM and access its interactive shell via
-           ``xl console``
-|        - Ping an external IP with the ``ping`` utility
-| 2. ``validate Guest VM management`` is composed of five sub-tests:
-|    2.1. Check that Xen reports the Guest VM as running via
-          ``xendomains status``
-|    2.2. Shutdown the Guest VM via ``systemctl stop``
-|    2.3. Check that Xen reports the Guest VM as not running via
-          ``xendomains status``
-|    2.4. Start the Guest VM via ``systemctl start``
-|    2.5. Check that Xen reports the Guest VM as running via
-          ``xendomains status``
+| For each Guest VM:
+|   1. ``validate Guest VM is running`` is composed of two sub-tests:
+|      1.1. Check that Xen reports the Guest VM as running via
+            ``xendomains status``
+|      1.2. Check that the Guest VM is operational and has external network access
+|          - Log-in to the Guest VM and access its interactive shell via
+             ``xl console``
+|          - Ping an external IP with the ``ping`` utility
+|   2. ``validate Guest VM management`` is composed of five sub-tests:
+|      2.1. Check that Xen reports the Guest VM as running via
+            ``xendomains status``
+|      2.2. Shutdown the Guest VM via ``systemctl stop``
+|      2.3. Check that Xen reports the Guest VM as not running via
+            ``xendomains status``
+|      2.4. Start the Guest VM via ``systemctl start``
+|      2.5. Check that Xen reports the Guest VM as running via
+            ``xendomains status``
 
 The tests can be customized via environment variables passed to the execution,
 each prefixed by ``VIRT_`` to identify the variable as associated to the
@@ -571,15 +574,15 @@ virtualization integration tests:
 |  ``VIRT_TEST_CLEAN_ENV``: enable test environment clean-up
 |    Default: ``1`` (enabled)
 |    See `Xen Virtualization Environment Clean-Up`_
-|  ``VIRT_TEST_GUEST_VM_NAME``: defines the name of the Guest VM to use for the
-   tests
-|    Default: ``${EWAOL_GUEST_VM_HOSTNAME}1``
-|    With standard configuration, the default Guest VM will therefore be
-     ``ewaol-guest-vm1``
+|  ``VIRT_TEST_GUEST_VM_BASENAME``: defines the base Xen domain name (hostname)
+   to determine which Guest VMs to validate
+|    Default: ``${EWAOL_GUEST_VM_HOSTNAME}``
+|    With standard configuration, the default Guest VMs will therefore be all
+     Guest VMs with domain names which start with ``ewaol-guest-vm``
 
 Prior to execution, the Xen Virtualization test suite expects the
-``xendomains.service`` Systemd service to be running or in the process of
-initializing.
+``xendomains.service`` Systemd service on the Control VM to be running or in the
+process of initializing.
 
 Xen Virtualization Environment Clean-Up
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -587,14 +590,14 @@ Xen Virtualization Environment Clean-Up
 The Xen Virtualization integration tests only modify the system environment when
 the test suite is executed on an image with
 :ref:`Security Hardening<manual/hardening:Security Hardening>` enabled, as
-accessing the Guest VM on a security hardened image requires setting the user
+accessing a Guest VM on a security hardened image requires setting the user
 account password.
 
 There is therefore only a single environment clean operation performed for this
 test suite:
 
-    * Clearing the password set when the tests accessed the Guest VM, performed
-      only when running the test suite with
+    * Clearing the passwords set when the tests accessed each Guest VM,
+      performed only when running the test suite with
       :ref:`Security Hardening<manual/hardening:Security Hardening>` enabled.
 
 Cleaning up the account password will only occur if ``VIRT_TEST_CLEAN_ENV`` is

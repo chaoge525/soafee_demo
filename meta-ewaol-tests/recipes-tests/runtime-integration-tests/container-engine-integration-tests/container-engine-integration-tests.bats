@@ -52,6 +52,14 @@ setup_file() {
         log "FAIL"
         return 1
     fi
+
+    # Call without run as we might export environment variables
+    extra_setup
+    status="${?}"
+    if [ "${status}" -ne 0 ]; then
+        log "FAIL"
+        return 1
+    fi
 }
 
 # Runs after the final test
