@@ -1,0 +1,14 @@
+# Copyright (c) 2022 Arm Limited or its affiliates. All rights reserved.
+#
+# SPDX-License-Identifier: MIT
+
+# Read The Docs specific
+jinja2==3.0.0
+
+# Required to build the documentation
+sphinx==4.0.2
+sphinx_rtd_theme==0.5.2
+sphinx-copybutton==0.4.0
+readthedocs-sphinx-search==0.1.1
+docutils==0.16
+sphinx-substitution-extensions==2022.2.16

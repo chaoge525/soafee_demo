@@ -83,7 +83,7 @@ modules:
             - "/documentation/Makefile"
             - "/documentation/index.rst"
             - "/documentation/requirements.txt"
-        dict_path: "meta-cassini/meta-cassini-config/qa-checks/cassini-dictionary"
+        dict_path: "meta-cassini-config/qa-checks/cassini-dictionary"
 
     yaml:
         include_patterns:

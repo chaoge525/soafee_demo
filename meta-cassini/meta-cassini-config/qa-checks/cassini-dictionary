@@ -24,6 +24,7 @@ build-time
 c
 cassini
 CASSINI
+cassini_architecture.png
 ce_test_clean_env
 ce_test_guest_vm_name
 ce_test_image
