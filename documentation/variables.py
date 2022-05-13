@@ -24,6 +24,7 @@
 # Note the "_" which renders the substitution as a hyperlink is only possible
 # because the variable is defined as a link, to be resolved as a Sphinx target.
 
+yocto_release = "kirkstone"
 yocto_doc_version = "4.0/"
 yocto_linux_version = "5.15"
 xen_version = "4.16"
@@ -40,11 +41,11 @@ general_links = {
   "link:Yocto Check Layer Script": f"https://docs.yoctoproject.org/{yocto_doc_version}singleindex.html#yocto-check-layer-script",
   "link:DEFAULTTUNE": f"https://docs.yoctoproject.org/{yocto_doc_version}ref-manual/variables.html#term-DEFAULTTUNE",
   "link:Yocto Docker config": f"https://git.yoctoproject.org/yocto-kernel-cache/tree/features/docker/docker.cfg?h=yocto-{yocto_linux_version}",
-  "link:Yocto K3s config": f"https://git.yoctoproject.org/cgit/cgit.cgi/meta-virtualization/tree/recipes-kernel/linux/linux-yocto/kubernetes.cfg?h=yocto-{yocto_linux_version}",
+  "link:Yocto K3s config": f"https://git.yoctoproject.org/cgit/cgit.cgi/meta-virtualization/tree/recipes-kernel/linux/linux-yocto/kubernetes.cfg?h={yocto_release}",
   "link:Yocto Xen config": f"https://git.yoctoproject.org/cgit/cgit.cgi/yocto-kernel-cache/tree/features/xen/xen.cfg?h=yocto-{yocto_linux_version}",
   "link:kas build tool": f"https://kas.readthedocs.io/en/{kas_version}/userguide.html",
   "link:kas Dependencies & installation": f"https://kas.readthedocs.io/en/{kas_version}/userguide.html#dependencies-installation",
-  "link:meta-arm-bsp": "https://git.yoctoproject.org/meta-arm/tree/meta-arm-bsp/documentation?h=kirkstone",
+  "link:meta-arm-bsp": "https://git.yoctoproject.org/meta-arm/tree/meta-arm-bsp/documentation?h={yocto_release}",
   "link:xl domain configuration": f"https://xenbits.xen.org/docs/{xen_version}-testing/man/xl.cfg.5.html",
   "link:xl documentation": f"https://xenbits.xen.org/docs/{xen_version}-testing/man/xl.1.html",
 
@@ -65,20 +66,20 @@ general_links = {
 }
 
 layer_definitions = {
-  "meta-ewaol contributions branch": "``kirkstone-dev``",
+  "meta-ewaol contributions branch": f"``{yocto_release}-dev``",
   "meta-ewaol repository": "https://gitlab.arm.com/ewaol/meta-ewaol",
   "meta-ewaol repository host": "https://gitlab.arm.com",
   "meta-ewaol remote": "https://git.gitlab.arm.com/ewaol/meta-ewaol.git",
-  "meta-ewaol branch": "kirkstone-dev",
-  "poky branch": "kirkstone",
-  "meta-openembedded branch": "kirkstone",
-  "meta-virtualization branch": "kirkstone",
-  "meta-arm branch": "kirkstone",
+  "meta-ewaol branch": f"{yocto_release}-dev",
+  "poky branch": f"{yocto_release}",
+  "meta-openembedded branch": f"{yocto_release}",
+  "meta-virtualization branch": f"{yocto_release}",
+  "meta-arm branch": f"{yocto_release}",
   "poky revision": "HEAD",
   "meta-virtualization revision": "HEAD",
   "meta-openembedded revision": "HEAD",
   "meta-arm revision": "HEAD",
-  "layer dependency statement": "The layer revisions are related to the EWAOL ``kirkstone-dev`` branch.",
+  "layer dependency statement": f"The layer revisions are related to the EWAOL ``{yocto_release}-dev`` branch.",
 }
 
 other_definitions = {
