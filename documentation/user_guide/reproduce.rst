@@ -17,7 +17,7 @@ Introduction
 ************
 
 The recommended approach for image build setup and customization is to use the
-`kas build tool`_. To support this, EWAOL provides configuration files to setup
+|kas build tool|_. To support this, EWAOL provides configuration files to setup
 and build different target images, different distribution image features, and
 set associated parameter configurations.
 
@@ -78,6 +78,8 @@ and one **Target Platform Config** to the kas build tool, chained via a colon
 In the next section, guidance is provided for configuring, building and
 deploying EWAOL distributions using these kas configuration files.
 
+.. _user_guide_reproduce_environment_setup:
+
 ****************************
 Build Host Environment Setup
 ****************************
@@ -111,6 +113,8 @@ User Guide uses ``bmap-tools``. This can be installed via:
   The Build Host should have at least 65 GBytes of free disk space to build an
   EWAOL baremetal distribution image, or at least 100 GBytes of free disk space
   to build an EWAOL virtualization distribution image.
+
+.. _user_guide_reproduce_download:
 
 ********
 Download
@@ -146,7 +150,7 @@ To build a baremetal distribution image for the N1SDP hardware target platform:
 
   .. code-block:: console
 
-    kas build meta-ewaol-config/kas/baremetal.yml:meta-ewaol-config/kas/n1sdp.yml
+    kas build --update meta-ewaol-config/kas/baremetal.yml:meta-ewaol-config/kas/n1sdp.yml
 
   The resulting baremetal distribution image will be produced at:
   ``build/tmp_baremetal/deploy/images/n1sdp/ewaol-baremetal-image-n1sdp.*``
@@ -156,7 +160,7 @@ hardware target platform:
 
   .. code-block:: console
 
-    kas build meta-ewaol-config/kas/baremetal-sdk.yml:meta-ewaol-config/kas/n1sdp.yml
+    kas build --update meta-ewaol-config/kas/baremetal-sdk.yml:meta-ewaol-config/kas/n1sdp.yml
 
   The resulting baremetal distribution image will be produced at:
   ``build/tmp_baremetal/deploy/images/n1sdp/ewaol-baremetal-sdk-image-n1sdp.*``
@@ -179,7 +183,7 @@ platform:
 
   .. code-block:: console
 
-    kas build meta-ewaol-config/kas/virtualization.yml:meta-ewaol-config/kas/n1sdp.yml
+    kas build --update meta-ewaol-config/kas/virtualization.yml:meta-ewaol-config/kas/n1sdp.yml
 
   The resulting virtualization distribution image will be produced:
   ``build/tmp_virtualization/deploy/images/n1sdp/ewaol-virtualization-image-n1sdp.*``
@@ -189,7 +193,7 @@ hardware target platform:
 
   .. code-block:: console
 
-    kas build meta-ewaol-config/kas/virtualization-sdk.yml:meta-ewaol-config/kas/n1sdp.yml
+    kas build --update meta-ewaol-config/kas/virtualization-sdk.yml:meta-ewaol-config/kas/n1sdp.yml
 
   The resulting virtualization distribution image will be produced:
   ``build/tmp_virtualization/deploy/images/n1sdp/ewaol-virtualization-sdk-image-n1sdp.*``
@@ -223,11 +227,13 @@ for its Guest VM, run:
 
   .. code-block:: console
 
-    EWAOL_GUEST_VM1_NUMBER_OF_CPUS=8 kas build meta-ewaol-config/kas/virtualization.yml:meta-ewaol-config/kas/n1sdp.yml
+    EWAOL_GUEST_VM1_NUMBER_OF_CPUS=8 kas build --update meta-ewaol-config/kas/virtualization.yml:meta-ewaol-config/kas/n1sdp.yml
 
 EWAOL supports adding multiple independently-configurable Guest VMs to a
 virtualization distribution image. Additional details for this are provided at
 :ref:`manual_build_system_virtualization_customization`.
+
+.. _user_guide_reproduce_deploy:
 
 ******
 Deploy
