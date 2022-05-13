@@ -96,6 +96,8 @@ other_definitions = {
 
 # Potentially old definitions required for documenting migrations, changelog
 release_definitions = {
+  "v1.0:migration version": "v1.0",
+  "v1.0:kas version": other_definitions["kas version"],
 }
 
 def generate_link(key, link):

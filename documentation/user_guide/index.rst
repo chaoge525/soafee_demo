@@ -24,3 +24,11 @@ features, and running example EWAOL use-cases.
 
 Describes how to extend the EWAOL project to build and run on a custom or
 unsupported target platform.
+
+.. toctree::
+   :maxdepth: 1
+
+   migration
+
+Guidance for migrating an existing EWAOL build environment to a later EWAOL
+release.

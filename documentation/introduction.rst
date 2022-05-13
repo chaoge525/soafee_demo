@@ -154,7 +154,9 @@ The documentation is structured as follows:
     Provides guidance for configuring, building, and deploying EWAOL
     distributions on supported target platforms, running and validating
     supported EWAOL functionalities, and running the distribution on custom
-    hardware.
+    hardware. Also includes migration guidance for how to enable these
+    activities on a later EWAOL release, when upgrading from an older release
+    version.
 
   * :ref:`Developer Manual <manual/index:Developer Manual>`
 

@@ -11,6 +11,8 @@ This section of the User Guide describes how to extend EWAOL in order to
 configure and build it for deployment on custom or unsupported target platforms,
 via kas.
 
+.. _user_guide_extend_porting:
+
 ****************************************************************
 Porting EWAOL to a Custom or Unsupported Target Platform via kas
 ****************************************************************
