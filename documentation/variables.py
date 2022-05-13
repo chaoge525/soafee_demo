@@ -7,44 +7,61 @@
 # as the rst_prolog (see the Sphinx Configuration documentation at
 # https://www.sphinx-doc.org/en/master/usage/configuration.html for more info).
 
+# There are two types of key-value substitutions:
+#     1. simple string replacements
+#     2. replacement with a rendered hyperlink, where the key defines what the
+#        rendered hyerplink text will be
+
+# Prepend the key with "link:" to identify it as a Sphinx target name for use as
+# a hyperlink. The "link:" prefix is dropped from the substitution name.
+#
+# For example:
+#   "link:This URL": "www.arm.com"
+#   "company name": "arm"
+# Can be used as:
+#   The |company name| website can be found at |This URL|_.
+#
+# Note the "_" which renders the substitution as a hyperlink is only possible
+# because the variable is defined as a link, to be resolved as a Sphinx target.
+
 yocto_doc_version = "4.0/"
 yocto_linux_version = "5.15"
 xen_version = "4.16"
 kas_version = "3.0.2"
 
-external_links = {
-  "Yocto Project Documentation": f"https://docs.yoctoproject.org/{yocto_doc_version}",
-  "Yocto Release Process": "https://docs.yoctoproject.org/ref-manual/release-process.html",
-  "kernel module compilation": f"https://docs.yoctoproject.org/{yocto_doc_version}kernel-dev/common.html#building-out-of-tree-modules-on-the-target",
-  "profiling and tracing": f"https://docs.yoctoproject.org/{yocto_doc_version}profile-manual/index.html",
-  "runtime package management": f"https://docs.yoctoproject.org/{yocto_doc_version}dev-manual/common-tasks.html#using-runtime-package-management",
-  "Multiple Configuration Build": f"https://docs.yoctoproject.org/{yocto_doc_version}dev-manual/common-tasks.html#building-images-for-multiple-targets-using-multiple-configurations",
-  "list of essential packages": f"https://docs.yoctoproject.org/{yocto_doc_version}singleindex.html#required-packages-for-the-build-host",
-  "Yocto Check Layer Script": f"https://docs.yoctoproject.org/{yocto_doc_version}singleindex.html#yocto-check-layer-script",
-  "DEFAULTTUNE": f"https://docs.yoctoproject.org/{yocto_doc_version}ref-manual/variables.html#term-DEFAULTTUNE",
-  "Yocto Docker config": f"https://git.yoctoproject.org/yocto-kernel-cache/tree/features/docker/docker.cfg?h=yocto-{yocto_linux_version}",
-  "Yocto K3s config": f"http://git.yoctoproject.org/cgit/cgit.cgi/meta-virtualization/tree/recipes-kernel/linux/linux-yocto/kubernetes.cfg?h=yocto-{yocto_linux_version}",
-  "Yocto Xen config": f"http://git.yoctoproject.org/cgit/cgit.cgi/yocto-kernel-cache/tree/features/xen/xen.cfg?h=yocto-{yocto_linux_version}",
-  "kas build tool": f"https://kas.readthedocs.io/en/{kas_version}/userguide.html",
-  "kas Dependencies & installation": f"https://kas.readthedocs.io/en/{kas_version}/userguide.html#dependencies-installation",
-  "meta-arm-bsp": "https://git.yoctoproject.org/meta-arm/tree/meta-arm-bsp/documentation?h=kirkstone",
-  "xl domain configuration": f"https://xenbits.xen.org/docs/{xen_version}-testing/man/xl.cfg.5.html",
-  "xl documentation": f"https://xenbits.xen.org/docs/{xen_version}-testing/man/xl.1.html",
+general_links = {
+  "link:Yocto Project Documentation": f"https://docs.yoctoproject.org/{yocto_doc_version}",
+  "link:Yocto Release Process": "https://docs.yoctoproject.org/ref-manual/release-process.html",
+  "link:kernel module compilation": f"https://docs.yoctoproject.org/{yocto_doc_version}kernel-dev/common.html#building-out-of-tree-modules-on-the-target",
+  "link:profiling and tracing": f"https://docs.yoctoproject.org/{yocto_doc_version}profile-manual/index.html",
+  "link:runtime package management": f"https://docs.yoctoproject.org/{yocto_doc_version}dev-manual/common-tasks.html#using-runtime-package-management",
+  "link:Multiple Configuration Build": f"https://docs.yoctoproject.org/{yocto_doc_version}dev-manual/common-tasks.html#building-images-for-multiple-targets-using-multiple-configurations",
+  "link:list of essential packages": f"https://docs.yoctoproject.org/{yocto_doc_version}singleindex.html#required-packages-for-the-build-host",
+  "link:Yocto Check Layer Script": f"https://docs.yoctoproject.org/{yocto_doc_version}singleindex.html#yocto-check-layer-script",
+  "link:DEFAULTTUNE": f"https://docs.yoctoproject.org/{yocto_doc_version}ref-manual/variables.html#term-DEFAULTTUNE",
+  "link:Yocto Docker config": f"https://git.yoctoproject.org/yocto-kernel-cache/tree/features/docker/docker.cfg?h=yocto-{yocto_linux_version}",
+  "link:Yocto K3s config": f"http://git.yoctoproject.org/cgit/cgit.cgi/meta-virtualization/tree/recipes-kernel/linux/linux-yocto/kubernetes.cfg?h=yocto-{yocto_linux_version}",
+  "link:Yocto Xen config": f"http://git.yoctoproject.org/cgit/cgit.cgi/yocto-kernel-cache/tree/features/xen/xen.cfg?h=yocto-{yocto_linux_version}",
+  "link:kas build tool": f"https://kas.readthedocs.io/en/{kas_version}/userguide.html",
+  "link:kas Dependencies & installation": f"https://kas.readthedocs.io/en/{kas_version}/userguide.html#dependencies-installation",
+  "link:meta-arm-bsp": "https://git.yoctoproject.org/meta-arm/tree/meta-arm-bsp/documentation?h=kirkstone",
+  "link:xl domain configuration": f"https://xenbits.xen.org/docs/{xen_version}-testing/man/xl.cfg.5.html",
+  "link:xl documentation": f"https://xenbits.xen.org/docs/{xen_version}-testing/man/xl.1.html",
 
-  "N1SDP Technical Reference Manual": "https://developer.arm.com/documentation/101489/0000",
-  "PEP 8": "https://peps.python.org/pep-0008/",
-  "pycodestyle Documentation": "https://pycodestyle.pycqa.org/en/latest/",
-  "Shellcheck": "https://github.com/koalaman/shellcheck",
-  "Shellcheck wiki pages": "https://github.com/koalaman/shellcheck/wiki/Checks",
-  "Docker documentation": "https://docs.docker.com",
-  "K3s documentation": "https://rancher.com/docs/k3s/latest/en",
-  "Xen documentation": "https://wiki.xenproject.org/wiki/Main_Page",
-  "yamllint documentation": "https://yamllint.readthedocs.io/en/stable/",
-  "Yocto Package Test": "https://wiki.yoctoproject.org/wiki/Ptest",
-  "Bash Automated Test System": "https://github.com/bats-core/bats-core",
-  "Python Datetime Format Codes": "https://docs.python.org/3/library/datetime.html#strftime-and-strptime-format-codes",
-  "Nginx": "https://www.nginx.com/",
-  "Potential firmware damage notice": "https://community.arm.com/developer/tools-software/oss-platforms/w/docs/604/notice-potential-damage-to-n1sdp-boards-if-using-latest-firmware-release",
+  "link:N1SDP Technical Reference Manual": "https://developer.arm.com/documentation/101489/0000",
+  "link:PEP 8": "https://peps.python.org/pep-0008/",
+  "link:pycodestyle Documentation": "https://pycodestyle.pycqa.org/en/latest/",
+  "link:Shellcheck": "https://github.com/koalaman/shellcheck",
+  "link:Shellcheck wiki pages": "https://github.com/koalaman/shellcheck/wiki/Checks",
+  "link:Docker documentation": "https://docs.docker.com",
+  "link:K3s documentation": "https://rancher.com/docs/k3s/latest/en",
+  "link:Xen documentation": "https://wiki.xenproject.org/wiki/Main_Page",
+  "link:yamllint documentation": "https://yamllint.readthedocs.io/en/stable/",
+  "link:Yocto Package Test": "https://wiki.yoctoproject.org/wiki/Ptest",
+  "link:Bash Automated Test System": "https://github.com/bats-core/bats-core",
+  "link:Python Datetime Format Codes": "https://docs.python.org/3/library/datetime.html#strftime-and-strptime-format-codes",
+  "link:Nginx": "https://www.nginx.com/",
+  "link:Potential firmware damage notice": "https://community.arm.com/developer/tools-software/oss-platforms/w/docs/604/notice-potential-damage-to-n1sdp-boards-if-using-latest-firmware-release",
 }
 
 layer_definitions = {
@@ -77,7 +94,11 @@ other_definitions = {
       """,
 }
 
-def generate_external_link(key, link):
+# Potentially old definitions required for documenting migrations, changelog
+release_definitions = {
+}
+
+def generate_link(key, link):
 
   definition = f".. _{key}: {link}"
   key_mapping = f".. |{key}| replace:: {key}"
@@ -92,13 +113,15 @@ def generate_rst_prolog():
 
   rst_prolog = ""
 
-  rst_prolog = "\n".join([generate_external_link(key, link) for key, link in
-                         external_links.items()]) + "\n"
+  for variables_group in [general_links,
+                          layer_definitions,
+                          other_definitions,
+                          release_definitions]:
 
-  rst_prolog += "\n".join([generate_replacement(key, value) for key, value in
-                         layer_definitions.items()]) + "\n"
-
-  rst_prolog += "\n".join([generate_replacement(key, value) for key, value in
-                         other_definitions.items()]) + "\n"
+    for key, value in variables_group.items():
+      if key.startswith("link:"):
+        rst_prolog += generate_link(key.split("link:")[1], value) + "\n"
+      else:
+        rst_prolog += generate_replacement(key, value) + "\n"
 
   return rst_prolog
