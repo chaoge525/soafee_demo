@@ -12,6 +12,7 @@ RDEPENDS:${PN}:append = " bats runtime-integration-tests-common"
 DEPENDS:append = " gettext-native"
 
 EWAOL_TEST_ACCOUNT ??= "test"
+EWAOL_TEST_BATS_OPTIONS ?= "--show-output-of-passing-tests"
 
 TEST_DIR = "${datadir}/${BPN}"
 TEST_SUITE_NAME = "${BPN}"
@@ -23,12 +24,14 @@ SRC_URI = "${TEST_FILES} \
 ENVSUBST_VARS = "\$TEST_SUITE_NAME \
                  \$EWAOL_TEST_ACCOUNT \
                  \$TEST_DIR \
-                 \$EWAOL_GUEST_VM_HOSTNAME"
+                 \$EWAOL_GUEST_VM_HOSTNAME \
+                 \$EWAOL_TEST_BATS_OPTIONS"
 
 export TEST_SUITE_NAME
 export EWAOL_TEST_ACCOUNT
 export TEST_DIR
 export EWAOL_GUEST_VM_HOSTNAME
+export EWAOL_TEST_BATS_OPTIONS
 
 do_install[vardeps] += "\
     ENVSUBST_VARS \
@@ -36,6 +39,7 @@ do_install[vardeps] += "\
     EWAOL_TEST_ACCOUNT \
     TEST_DIR \
     EWAOL_GUEST_VM_HOSTNAME \
+    EWAOL_TEST_BATS_OPTIONS \
     "
 
 do_install() {

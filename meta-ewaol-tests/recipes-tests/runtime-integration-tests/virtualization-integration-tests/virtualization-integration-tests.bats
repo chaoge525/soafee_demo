@@ -15,8 +15,6 @@ else
     TEST_LOG_DIR="${VIRT_TEST_LOG_DIR}"
 fi
 
-TEST_RUNTIME_DIR="/var/run/ewaol-integration-tests"
-
 export TEST_LOG_FILE="${TEST_LOG_DIR}/virtualization-integration-tests.log"
 export TEST_STDERR_FILE="${TEST_LOG_DIR}/virt-stderr.log"
 export TEST_RUN_FILE="${TEST_RUNTIME_DIR}/virtualization-integration-tests.pgid"

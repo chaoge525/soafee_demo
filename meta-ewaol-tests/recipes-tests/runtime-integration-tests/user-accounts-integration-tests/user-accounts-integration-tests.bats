@@ -14,8 +14,6 @@ else
     TEST_LOG_DIR="${UA_TEST_LOG_DIR}"
 fi
 
-TEST_RUNTIME_DIR="/var/run/ewaol-integration-tests"
-
 export TEST_LOG_FILE="${TEST_LOG_DIR}/user-accounts-integration-tests.log"
 export TEST_STDERR_FILE="${TEST_LOG_DIR}/ua-stderr.log"
 export TEST_RUN_FILE="${TEST_RUNTIME_DIR}/user-accounts-integration-tests.pgid"
