@@ -1,11 +1,15 @@
+1.1.0+git0+b9460f26b4
 1.0.0+rc93+git0+249bca0a13
 3.2.1+git0+ab4d0cf908
+4.16+stable0+f265444922
+20.10.12+ce+git906f57f
 3rd
 aarch64
 aem
 appends
 arm-machines.yml
 armv8-a
+armv8a-crc
 baremetal
 baremetal_architecture.png
 baremetal-sdk.yml
@@ -41,8 +45,10 @@ customizations
 datetime
 dbg
 devicetree
+deprecated
 diego.sueiro
 distro_features
+do_fetch
 docker's
 dom0
 domu
@@ -109,6 +115,7 @@ initializes
 introduction_use_cases_overview
 k3s
 k3s-integration-tests.bb
+k3s_git.bb
 k3s_kernelcfg_check.bbclass
 k3s-killall.sh
 k3s.service
@@ -166,6 +173,7 @@ pyspellchecker
 pyyaml
 qcow2
 quickstart
+readability
 readme.md
 refactor
 refactored
@@ -227,6 +235,7 @@ user_guide_reproduce_environment_setup
 v
 v1.0
 v1.20.11+k3s2
+v1.22.6+k3s1+git4262c6b
 validations
 virt_test_clean_env
 virt_test_guest_vm_name
