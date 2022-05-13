@@ -1,11 +1,11 @@
-# Copyright (c) 2021, Arm Limited.
+# Copyright (c) 2021-2022, Arm Limited.
 #
 # SPDX-License-Identifier: MIT
 
 inherit kernelcfg_check
 
 # Current checksum, should be updated to track latest xen requirements
-# http://git.yoctoproject.org/cgit/cgit.cgi/yocto-kernel-cache/tree/features/xen/xen.cfg
+# https://git.yoctoproject.org/cgit/cgit.cgi/yocto-kernel-cache/tree/features/xen/xen.cfg
 XEN_CONFIG_FILE ?= "xen.cfg"
 XEN_CONFIG_FILE_MD5 ?= "1a3c770197a4c0c720b0ae1d73f4c090"
 

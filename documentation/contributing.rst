@@ -23,7 +23,7 @@ to be reviewed and accepted by the EWAOL project:
   project.**
 
   EWAOL forms the reference software implementation of the SOAFEE project
-  (`<http://soafee.io>`_). Contributions should therefore be generally
+  (`<https://soafee.io>`_). Contributions should therefore be generally
   applicable to other downstream consumers of ``meta-ewaol``.
 
 * **Contributions should be high-quality, and should pass all tests within the

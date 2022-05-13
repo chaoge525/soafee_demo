@@ -48,7 +48,7 @@ software layers:
 EWAOL is the reference implementation for SOAFEE (Scalable Open Architecture
 For Embedded Edge), the Arm lead industry initiative for extending cloud-native
 software development to automotive, with a special focus on real-time and
-functional safety. For more details, please see `<http://soafee.io>`_.
+functional safety. For more details, please see `<https://soafee.io>`_.
 
 More specifically, the ``meta-ewaol`` repository contains Yocto layers,
 configuration files, documentation and tools to support building EWAOL
