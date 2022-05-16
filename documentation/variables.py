@@ -45,7 +45,7 @@ general_links = {
   "link:Yocto Xen config": f"https://git.yoctoproject.org/cgit/cgit.cgi/yocto-kernel-cache/tree/features/xen/xen.cfg?h=yocto-{yocto_linux_version}",
   "link:kas build tool": f"https://kas.readthedocs.io/en/{kas_version}/userguide.html",
   "link:kas Dependencies & installation": f"https://kas.readthedocs.io/en/{kas_version}/userguide.html#dependencies-installation",
-  "link:meta-arm-bsp": "https://git.yoctoproject.org/meta-arm/tree/meta-arm-bsp/documentation?h={yocto_release}",
+  "link:meta-arm-bsp": f"https://git.yoctoproject.org/meta-arm/tree/meta-arm-bsp/documentation?h={yocto_release}",
   "link:xl domain configuration": f"https://xenbits.xen.org/docs/{xen_version}-testing/man/xl.cfg.5.html",
   "link:xl documentation": f"https://xenbits.xen.org/docs/{xen_version}-testing/man/xl.1.html",
 
