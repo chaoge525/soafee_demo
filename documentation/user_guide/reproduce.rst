@@ -143,6 +143,27 @@ As different kas configuration files with different customizable parameters are
 used to build EWAOL for different architectural use-cases, the instructions for
 building an EWAOL distribution depend on the target architecture, as follows.
 
+
+  .. note::
+    The K3s recipe build involves fetching a substantial amount of source code
+    which might fail due to connection timeout. If a similar error message as
+    bellow is displayed, try re-running the build command until it completes.
+
+    .. code-block:: console
+
+      WARNING: k3s-v1.22.6+k3s1+git4262c6b91a43ef8411870f72ff8b8715949f90e2-r0 do_fetch: Failed to fetch URL git://go.googlesource.com/oauth2;name=oauth2;protocol=https;nobranch=1;destsuffix=/<...>/build/tmp_baremetal/work/armv8a-poky-linux/k3s/v1.22.6+k3s1+git4262c6b91a43ef8411870f72ff8b8715949f90e2-r0/k3s-v1.22.6+k3s1+git4262c6b91a43ef8411870f72ff8b8715949f90e2/src/import/vendor.fetch/go.googlesource.com/oauth2, attempting MIRRORS if available
+      ERROR: k3s-v1.22.6+k3s1+git4262c6b91a43ef8411870f72ff8b8715949f90e2-r0 do_fetch: Fetcher failure: Fetch command export PSEUDO_DISABLED=1; export SSH_AUTH_SOCK="/run/user/51741/keyring/ssh"; export PATH="/<...>/build/tmp_baremetal/sysroots-uninative/x86_64-linux/usr/bin:/<...>/layers/poky/scripts:/<...>/build/tmp_baremetal/work/armv8a-poky-linux/k3s/v1.22.6+k3s1+git4262c6b91a43ef8411870f72ff8b8715949f90e2-r0/recipe-sysroot-native/usr/bin/aarch64-poky-linux:/<...>/build/tmp_baremetal/work/armv8a-poky-linux/k3s/v1.22.6+k3s1+git4262c6b91a43ef8411870f72ff8b8715949f90e2-r0/recipe-sysroot/usr/bin/crossscripts:/<...>/build/tmp_baremetal/work/armv8a-poky-linux/k3s/v1.22.6+k3s1+git4262c6b91a43ef8411870f72ff8b8715949f90e2-r0/recipe-sysroot-native/usr/sbin:/<...>/build/tmp_baremetal/work/armv8a-poky-linux/k3s/v1.22.6+k3s1+git4262c6b91a43ef8411870f72ff8b8715949f90e2-r0/recipe-sysroot-native/usr/bin:/<...>/build/tmp_baremetal/work/armv8a-poky-linux/k3s/v1.22.6+k3s1+git4262c6b91a43ef8411870f72ff8b8715949f90e2-r0/recipe-sysroot-native/sbin:/<...>/build/tmp_baremetal/work/armv8a-poky-linux/k3s/v1.22.6+k3s1+git4262c6b91a43ef8411870f72ff8b8715949f90e2-r0/recipe-sysroot-native/bin:/<...>/layers/poky/bitbake/bin:/<...>/build/tmp_baremetal/hosttools"; export HOME="/tmp/tmpk1obk02g"; LANG=C git -c core.fsyncobjectfiles=0 -c gc.autoDetach=false clone --bare --mirror https://go.googlesource.com/oauth2 /<...>/build/downloads/git2/go.googlesource.com.oauth2 --progress failed with exit code 128, no output
+      ERROR: k3s-v1.22.6+k3s1+git4262c6b91a43ef8411870f72ff8b8715949f90e2-r0 do_fetch: Bitbake Fetcher Error: FetchError('Unable to fetch URL from any source.', 'git://go.googlesource.com/oauth2;name=oauth2;protocol=https;nobranch=1;destsuffix=/<...>/build/tmp_baremetal/work/armv8a-poky-linux/k3s/v1.22.6+k3s1+git4262c6b91a43ef8411870f72ff8b8715949f90e2-r0/k3s-v1.22.6+k3s1+git4262c6b91a43ef8411870f72ff8b8715949f90e2/src/import/vendor.fetch/go.googlesource.com/oauth2')
+      ERROR: Logfile of failure stored in: /<...>/build/tmp_baremetal/work/armv8a-poky-linux/k3s/v1.22.6+k3s1+git4262c6b91a43ef8411870f72ff8b8715949f90e2-r0/temp/log.do_fetch.70146
+      ERROR: Task (/<...>/layers/meta-virtualization/recipes-containers/k3s/k3s_git.bb:do_fetch) failed with exit code '1'
+      NOTE: Tasks Summary: Attempted 3710 tasks of which 2318 didn't need to be rerun and 1 failed.
+
+      Summary: 1 task failed:
+        /<...>/layers/meta-virtualization/recipes-containers/k3s/k3s_git.bb:do_fetch
+      Summary: There were 2 ERROR messages, returning a non-zero exit code.
+      2022-05-17 06:42:21 - ERROR    - Command returned non-zero exit status 1
+
+
 Baremetal Distribution
 ======================
 
