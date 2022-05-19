@@ -18,7 +18,7 @@ orchestration of applications on edge platforms.
 ## EWAOL Documentation
 
 The project's documentation can be browsed at
-<https://ewaol.sites.arm.com/meta-ewaol>.
+<https://ewaol.docs.arm.com>.
 
 To build a local version of the documentation, a Python build script that
 automates the documentation build process is available under

@@ -58,4 +58,4 @@ file by running the following kas command:
 
 .. code-block:: console
 
-    kas build meta-my-bsp-layer/my-machine.yml
+    kas build --update meta-my-bsp-layer/my-machine.yml

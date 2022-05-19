@@ -7,10 +7,11 @@
 Reproduce
 #########
 
-The section of the User Guide describes how to reproduce a standard EWAOL
-distribution image for a supported target platform, configuring and deploying
-the supported set of distribution image features, and running simple examples of
-the :ref:`EWAOL Use-Cases <introduction_use_cases_overview>`.
+This section of the User Guide describes how to reproduce a standard EWAOL
+distribution image for a supported
+:ref:`target platform <manual_build_system_target_platforms>`, configuring and
+deploying the supported set of distribution image features, and running simple
+examples of the :ref:`EWAOL Use-Cases <introduction_use_cases_overview>`.
 
 ************
 Introduction
@@ -476,7 +477,7 @@ Build Host. The instructions are as follows:
     sdb      8:0    0     2G  0 disk
     └─sdb1   8:1    0     2G  0 part
 
-  .. note::
+  .. warning::
     In this example, the ``/dev/sdb1`` partition is being mounted. As this
     may vary on different machines, care should be taken when copying and
     pasting the following commands.

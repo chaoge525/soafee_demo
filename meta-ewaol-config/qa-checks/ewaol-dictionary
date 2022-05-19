@@ -130,6 +130,8 @@ loopback
 lts
 m
 maxdepth
+manual_build_system_target_platforms
+manual_yocto_layers_layer_dependency_overview
 mb
 meta-arm-bsp
 meta-ewaol

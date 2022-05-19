@@ -16,10 +16,8 @@ on the target, such as:
   * Tracing
   * Runtime package management
 
-.. note::
-    The precise list of packages and image features provided as part of the
-    EWAOL SDK can be found in
-    ``meta-ewaol-distro/conf/distro/include/ewaol-sdk.inc``.
+The precise list of packages and image features provided as part of the EWAOL
+SDK can be found in ``meta-ewaol-distro/conf/distro/include/ewaol-sdk.inc``.
 
 The Yocto project provides guidance for some of these common development tasks,
 for example |kernel module compilation|_, |profiling and tracing|_, and

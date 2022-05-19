@@ -22,8 +22,8 @@ features, and running example EWAOL use-cases.
 
    extend
 
-Describes how to extend the EWAOL project to build and run on a custom or
-unsupported target platform.
+Describes how to extend the EWAOL project to build for a custom or unsupported
+target platform.
 
 .. toctree::
    :maxdepth: 1
