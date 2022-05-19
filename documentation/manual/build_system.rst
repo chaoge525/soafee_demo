@@ -36,17 +36,17 @@ The ``meta-ewaol-config/kas`` directory contains kas configuration files that
 support building images via kas for the EWAOL project. and fall into three
 ordered categories:
 
-* Architecture Configs
-* Build Modifier Configs
-* Target Platform Configs
+* **Architecture Configs**
+* **Build Modifier Configs**
+* **Target Platform Configs**
 
 To build an EWAOL distribution image via kas, it is required to provide one
-Architecture Config and one Target Platform Config, unless otherwise stated in
-their descriptions below. Additional Build Modifiers are optional, and depend on
-the target use-case. Currently, it is necessary that kas configuration files are
-provided in order: the Architecture Config is defined first, then additional
-build features via zero or more Build Modifier Configs, and finally the Target
-Platform Config.
+**Architecture Config** and one **Target Platform Config**, unless otherwise
+stated in their descriptions below. Additional Build Modifiers are optional,
+and depend on the target use-case. Currently, it is necessary that kas
+configuration files are provided in order: the **Architecture Config** is
+defined first, then additional build features via zero or more **Build Modifier
+Configs**, and finally the **Target Platform Config**.
 
 The kas configuration files to enable builds for a supported target platform or
 to configure each EWAOL distribution image feature, are described in their
@@ -57,6 +57,8 @@ respectively. Example usage of these kas configuration files can be found in the
 .. note::
   If a kas configuration file does not set a particular build parameter, the
   parameter will take its default value.
+
+.. _manual_build_system_target_platforms:
 
 ****************
 Target Platforms
@@ -215,9 +217,9 @@ generated for each Guest VM by appending the instance index to the
 will have a hostname ``ewaol-guest-vm1``, the second will have a hostname
 ``ewaol-guest-vm2``, and so on. An example of configuring a second Guest VM
 instance using the kas tool is given in
-``meta-ewaol-config/kas/second-vm-parameters.yml``, although these variables
-will only be used if ``EWAOL_GUEST_VM_INSTANCES`` is set to build two or more
-Guest VMs.
+``meta-ewaol-config/kas/include/second-guest-vm-parameters.yml``, although
+these variables will only be used if ``EWAOL_GUEST_VM_INSTANCES`` is set to
+build two or more Guest VMs.
 
 Other EWAOL Features
 ====================
@@ -415,9 +417,11 @@ Manual Bitbake Build Setup
 In order to build an EWAOL distribution image without the kas build tool
 directly via bitbake, it is necessary to prepare a bitbake project as follows:
 
-  * Configure dependent Yocto layers in ``bblayers.conf``.
+  * Configure :ref:`dependent Yocto layers <manual_yocto_layers_layer_dependency_overview>`
+    in ``bblayers.conf``.
   * Configure the ``DISTRO`` as ``ewaol`` in ``local.conf``.
-  * Configure the image ``DISTRO_FEATURES`` in ``local.conf``.
+  * Configure the image ``DISTRO_FEATURES``, including the EWAOL Architecture
+    (``ewaol-baremetal`` or ``ewaol-virtualization``), in ``local.conf``.
 
 Assuming correct environment configuration, the Bitbake build can then be run
 for the desired image target corresponding to one of the following:

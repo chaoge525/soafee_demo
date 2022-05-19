@@ -33,6 +33,8 @@ Project, in the following sub-directories:
     devicetree together with a Xen efi binary are included into the final wic
     image in the ``boot`` partition.
 
+.. _manual_yocto_layers_layer_dependency_overview:
+
 *************************
 Layer Dependency Overview
 *************************
@@ -78,7 +80,7 @@ is the ``meta-arm`` repository, which provides three Yocto layers:
 The layers required from ``meta-arm`` depend on the EWAOL distribution image:
 
   * EWAOL SDK distribution images require ``meta-arm`` and
-    ``meta-arm-toolchain``, as the gator-daemon package is installed on the
+    ``meta-arm-toolchain``, as the ``gator-daemon`` package is installed on the
     rootfs.
 
   * An EWAOL virtualization distribution image requires ``meta-arm`` and
@@ -100,7 +102,6 @@ These layers are described as follows:
 
     * URL: https://git.yoctoproject.org/cgit/cgit.cgi/meta-arm/tree/meta-arm-bsp.
     * Board specific components for Arm target platforms.
-    * Can be replaced by ``meta-<SiP>-bsp``.
 
   * ``meta-arm-toolchain``:
 

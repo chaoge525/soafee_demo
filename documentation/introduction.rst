@@ -153,10 +153,10 @@ The documentation is structured as follows:
 
     Provides guidance for configuring, building, and deploying EWAOL
     distributions on supported target platforms, running and validating
-    supported EWAOL functionalities, and running the distribution on custom
-    hardware. Also includes migration guidance for how to enable these
-    activities on a later EWAOL release, when upgrading from an older release
-    version.
+    supported EWAOL functionalities, and building the distribution for a custom
+    or unsupported target platform. Also includes migration guidance for how to
+    enable these activities on a later EWAOL release, when upgrading from an
+    older release.
 
   * :ref:`Developer Manual <manual/index:Developer Manual>`
 
@@ -299,8 +299,8 @@ Guidance for contributing to the EWAOL project can be found at
 :ref:`Contributing <contributing:Contributing>`.
 
 To report issues with the repository such as potential bugs, security concerns,
-or feature requests, please submit an Issue via GitLab, following the project's
-Issue template.
+or feature requests, please submit an Issue via |GitLab Issues|_, following the
+project's template.
 
 ********************
 Feedback and support

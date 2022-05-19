@@ -272,15 +272,9 @@ Gitlab Account Setup
 ====================
 
 In order to contribute to the repository, it is necessary to have an account on
-|meta-ewaol repository host|. Please see `TBC`_ for details of how to create an
-account. If contributing within a professional capacity, please include the
-affiliation under the ``Organization`` heading on account settings.
-
-The account must be able have sufficient personal project capacity to fork the
-``meta-ewaol`` repository. Please see `TBC`_ for details of how to
-increase personal project capacity.
-
-.. _TBC: https://
+|meta-ewaol repository host|. Please see
+`<https://gitlab.arm.com/documentation/contributions>`_ for details of how to
+create an account and request a fork of the ``meta-ewaol`` repository.
 
 Submission
 ==========

@@ -45,10 +45,9 @@ general_links = {
   "link:Yocto Xen config": f"https://git.yoctoproject.org/cgit/cgit.cgi/yocto-kernel-cache/tree/features/xen/xen.cfg?h=yocto-{yocto_linux_version}",
   "link:kas build tool": f"https://kas.readthedocs.io/en/{kas_version}/userguide.html",
   "link:kas Dependencies & installation": f"https://kas.readthedocs.io/en/{kas_version}/userguide.html#dependencies-installation",
-  "link:meta-arm-bsp": f"https://git.yoctoproject.org/meta-arm/tree/meta-arm-bsp/documentation?h={yocto_release}",
+  "link:meta-arm-bsp": f"https://git.yoctoproject.org/meta-arm/tree/meta-arm-bsp/documentation/n1sdp.md?h={yocto_release}",
   "link:xl domain configuration": f"https://xenbits.xen.org/docs/{xen_version}-testing/man/xl.cfg.5.html",
   "link:xl documentation": f"https://xenbits.xen.org/docs/{xen_version}-testing/man/xl.1.html",
-
   "link:N1SDP Technical Reference Manual": "https://developer.arm.com/documentation/101489/0000",
   "link:PEP 8": "https://peps.python.org/pep-0008/",
   "link:pycodestyle Documentation": "https://pycodestyle.pycqa.org/en/latest/",
@@ -63,6 +62,7 @@ general_links = {
   "link:Python Datetime Format Codes": "https://docs.python.org/3/library/datetime.html#strftime-and-strptime-format-codes",
   "link:Nginx": "https://www.nginx.com/",
   "link:Potential firmware damage notice": "https://community.arm.com/developer/tools-software/oss-platforms/w/docs/604/notice-potential-damage-to-n1sdp-boards-if-using-latest-firmware-release",
+  "link:GitLab Issues": "https://gitlab.arm.com/ewaol/meta-ewaol/-/issues",
 }
 
 layer_definitions = {
