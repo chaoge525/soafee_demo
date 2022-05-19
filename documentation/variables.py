@@ -29,6 +29,7 @@ yocto_doc_version = "4.0/"
 yocto_linux_version = "5.15"
 xen_version = "4.16"
 kas_version = "3.0.2"
+ewaol_version = "v1.0"
 
 general_links = {
   "link:Yocto Project Documentation": f"https://docs.yoctoproject.org/{yocto_doc_version}",
@@ -71,15 +72,16 @@ layer_definitions = {
   "meta-ewaol repository host": "https://gitlab.arm.com",
   "meta-ewaol remote": "https://git.gitlab.arm.com/ewaol/meta-ewaol.git",
   "meta-ewaol branch": f"{yocto_release}-dev",
+  "meta-ewaol version": f"{ewaol_version}",
   "poky branch": f"{yocto_release}",
   "meta-openembedded branch": f"{yocto_release}",
   "meta-virtualization branch": f"{yocto_release}",
   "meta-arm branch": f"{yocto_release}",
-  "poky revision": "HEAD",
-  "meta-virtualization revision": "HEAD",
-  "meta-openembedded revision": "HEAD",
-  "meta-arm revision": "HEAD",
-  "layer dependency statement": f"The layer revisions are related to the EWAOL ``{yocto_release}-dev`` branch.",
+  "poky revision": "453be4d258f71855205f45599eea04589eb4a369",
+  "meta-virtualization revision": "2fae71cdf0e8c6f398f51219bdf31eac76c662ec",
+  "meta-openembedded revision": "166ef8dbb14ad98b2094a77fcf352f6c63d5abf2",
+  "meta-arm revision": "fc09cc0e8db287600625e64905170a6de24f2686",
+  "layer dependency statement": f"The layer revisions are related to the EWAOL ``{ewaol_version}`` release.",
 }
 
 other_definitions = {

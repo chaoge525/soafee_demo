@@ -58,7 +58,7 @@ EWAOL depends on the following layer dependency sources:
     URL: https://git.openembedded.org/meta-openembedded
     layers: meta-filesystems, meta-networking, meta-oe, meta-python
     branch: |meta-openembedded branch|
-    revision: |meta-openembedded branch|
+    revision: |meta-openembedded revision|
 
     URL: https://git.yoctoproject.org/git/meta-virtualization
     layers: meta-virtualization
