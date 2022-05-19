@@ -29,6 +29,7 @@ yocto_doc_version = "dev/"
 yocto_linux_version = "5.15"
 xen_version = "4.16"
 kas_version = "3.0.2"
+ewaol_version = "main"
 
 general_links = {
   "link:Yocto Project Documentation": f"https://docs.yoctoproject.org/{yocto_doc_version}",
@@ -71,6 +72,7 @@ layer_definitions = {
   "meta-ewaol repository host": "https://gitlab.arm.com",
   "meta-ewaol remote": "https://git.gitlab.arm.com/ewaol/meta-ewaol.git",
   "meta-ewaol branch": f"kirkstone-dev",
+  "meta-ewaol version": f"{ewaol_version}",
   "poky branch": f"{yocto_release}",
   "meta-openembedded branch": f"{yocto_release}",
   "meta-virtualization branch": f"{yocto_release}",

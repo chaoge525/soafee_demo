@@ -41,7 +41,7 @@ distribution image:
 
     meta-ewaol:
       url: |meta-ewaol remote|
-      refspec: |meta-ewaol branch|
+      refspec: |meta-ewaol version|
 
   machine: my-machine
 
