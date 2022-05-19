@@ -48,17 +48,17 @@ EWAOL depends on the following layer dependency sources:
   .. code-block:: yaml
     :substitutions:
 
-    URI: git://git.yoctoproject.org/poky
+    URL: https://git.yoctoproject.org/git/poky
     layers: meta, meta-poky
     branch: |poky branch|
     revision: |poky revision|
 
-    URI: git://git.openembedded.org/meta-openembedded
+    URL: https://git.openembedded.org/meta-openembedded
     layers: meta-filesystems, meta-networking, meta-oe, meta-python
     branch: |meta-openembedded branch|
     revision: |meta-openembedded branch|
 
-    URI: git://git.yoctoproject.org/meta-virtualization
+    URL: https://git.yoctoproject.org/git/meta-virtualization
     layers: meta-virtualization
     branch: |meta-virtualization branch|
     revision: |meta-virtualization revision|
@@ -70,7 +70,7 @@ is the ``meta-arm`` repository, which provides three Yocto layers:
   .. code-block:: yaml
     :substitutions:
 
-    URI: git://git.yoctoproject.org/meta-arm
+    URL: https://git.yoctoproject.org/git/meta-arm
     layers: meta-arm, meta-arm-bsp, meta-arm-toolchain
     branch: |meta-arm branch|
     revision: |meta-arm revision|
