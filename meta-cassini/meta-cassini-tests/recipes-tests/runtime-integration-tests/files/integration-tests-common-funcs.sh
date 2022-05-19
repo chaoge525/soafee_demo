@@ -4,6 +4,11 @@
 #
 # SPDX-License-Identifier: MIT
 
+# In order to automatically print the log from a generic file that is common to
+# the test suites, also store the log messages in the volatile runtime dir which
+# doesn't change.
+export TEST_TEMP_LOG_FILE="${TEST_RUNTIME_DIR}/latest-tests.log"
+
 # Arg1: Type of message (INFO, DEBUG, PASS, FAIL, SKIP)
 # Arg2: Message to log
 #
@@ -28,18 +33,18 @@ log() {
         log_msg="${log_msg}:${*:2}"
     fi
 
-    echo "${log_msg}" >> "${TEST_LOG_FILE}"
-    echo "${log_msg}"
+    echo "${log_msg}" | sudo -n tee -a "${TEST_LOG_FILE}" "${TEST_TEMP_LOG_FILE}"
 
     if [ "${1}" == "FAIL" ]; then
         # If the test failed, add additional debugging information
-
+        touch "${TEST_STDERR_FILE}"
         stderr="$(cat "${TEST_STDERR_FILE}")"
 
         debug_msg="${timestamp} DEBUG:${BATS_TEST_NAME}:${status:-}:${output:-}:${stderr}"
 
-        echo "${debug_msg}" >> "${TEST_LOG_FILE}"
-        echo "${debug_msg}"
+        echo "${debug_msg}" | sudo -n tee -a "${TEST_LOG_FILE}" \
+                                            "${TEST_TEMP_LOG_FILE}"
+
         echo "DEBUG:Test log can be found at ${TEST_LOG_FILE}"
     fi
 }
@@ -75,7 +80,10 @@ check_running_test_suite() {
     # appropriately
     BATS_TEST_NAME="check_prior_execution"
 
-    if pgid=$(cat "$1"); then
+    # If umask is set to 0027, then the access to the files under '/var/run/*'
+    # is restricted for 'others'. `sudo` is required because the owner of the
+    # '/var/run/*' files is 'root'.
+    if pgid=$(sudo -n cat "$1"); then
         # A run file currently exists, therefore a previous execution didn't
         # complete
         log "DEBUG" "Found a run-file from an existing test execution: ${pgid}"
@@ -117,7 +125,7 @@ check_running_test_suite() {
 begin_test_suite() {
     # shellcheck disable=SC2009
     pgid="$(ps -o pid,pgid | grep -w "$$" | xargs | cut -d" " -f 2)"
-    sudo sh -c "echo ${pgid} > ${1}"
+    echo "${pgid}" | sudo -n tee "${1}" > /dev/null
 }
 
 # Remove the run-file if it contains the appropriate PGID
@@ -127,13 +135,17 @@ finish_test_suite() {
 
     # shellcheck disable=SC2009
     pgid=$(ps -o pid,pgid | grep -w "$$" | xargs | cut -d" " -f 2)
-    file_pgid=$(cat "$1")
+
+    # If umask is set to 0027, then the access to the files under '/var/run/*'
+    # is restricted for 'others'. `sudo` is required because the owner of the
+    # '/var/run/*' files is 'root'.
+    file_pgid=$(sudo -n cat "$1")
 
     if [ "${pgid}" -ne "${file_pgid}" ]; then
         log "DEBUG" "When finishing test-suite execution, the PGID ${pgid}"
             " did not match the PGID within the run-file ${file_pgid}"
     else
-        sudo rm "${1}"
+        sudo -n rm "${1}"
     fi
 
 }
@@ -153,11 +165,12 @@ finish_test_suite() {
 test_suite_setup() {
 
     # Clear and rebuild the logs
+    sudo -n rm -f "${TEST_TEMP_LOG_FILE}"
     rm -f "${TEST_LOG_FILE}" "${TEST_STDERR_FILE}"
     mkdir -p "${TEST_LOG_DIR}"
 
     # Create volatile runtime directory.
-    sudo mkdir -p "${TEST_RUNTIME_DIR}"
+    sudo -n mkdir -p "${TEST_RUNTIME_DIR}"
 
     _run check_running_test_suite "${TEST_RUN_FILE}"
     if [ "${status}" -ne 0 ]; then

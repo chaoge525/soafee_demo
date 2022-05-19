@@ -14,8 +14,6 @@ else
     TEST_LOG_DIR="${CE_TEST_LOG_DIR}"
 fi
 
-TEST_RUNTIME_DIR="/var/run/cassini-integration-tests"
-
 export TEST_LOG_FILE="${TEST_LOG_DIR}/container-engine-integration-tests.log"
 export TEST_STDERR_FILE="${TEST_LOG_DIR}/ce-stderr.log"
 export TEST_RUN_FILE="${TEST_RUNTIME_DIR}/container-engine-integration-tests.pgid"

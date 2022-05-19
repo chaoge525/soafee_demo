@@ -3,8 +3,12 @@
 # SPDX-License-Identifier: MIT
 
 export TEST_COMMON_DIR = "${datadir}/runtime-integration-tests-common"
-ENVSUBST_VARS:append = " \$TEST_COMMON_DIR"
+export TEST_RUNTIME_DIR = "/var/run/cassini-integration-tests"
+
+ENVSUBST_VARS:append = " \$TEST_COMMON_DIR\
+                         \$TEST_RUNTIME_DIR "
 
 do_install[vardeps] += "\
     TEST_COMMON_DIR \
+    TEST_RUNTIME_DIR \
     "

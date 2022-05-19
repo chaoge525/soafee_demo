@@ -38,8 +38,8 @@ do_compile[noexec] = "1"
 do_install() {
     install -d "${D}/${TEST_COMMON_DIR}"
 
-    install --mode="644" "${WORKDIR}/integration-tests-common-funcs.sh" \
-        "${D}/${TEST_COMMON_DIR}"
+    envsubst '$TEST_RUNTIME_DIR' < "${WORKDIR}/integration-tests-common-funcs.sh" \
+        > "${D}/${TEST_COMMON_DIR}/integration-tests-common-funcs.sh"
 
     install --mode="644" "${WORKDIR}/login-console-funcs.expect" \
         "${D}/${TEST_COMMON_DIR}"

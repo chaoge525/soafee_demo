@@ -1,4 +1,4 @@
-# Based on: https://cgit.openembedded.org/meta-openembedded/tree/meta-oe/recipes-test/bats/bats_1.5.0.bb?h=master&id=f16f628d1f8c2ca37df10b2d84dea05d6b9ebab1
+# Based on: https://cgit.openembedded.org/meta-openembedded/commit/meta-oe/recipes-test/bats/bats_1.6.0.bb?id=76d8e526eae9fc9ab14ff5804ae0091230a8b39e
 # In open-source project: https://git.openembedded.org/meta-openembedded
 #
 # Original file: Copyright (c) 2022 wangmy <wangmy@fujitsu.com>
@@ -14,9 +14,9 @@ HOMEPAGE = "https://github.com/bats-core/bats-core"
 LICENSE = "MIT"
 LIC_FILES_CHKSUM = "file://LICENSE.md;md5=2970203aedf9e829edb96a137a4fe81b"
 
-SRC_URI = "git://github.com/bats-core/bats-core.git;branch=master;protocol=https"
-# v1.5.0
-SRCREV = "99d64eb017abcd6a766dd0d354e625526da69cb3"
+SRC_URI = "git://github.com/bats-core/bats-core.git;branch=version/1.6.x;protocol=https"
+# v1.6.1
+SRCREV = "1977254c2a7faa2e0af17355856f91dc471d1daa"
 
 S = "${WORKDIR}/git"
 

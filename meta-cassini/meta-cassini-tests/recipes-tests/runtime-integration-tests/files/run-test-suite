@@ -9,14 +9,22 @@
 # when we already switched to ${CASSINI_TEST_ACCOUNT} via the following sudo
 # command.
 if ! cd /home ; then
-    echo "FAIL:${TEST_SUITE_NAME}"
-    exit 1
+	echo "FAIL:${TEST_SUITE_NAME}"
+	exit 1
 fi
 
-if sudo -HEnu "${CASSINI_TEST_ACCOUNT}" bats "${TEST_DIR}/${TEST_SUITE_NAME}.bats"; then
-    echo "PASS:${TEST_SUITE_NAME}"
-    exit 0
+if sudo -HEnu "${CASSINI_TEST_ACCOUNT}" bats "${CASSINI_TEST_BATS_OPTIONS}" "${TEST_DIR}/${TEST_SUITE_NAME}.bats"; then
+	echo "PASS:${TEST_SUITE_NAME}"
+	exit 0
 else
-    echo "FAIL:${TEST_SUITE_NAME}"
-    exit 1
+	echo "FAIL:${TEST_SUITE_NAME}"
+	sudo -HEns <<-'EOF'
+		if [ -f "${TEST_RUNTIME_DIR}/latest-tests.log" ]; then
+			echo "DEBUG:Printing the contents of the log-file:"
+			cat "${TEST_RUNTIME_DIR}/latest-tests.log"
+		else
+			echo "DEBUG:Could not find a log-file."
+		fi
+		EOF
+	exit 1
 fi
