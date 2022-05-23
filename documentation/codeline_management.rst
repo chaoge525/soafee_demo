@@ -25,7 +25,7 @@ The diagram above gives an overview of the Yocto branch and release process:
 * The project has a major release roughly every 6 months where a stable release
   branch is created.
 * Each major release has a `codename` which is also used to name the stable
-  release branch (e.g. hardknott).
+  release branch (e.g. kirkstone).
 * Once a stable branch is created and released, it only receives bug fixes with
   minor (point) releases on an unscheduled basis.
 * The goal is for users and 3rd parties layers to use these codenamed branches

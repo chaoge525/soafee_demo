@@ -1,9 +1,9 @@
-1.1.0+git0+b9460f26b4
 1.0.0+rc93+git0+249bca0a13
-3.2.1+git0+ab4d0cf908
-4.16+stable0+f265444922
+1.1.0+git0+b9460f26b4
 20.10.12+ce+git906f57f
+3.2.1+git0+ab4d0cf908
 3rd
+4.16+stable0+f265444922
 aarch64
 aem
 appends
@@ -44,12 +44,12 @@ customization
 customizations
 datetime
 dbg
-devicetree
 deprecated
+devicetree
 diego.sueiro
 distro_features
-do_fetch
 docker's
+do_fetch
 dom0
 domu
 efi
@@ -114,8 +114,8 @@ index.html
 initializes
 introduction_use_cases_overview
 k3s
-k3s-integration-tests.bb
 k3s_git.bb
+k3s-integration-tests.bb
 k3s_kernelcfg_check.bbclass
 k3s-killall.sh
 k3s.service
@@ -124,6 +124,7 @@ k3s_test_guest_vm_name
 k3s_test_log_dir
 kb
 kernel_features
+kirkstone
 kubectl
 kubernetes
 kube-system
@@ -136,9 +137,9 @@ localhost
 loopback
 lts
 m
-maxdepth
 manual_build_system_target_platforms
 manual_yocto_layers_layer_dependency_overview
+maxdepth
 mb
 meta-arm-bsp
 meta-ewaol

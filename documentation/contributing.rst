@@ -157,7 +157,7 @@ documentation.
 License and Copyright Header
 =============================
 
-Contributed files must contain a valid licence and copyright header, following
+Contributed files must contain a valid license and copyright header, following
 one of the two following formats, based on the source of the contribution:
 
   1. Original works contributed to the project:
@@ -183,7 +183,7 @@ one of the two following formats, based on the source of the contribution:
     Please follow the contribution guideline relating to licensing in order to
     select the appropriate SPDX License Identifier for the contributed files.
 
-The licence and copyright header QA check expects the header lines to be
+The license and copyright header QA check expects the header lines to be
 commented. The current implementation therefore expects each line to begin with
 one of the following set of characters: ``#``, ``//``, ``*``, ``;``. Please
 refer to the current files within the repository for further guidance on how to
