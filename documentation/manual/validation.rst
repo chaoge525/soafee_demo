@@ -17,7 +17,7 @@ specific EWAOL functionalities.
 
 A list of required kernel configs is used as a reference, and compared against
 the list of available configs in the kernel build. All reference configs need to
-be present either as module (``=m``) or built-in (``=y``). A Bitbake warning
+be present either as module (``=m``) or built-in (``=y``). A BitBake warning
 message is produced if the kernel is not configured as expected.
 
 The following kernel configuration checks are performed:
@@ -201,7 +201,7 @@ on it, thereby reporting any test failures of the Guest VM as part of the
 Control VM's test suite execution.
 
 The test suite is built and installed in the image according to the following
-bitbake recipe:
+BitBake recipe:
 ``meta-ewaol-tests/recipes-tests/runtime-integration-tests/container-engine-integration-tests.bb``.
 
 Currently the test suite contains three top-level integration tests, which run
@@ -293,7 +293,7 @@ for execution via ``ptest-runner`` or as a standalone BATS suite, as described
 in `Running the Tests`_.
 
 The test suite is built and installed in the image according to the following
-bitbake recipe within
+BitBake recipe within
 ``meta-ewaol-tests/recipes-tests/runtime-integration-tests/k3s-integration-tests.bb``.
 
 Currently the test suite contains a single top-level integration test which
@@ -415,7 +415,7 @@ for execution via ``ptest-runner`` or as a standalone BATS suite, as described
 in `Running the Tests`_.
 
 The test suite is built and installed in the image according to the following
-bitbake recipe within
+BitBake recipe within
 ``meta-ewaol-tests/recipes-tests/runtime-integration-tests/user-accounts-integration-tests.bb``.
 
 The test suite validates that the user accounts described in
@@ -533,7 +533,7 @@ for execution via ``ptest-runner`` or as a standalone BATS suite, as described
 in `Running the Tests`_.
 
 The test suite is built and installed in the image according to the following
-bitbake recipe within
+BitBake recipe within
 ``meta-ewaol-tests/recipes-tests/runtime-integration-tests/virtualization-integration-tests.bb``.
 
 The test suite is only available for images that target the virtualization

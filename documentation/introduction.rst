@@ -281,7 +281,7 @@ layer dependencies in :ref:`Yocto Layers <manual/yocto_layers:Yocto Layers>`.
 Repository License
 ******************
 
-The repository's standard licence is the MIT license (more details in
+The repository's standard license is the MIT license (more details in
 :ref:`license_link:License`), under which most of the repository's content is
 provided. Exceptions to this standard license relate to files that represent
 modifications to externally licensed works (for example, patch files). These

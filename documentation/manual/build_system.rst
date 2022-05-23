@@ -8,8 +8,8 @@ Build System
 ############
 
 An EWAOL build can be configured by setting the target platform via the
-``MACHINE`` Bitbake variable, the desired distribution image features via the
-``DISTRO_FEATURES`` Bitbake variable, and customizing those features via
+``MACHINE`` BitBake variable, the desired distribution image features via the
+``DISTRO_FEATURES`` BitBake variable, and customizing those features via
 feature-specific modifiable variables.
 
 This page first overviews EWAOL's support for the kas build tool. Each
@@ -33,7 +33,7 @@ configuration files can extend other kas configuration files, thereby enabling
 specialized configurations that inherit common configurations.
 
 The ``meta-ewaol-config/kas`` directory contains kas configuration files that
-support building images via kas for the EWAOL project. and fall into three
+support building images via kas for the EWAOL project, and fall into three
 ordered categories:
 
 * **Architecture Configs**
@@ -65,7 +65,7 @@ Target Platforms
 ****************
 
 There is currently one supported target platform (corresponding to the
-``MACHINE`` Bitbake variable) with an associated kas configuration file, as
+``MACHINE`` BitBake variable) with an associated kas configuration file, as
 follows.
 
 N1SDP
@@ -87,7 +87,7 @@ Distribution Image Features
 ***************************
 
 For a particular target platform, the available EWAOL distribution image
-features (corresponding to the contents of the ``DISTRO_FEATURES`` Bitbake
+features (corresponding to the contents of the ``DISTRO_FEATURES`` BitBake
 variable) are detailed in this section, along with any associated kas
 configuration files, and any associated customization options relevant for that
 feature.
@@ -155,7 +155,7 @@ Virtualization Architecture
       * Enables Xen specific configs required by kernel.
       * Includes all necessary packages and adjustments to the Control VM's root
         filesystem to support management of Xen Guest VMs.
-      * Uses Bitbake |Multiple Configuration Build|_.
+      * Uses BitBake |Multiple Configuration Build|_.
       * Includes a single Guest VM based on the ``generic-arm64`` ``MACHINE``,
         by default.
       * Is incompatible with the ``ewaol-baremetal`` distribution image feature.
@@ -196,7 +196,7 @@ The variables may be set either within an included kas configuration file
 (see ``meta-ewaol-config/kas/virtualization.yml`` for example usage), the
 environment, or manually via, for example, ``local.conf``. The
 ``EWAOL_*_ROOTFS_EXTRA_SPACE`` variables apply their values to the relevant
-``IMAGE_ROOTFS_EXTRA_SPACE`` bitbake variable.
+``IMAGE_ROOTFS_EXTRA_SPACE`` BitBake variable.
 
 Adding Extra EWAOL Guest VM Instances
 """""""""""""""""""""""""""""""""""""
@@ -206,14 +206,14 @@ distribution image, each one based on the same kernel and image recipe. The
 number of Guest VM instances built for and included on the virtualization
 distribution image can be set via the ``EWAOL_GUEST_VM_INSTANCES`` variable.
 
-Guest VM instances can be independently configured via Bitbake variables which
+Guest VM instances can be independently configured via BitBake variables which
 reference the Guest VM's integer instance index, from 1 to the value of
 ``EWAOL_GUEST_VM_INSTANCES``, inclusive. For example, variables with a prefix
 ``EWAOL_GUEST_VM1_`` apply to the first Guest VM, variables with a prefix
 ``EWAOL_GUEST_VM2_`` apply to the second Guest VM, and so on. All Guest VM
 instances use the same default configuration, apart from the hostname, which is
 generated for each Guest VM by appending the instance index to the
-``EWAOL_GUEST_VM_HOSTNAME`` Bitbake variable. By default, the first Guest VM
+``EWAOL_GUEST_VM_HOSTNAME`` BitBake variable. By default, the first Guest VM
 will have a hostname ``ewaol-guest-vm1``, the second will have a hostname
 ``ewaol-guest-vm2``, and so on. An example of configuring a second Guest VM
 instance using the kas tool is given in
@@ -329,7 +329,7 @@ Software Development Kit (SDK)
     This EWAOL distribution image feature:
 
       * Adds the EWAOL Software Development Kit (SDK) which includes packages
-        and image features to support on-target software development activites.
+        and image features to support on-target software development activities.
       * Enables two additional SDK build targets, ``ewaol-baremetal-sdk-image``
         and ``ewaol-virtualization-sdk-image``, each only compatible with the
         corresponding architecture's distribution image feature.
@@ -376,9 +376,9 @@ Adding Extra Rootfs Space
 -------------------------
 
 The size of the root filesystem can be extended via the
-``EWAOL_ROOTFS_EXTRA_SPACE`` Bitbake variable, which defaults to ``2000000``
+``EWAOL_ROOTFS_EXTRA_SPACE`` BitBake variable, which defaults to ``2000000``
 Kilobytes. The value of this variable is appended to the
-``IMAGE_ROOTFS_EXTRA_SPACE`` Bitbake variable. For an EWAOL virtualization
+``IMAGE_ROOTFS_EXTRA_SPACE`` BitBake variable. For an EWAOL virtualization
 distribution image, the root filesystems of both the Control VM and the Guest
 VM(s) are extended via this variable, in addition to any other parameters which
 affect those filesystems as described in
@@ -393,7 +393,7 @@ sstate-cache reused between different image types and target platforms. This
 optimization can be disabled by setting ``EWAOL_GENERIC_ARM64_FILESYSTEM`` to
 ``"0"``. The tune used when ``EWAOL_GENERIC_ARM64_FILESYSTEM`` is enabled can
 be changed by setting ``EWAOL_GENERIC_ARM64_DEFAULTTUNE``, which configures the
-``DEFAULTTUNE`` Bitbake variable for the ``aarch64`` based target platforms
+``DEFAULTTUNE`` BitBake variable for the ``aarch64`` based target platforms
 builds. See |DEFAULTTUNE|_ for more information.
 
 In summary, the relevant variables and their default values are:
@@ -403,7 +403,7 @@ In summary, the relevant variables and their default values are:
     EWAOL_GENERIC_ARM64_FILESYSTEM: "1"             # Enable generic file system (1 or 0).
     EWAOL_GENERIC_ARM64_DEFAULTTUNE: "armv8a-crc"   # Value of DEFAULTTUNE if generic file system enabled.
 
-Their values can be set by passing them as enviromental variables. For example,
+Their values can be set by passing them as environmental variables. For example,
 the optimization can be disabled using:
 
   .. code-block:: console
@@ -411,11 +411,11 @@ the optimization can be disabled using:
         EWAOL_GENERIC_ARM64_FILESYSTEM="0" kas build meta-ewaol-config/kas/baremetal.yml:meta-ewaol-config/kas/n1sdp.yml
 
 **************************
-Manual Bitbake Build Setup
+Manual BitBake Build Setup
 **************************
 
 In order to build an EWAOL distribution image without the kas build tool
-directly via bitbake, it is necessary to prepare a bitbake project as follows:
+directly via BitBake, it is necessary to prepare a BitBake project as follows:
 
   * Configure :ref:`dependent Yocto layers <manual_yocto_layers_layer_dependency_overview>`
     in ``bblayers.conf``.
@@ -423,7 +423,7 @@ directly via bitbake, it is necessary to prepare a bitbake project as follows:
   * Configure the image ``DISTRO_FEATURES``, including the EWAOL Architecture
     (``ewaol-baremetal`` or ``ewaol-virtualization``), in ``local.conf``.
 
-Assuming correct environment configuration, the Bitbake build can then be run
+Assuming correct environment configuration, the BitBake build can then be run
 for the desired image target corresponding to one of the following:
 
   * ``ewaol-baremetal-image``
@@ -434,4 +434,4 @@ for the desired image target corresponding to one of the following:
 As the kas build configuration files within the ``meta-ewaol-config/kas/``
 directory define the recommended build settings for each feature. Any additional
 functionalities may therefore be enabled by reading these configuration files
-and manually inserting their changes into the Bitbake build environment.
+and manually inserting their changes into the BitBake build environment.

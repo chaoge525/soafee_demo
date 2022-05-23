@@ -158,7 +158,7 @@ Resolved and Known Issues
 
 Resolved issues from v0.2.3:
 
-  * ewaol-distro: Fix bitbake fetch for ostree recipe from meta-oe
+  * ewaol-distro: Fix BitBake fetch for ostree recipe from meta-oe
 
 ******
 v0.2.3
@@ -187,7 +187,7 @@ Resolved and Known Issues
 Resolved issues from v0.2.2:
 
   * qa-checks: Install pip for Python 3.6
-  * ewaol-distro: Fix bitbake fetch for runc-opencontainers recipe from
+  * ewaol-distro: Fix BitBake fetch for runc-opencontainers recipe from
     meta-virtualization
 
 ******
@@ -249,7 +249,7 @@ Resolved issues from v0.2:
   * qa-checks: Consider latest git commit for matching file's copyright year
   * qa-checks: Fix getting the last modification date of external works
   * qa-checks: Disable SC2086 shellcheck for k3s-killall.sh from K3s package
-  * ewaol-distro: Fix bitbake fetch for go-fsnotify recipe from
+  * ewaol-distro: Fix BitBake fetch for go-fsnotify recipe from
     meta-virtualization
 
 ****
@@ -325,7 +325,7 @@ Tools:
     configurations from yaml files. This tool is still in experimental stage
     and will be replacing kas-ci-build.py in the future
   * Added '-j' and '--out-dir' parameters to kas-ci-build.py set the maximum
-    number of cpu threads available for bitbake and allow user to change build
+    number of CPU threads available for BitBake and allow user to change build
     directory
   * Moved project specific configurations for QA checks to meta-ewaol-config
   * Various improvements in QA checks for spelling, commit message and license
@@ -362,7 +362,7 @@ Changed
 
 Documentation:
 
-  * Added manual bitbake build preparation documentation
+  * Added manual BitBake build preparation documentation
   * Added QA checks documentation
   * Added meta-ewaol public repository URL
   * CI Build Tool documentation fixes

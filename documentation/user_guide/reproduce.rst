@@ -602,7 +602,7 @@ running successfully, depending on the target architecture:
 
       .. code-block:: console
 
-        systemctl status --no-pager --lines=0 docker.service k3s.service xendomains.services
+        systemctl status --no-pager --lines=0 docker.service k3s.service xendomains.service
 
     And ensuring the command output lists them as active and running.
 

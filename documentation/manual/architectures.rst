@@ -25,7 +25,7 @@ An EWAOL baremetal distribution image (``ewaol-baremetal-image``) is enabled if
 following image features by default:
 
   * Container engine and runtime with Docker and runc-opencontainers
-  * Container workload orchestration with the K3s kubernetes distribution
+  * Container workload orchestration with the K3s Kubernetes distribution
 
 On a baremetal distribution image system boot, a K3s Systemd service
 (``k3s.service``) provides a container orchestration environment consisting of a
@@ -50,7 +50,7 @@ image includes the following image features by default:
 
   * Hardware virtualization support with the Xen type-1 hypervisor
   * Container engine and runtime with Docker and runc-opencontainers
-  * Container workload orchestration with the K3s kubernetes distribution
+  * Container workload orchestration with the K3s Kubernetes distribution
 
 On an EWAOL virtualization distribution image, the software stack includes the
 Xen type-1 hypervisor and provides a Control VM (Dom0) and a single bundled
