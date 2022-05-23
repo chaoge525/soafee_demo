@@ -754,7 +754,7 @@ Guest VM via K3s orchestration. This example process is as follows:
 
          .. code-block:: console
 
-           ExecStart=/usr/local/bin/k3s agent --server=https://[IP]:6443 --token=[TOKEN] --node-label=ewaol.node-type=guest-vm'
+           ExecStart=/usr/local/bin/k3s agent --server=https://[IP]:6443 --token=[TOKEN] --node-label=ewaol.node-type=guest-vm
 
     2.5. Start the Guest VM's K3s Agent with these values via:
 
