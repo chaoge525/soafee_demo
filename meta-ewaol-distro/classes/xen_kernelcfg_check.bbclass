@@ -7,18 +7,10 @@ inherit kernelcfg_check
 # Current checksum, should be updated to track latest xen requirements
 # https://git.yoctoproject.org/cgit/cgit.cgi/yocto-kernel-cache/tree/features/xen/xen.cfg
 XEN_CONFIG_FILE ?= "xen.cfg"
-XEN_CONFIG_FILE_MD5 ?= "1a3c770197a4c0c720b0ae1d73f4c090"
+XEN_CONFIG_FILE_MD5 ?= "9dd5450b99fc05551999bf119208acf8"
 
 # List of XEN configs not valid or not wanted for aarch64 machines
-XEN_CONFIG_IGNORE_LIST ?= "CONFIG_HYPERVISOR_GUEST \
-                           CONFIG_XEN_PVHVM \
-                           CONFIG_XEN_SAVE_RESTORE \
-                           CONFIG_PCI_XEN \
-                           CONFIG_XEN_PCIDEV_FRONTEND \
-                           CONFIG_XEN_SCRUB_PAGES \
-                           CONFIG_XEN_PCIDEV_BACKEND \
-                           CONFIG_XEN_ACPI_PROCESSOR \
-                           CONFIG_XEN_MCE_LOG \
+XEN_CONFIG_IGNORE_LIST ?= "\
                            CONFIG_XEN_HAVE_PVMMU \
                            CONFIG_XEN_PVCALLS_FRONTEND \
                            CONFIG_XEN_PVCALLS_BACKEND \
