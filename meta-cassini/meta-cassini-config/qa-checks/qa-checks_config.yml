@@ -35,9 +35,7 @@ modules:
     header:
         exclude_patterns:
             - GITIGNORE_CONTENTS
-            - "/meta-cassini/meta-cassini-config/qa-checks/cassini-dictionary"
-            - "meta-ewaol-config/qa-checks/ewaol-dictionary"
-            - "/license.rst"
+            - "meta-cassini-config/qa-checks/cassini-dictionary"
             - "*.git"
             - "*.gitignore"
             - "*.pyc"
@@ -49,8 +47,9 @@ modules:
 
     layer:
         kas_configs:
-            - "meta-cassini-config/kas/n1sdp.yml:\
-               meta-cassini-config/kas/tests.yml"
+            - "meta-cassini/meta-cassini-config/kas/cassini.yml:\
+               meta-cassini/meta-cassini-config/kas/n1sdp.yml:\
+               meta-cassini/meta-cassini-config/kas/tests.yml"
         test_layers:
             - "meta-cassini-distro"
             - "meta-cassini-tests"

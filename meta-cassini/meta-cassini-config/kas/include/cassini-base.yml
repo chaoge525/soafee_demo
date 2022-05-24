@@ -24,6 +24,7 @@ repos:
       meta-arm-toolchain: excluded
 
   meta-cassini:
+    path: meta-cassini
     layers:
       meta-cassini-distro:
 

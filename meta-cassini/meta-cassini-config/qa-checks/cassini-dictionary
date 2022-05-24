@@ -170,6 +170,7 @@ png
 podman
 ppa
 ppas
+project_root
 ptest
 pycodestyle
 pyspellchecker
