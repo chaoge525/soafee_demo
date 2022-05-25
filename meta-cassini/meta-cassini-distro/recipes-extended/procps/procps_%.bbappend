@@ -2,9 +2,9 @@
 #
 # SPDX-License-Identifier: MIT
 
-INCLUDE_FOR = "${CASSINI_DISTRO_FEATURES}"
-INCLUDE_FOR:remove = "cassini-sdk"
+CASSINI_PROCPS_INC := "\
+${@ "${BPN}-cassini.inc" \
+    if (d.getVar('DISTRO_FEATURES').find("sdk") == -1) \
+    else "" }"
 
-require ${@bb.utils.contains_any('DISTRO_FEATURES', \
-                                 d.getVar("INCLUDE_FOR"), \
-                                 '${BPN}-cassini.inc', '', d)}
+require ${CASSINI_PROCPS_INC}

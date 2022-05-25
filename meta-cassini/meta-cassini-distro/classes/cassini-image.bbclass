@@ -18,7 +18,16 @@ IMAGE_ROOTFS_EXTRA_SPACE:append = "${@ ' + ${CASSINI_ROOTFS_EXTRA_SPACE}' \
 
 IMAGE_FEATURES += "ssh-server-openssh bash-completion-pkgs"
 
-IMAGE_INSTALL += "packagegroup-cassini"
+IMAGE_INSTALL += "\
+    bash \
+    bash-completion-extra \
+    ca-certificates \
+    docker-ce \
+    k3s-server \
+    procps \
+    sudo \
+    wget \
+    "
 
 # Add two users: one with admin access and one without admin access
 # 'CASSINI_USER_ACCOUNT', 'CASSINI_ADMIN_ACCOUNT'
