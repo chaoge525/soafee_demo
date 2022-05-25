@@ -131,7 +131,7 @@ The ``meta-ewaol`` repository can be downloaded using Git, via:
 
   mkdir -p ~/ewaol
   cd ~/ewaol
-  git clone |meta-ewaol remote| --branch |meta-ewaol version|
+  git clone |meta-ewaol remote| --branch |meta-ewaol branch|
   cd meta-ewaol
 
 .. _user_guide_reproduce_build:

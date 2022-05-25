@@ -77,11 +77,11 @@ layer_definitions = {
   "meta-openembedded branch": f"{yocto_release}",
   "meta-virtualization branch": f"{yocto_release}",
   "meta-arm branch": f"{yocto_release}",
-  "poky revision": "453be4d258f71855205f45599eea04589eb4a369",
-  "meta-virtualization revision": "2fae71cdf0e8c6f398f51219bdf31eac76c662ec",
-  "meta-openembedded revision": "166ef8dbb14ad98b2094a77fcf352f6c63d5abf2",
-  "meta-arm revision": "fc09cc0e8db287600625e64905170a6de24f2686",
-  "layer dependency statement": f"The layer revisions are related to the EWAOL ``{ewaol_version}`` release.",
+  "poky revision": "HEAD",
+  "meta-virtualization revision": "HEAD",
+  "meta-openembedded revision": "HEAD",
+  "meta-arm revision": "HEAD",
+  "layer dependency statement": f"The layer revisions are related to the EWAOL ``{yocto_release}-dev`` branch.",
 }
 
 other_definitions = {
