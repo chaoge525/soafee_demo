@@ -640,14 +640,14 @@ Deploying Application Workloads via Docker and K3s
 
 This example use-case is performed on the:
 
-  * EWAOL baremetal architecture
-  * EWAOL virtualization architecture
+  * Baremetal distribution image
+  * Virtualization distribution image
 
 This example deploys the |Nginx|_ webserver as an application workload, using
 the ``nginx`` container image available from Docker's default image repository.
 The deployment can be achieved either via Docker or via K3s, as follows:
 
-  1. Boot the image and log-in as ``ewaol`` user.
+  1. Reboot the image and log-in as the ``ewaol`` user.
 
      On a virtualization distribution image, this will produce a console on the
      Control VM.
@@ -660,7 +660,7 @@ The deployment can be achieved either via Docker or via K3s, as follows:
 
             .. code-block:: console
 
-              sudo docker run -p 8082:80 -d nginx
+              sudo docker run --name nginx_docker_example -p 8082:80 -d nginx
 
        2.2. Confirm the Docker container is running by checking its ``STATUS``
        in the container list:
@@ -668,6 +668,14 @@ The deployment can be achieved either via Docker or via K3s, as follows:
             .. code-block:: console
 
               sudo docker container list
+
+            The container should appear in the list of running containers, with
+            the associated name ``nginx_docker_example``. For example:
+
+            .. code-block:: console
+
+              CONTAINER ID   IMAGE     COMMAND                  CREATED          STATUS          PORTS                                   NAMES
+              cb7f67053556   nginx     "/docker-entrypoint.…"   14 seconds ago   Up 13 seconds   0.0.0.0:8082->80/tcp, :::8082->80/tcp   nginx_docker_example
 
      * **Deploy via K3s**
 
@@ -696,6 +704,13 @@ The deployment can be achieved either via Docker or via K3s, as follows:
 
               sudo kubectl get pods -o wide
 
+            The output should be similar to the following example output:
+
+            .. code-block:: console
+
+              NAME                READY   STATUS    RESTARTS   AGE   IP          NODE    NOMINATED NODE   READINESS GATES
+              k3s-nginx-example   1/1     Running   0          28s   [IP]   n1sdp   <none>           <none>
+
   3. After the Nginx application workload has been successfully deployed, it can
      be interacted with on the network, via for example:
 
@@ -703,17 +718,51 @@ The deployment can be achieved either via Docker or via K3s, as follows:
 
        wget localhost:8082
 
+     This should download the webserver's default ``index.html`` page and return
+     a successful exit status, similar to the following example output:
+
+     .. code-block:: console
+
+       --YYYY-MM-DD HH:mm:ss--  http://localhost:8082/
+       Resolving localhost (localhost)... ::1, 127.0.0.1
+       Connecting to localhost (localhost)|::1|:8082... connected.
+       HTTP request sent, awaiting response... 200 OK
+       Length: 615 [text/html]
+       Saving to: ‘index.html’
+
+       index.html                             100%[===========================================================================>]     615  --.-KB/s    in 0s
+
+       YYYY-MM-DD HH:mm:ss (189 MB/s) - ‘index.html’ saved [615/615]
+
 .. note::
   As both methods deploy a webserver listening on port 8082, the two methods
   cannot be run simultaneously and one deployment must be stopped before the
   other can start.
+
+  To stop the application workload deployed via Docker, use the command:
+
+    .. code-block:: console
+
+      sudo docker stop nginx_docker_example
+
+  The container should then no longer appear in the list of running containers
+  given by ``sudo docker container list``.
+
+  To stop the application workload deployed via K3s, use the command:
+
+    .. code-block:: console
+
+      sudo kubectl delete pod k3s-nginx-example
+
+  The K3s Pod which was running the container should no longer appear in the
+  list of K3s Pods given by ``sudo kubectl get pods -o wide``.
 
 Orchestrating Resource-Managed and Isolated Application Workloads via K3s and Xen VMs
 =====================================================================================
 
 This example use-case is performed on the:
 
-  * EWAOL virtualization architecture
+  * Virtualization distribution image
 
 This example uses the K3s orchestration framework to use the Control VM to
 schedule an |Nginx|_ webserver application workload for execution on the Guest
@@ -726,62 +775,72 @@ Guest VM via K3s orchestration. This example process is as follows:
 
   1. **Log-in to the Control VM**
 
-    Boot the virtualization distribution image and log-in as ``ewaol`` user.
+    Reboot the virtualization distribution image, then log-in as the ``ewaol``
+    user.
 
   2. **Connect Guest VM K3s Agent**
 
-    2.1. Determine the IP address of the Control VM via:
+    2.1. On the **Control VM**, determine its IP address via:
 
          .. code-block:: console
 
            ifconfig xenbr0
 
-    2.2. Determine the node-token for the K3s server on the Control VM via:
+    2.2. On the **Control VM**, determine the node-token for the K3s server via:
 
          .. code-block:: console
 
            sudo cat /var/lib/rancher/k3s/server/node-token
 
-    2.3. Then, log in to the Guest VM as ``ewaol`` user, via:
+    2.3. On the **Control VM**, log in to the **Guest VM** as the ``ewaol``
+    user, via:
 
          .. code-block:: console
 
            sudo xl console ewaol-guest-vm1
 
-    2.4. Denoting the IP address and node-token as ``[IP]`` and ``[TOKEN]``
-    respectively, change the ``ExecStart=`` line in
+    2.4. On the **Guest VM**, and denoting the IP address and node-token as
+    ``[IP]`` and ``[TOKEN]`` respectively, change the ``ExecStart=`` line in
     ``/lib/systemd/system/k3s-agent.service`` to:
 
          .. code-block:: console
 
            ExecStart=/usr/local/bin/k3s agent --server=https://[IP]:6443 --token=[TOKEN] --node-label=ewaol.node-type=guest-vm
 
-    2.5. Start the Guest VM's K3s Agent with these values via:
+    2.5. On the **Guest VM**, start the K3s Agent with these values via:
 
          .. code-block:: console
 
            sudo systemctl daemon-reload && sudo systemctl start k3s-agent
 
-    2.6. Disconnect from the Guest VM and return to the Control VM via:
+    2.6. On the **Guest VM**, disconnect from it and return to the Control VM
+    via:
 
          .. code-block:: console
 
            Ctrl+]
 
-    2.7. Ensure that the Control VM K3s server and the Guest VM K3s agent are
-    connected. This can be checked on the Control VM via:
+    2.7. On the **Control VM**, ensure that the K3s server and the Guest VM's
+    K3s agent are connected, by running:
 
          .. code-block:: console
 
            sudo kubectl get nodes
 
-         The hostname of the Guest VM should appear as a node in the list, with a
-         ``STATUS`` of ``ready``.
+         The hostname of the Guest VM should appear as a node in the list, with
+         a ``STATUS`` of ``ready``. The output should be similar to the
+         following example:
+
+         .. code-block:: console
+
+           NAME              STATUS   ROLES                  AGE     VERSION
+           ewaol-guest-vm1   Ready    <none>                 22s     v1.22.6-k3s1
+           n1sdp             Ready    control-plane,master   6m40s   v1.22.6-k3s1
 
   3. **Schedule Application Workload**
 
-    3.1. Schedule the Nginx application workload to the Guest VM, via the
-    following example command:
+    3.1. On the **Control VM**, schedule the Nginx application workload to be
+    deployed on the Guest VM, by running the following example command:
 
          .. code-block:: console
 
@@ -801,22 +860,55 @@ Guest VM via K3s orchestration. This example process is as follows:
                ewaol.node-type: guest-vm
            EOT
 
-     3.2. Confirm that the K3s Pod hosting the container is running on the Guest
-     VM by checking its ``STATUS`` is ``running``, and its ``NODE`` is the Guest
-     VM's hostname, using:
+    3.2. On the **Control VM**, confirm that the K3s Pod (which hosts the
+    container) was deployed to the Guest VM by checking its ``STATUS`` is
+    ``running`` and its ``NODE`` is the Guest VM's hostname, by running the
+    following command:
 
-          .. code-block:: console
+      .. code-block:: console
 
-            sudo kubectl get pods -o wide
+        sudo kubectl get pods -o wide
+
+      The output should be similar to the following example output:
+
+      .. code-block:: console
+
+        NAME                READY   STATUS    RESTARTS   AGE   IP          NODE              NOMINATED NODE   READINESS GATES
+        k3s-nginx-example   1/1     Running   0          33s   [IP]   ewaol-guest-vm1   <none>           <none>
 
   4. **Access the Application Workload**
 
-    The webserver will then be running on the Guest VM, and can be accessed by
-    running the following example command on the Guest VM:
+    The webserver will then be running on the Guest VM. To access the webserver:
+
+    4.1. On the **Control VM**, log in to the **Guest VM** as the ``ewaol``
+    user, via:
+
+         .. code-block:: console
+
+           sudo xl console ewaol-guest-vm1
+
+    4.2. On the **Guest VM**, access the webserver by running the following
+    example command:
 
       .. code-block:: console
 
         wget localhost:8082
+
+    This should download the webserver's default ``index.html`` page and return
+    a successful exit status, similar to the following example output:
+
+      .. code-block:: console
+
+        --YYYY-MM-DD HH:mm:ss--  http://localhost:8082/
+        Resolving localhost (localhost)... ::1, 127.0.0.1
+        Connecting to localhost (localhost)|::1|:8082... connected.
+        HTTP request sent, awaiting response... 200 OK
+        Length: 615 [text/html]
+        Saving to: ‘index.html’
+
+        index.html                             100%[===========================================================================>]     615  --.-KB/s    in 0s
+
+        YYYY-MM-DD HH:mm:ss (189 MB/s) - ‘index.html’ saved [615/615]
 
 While the Guest VM is running this application workload, other deployments may
 be carried out (for example) on the Control VM, thus enabling isolation between
