@@ -18,6 +18,7 @@ repos:
   # layer in here and eneable it in ava.yml when used for the build. This way
   # we avoid external bsp layers to checkout and use this layer
   meta-adlink-ampere:
+    refspec: main
     layers:
       .: excluded
 
