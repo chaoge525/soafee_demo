@@ -10,7 +10,6 @@ repos:
   meta-adlink-ampere:
     url: https://github.com/ADLINK/meta-adlink-ampere.git
     path: layers/meta-adlink-ampere
-    refspec: kirkstone
     layers:
       .: included
 
