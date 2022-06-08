@@ -17,8 +17,12 @@ This page describes the two target architectures supported by the EWAOL project.
 Baremetal Architecture
 **********************
 
+|
+
 .. image:: ../images/baremetal_architecture.png
    :align: center
+
+|
 
 An EWAOL baremetal distribution image (``ewaol-baremetal-image``) is enabled if
 ``ewaol-baremetal`` is included in ``DISTRO_FEATURES``. The image includes the
@@ -41,8 +45,12 @@ EWAOL baremetal distribution image.
 Virtualization Architecture
 ***************************
 
+|
+
 .. image:: ../images/virtualization_architecture.png
    :align: center
+
+|
 
 An EWAOL virtualization distribution image (``ewaol-virtualization-image``) is
 enabled if ``ewaol-virtualization`` is included in ``DISTRO_FEATURES``. The
