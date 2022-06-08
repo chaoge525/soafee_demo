@@ -42,8 +42,12 @@ Layer Dependency Overview
 The following diagram illustrates the layers which are integrated by the EWAOL
 project, which are further expanded on below. |layer dependency statement|
 
+|
+
 .. image:: ../images/ewaol_layers_deps_diagram.png
    :align: center
+
+|
 
 EWAOL depends on the following layer dependency sources:
 

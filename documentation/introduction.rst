@@ -67,8 +67,12 @@ different system architectures to support application workload deployment and
 orchestration, as described in `EWAOL System Architectures`_ later in this
 introduction.
 
+|
+
 .. image:: images/high_level_overview.png
    :align: center
+
+|
 
 .. _introduction_use_cases_overview:
 
