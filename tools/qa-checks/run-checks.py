@@ -191,12 +191,15 @@ def parse_options():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         description=f"{desc}\n{usage}\n\n{example}\n\n{sets}")
 
+    valid_checks = set(check_names + ["default", "all"])
     parser.add_argument("--check", action="append", default=[],
-                        choices=check_names + ["default", "all"],
                         dest="checks",
-                        help=("Add a specific check to run, or the 'default'"
-                              " set, or 'all' checks. If not given, then the"
-                              " default set will be run."))
+                        metavar="{" + ",".join(sorted(valid_checks)) + "}",
+                        help=("Comma-separated list: Add specific checks to"
+                              " run, or the 'default' set, or 'all' checks. If"
+                              " not given, then the default set will be run."
+                              " Multiple checks can be specified as a list and"
+                              " by passing the argument multiple times."))
 
     # Internal usage: a requested check may be skipped using this option (e.g.
     # due to failed dependency-installation in the virtual environment)
@@ -291,6 +294,21 @@ def parse_options():
         if any([skip not in opts.checks for skip in opts.skip_checks]):
             logger.error("Cannot skip a check that wasn't requested.")
             exit(1)
+
+    # Split each comma separated check in the list and flatten the list
+    checks = []
+    for check_sublist in opts.checks:
+        checks.extend(check_sublist.split(","))
+    opts.checks = checks
+
+    has_invalid_check = False
+    for check in opts.checks:
+        if check not in valid_checks:
+            logger.error(f"Argument 'check': value '{check}' is invalid."
+                         f" Choose from {valid_checks}")
+            has_invalid_check = True
+    if has_invalid_check:
+        exit(1)
 
     # Set default here because the append action extends the argparse default
     # rather than replaces the default
