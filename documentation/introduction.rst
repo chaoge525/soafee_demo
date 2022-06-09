@@ -31,16 +31,19 @@ software layers:
     functionalities and facilitate deployment and orchestration of user
     application workloads. These tools and services include the Docker container
     engine, the K3s container orchestration framework, and Xen virtualization
-    management software, together with their run-time dependencies. In addition,
-    EWAOL provides supporting packages such as those which enable run-time
-    validation tests or software development capabilities on the target platform.
+    management software, together with their run-time dependencies. The
+    integration of the Docker container engine and the K3s container
+    orchestration framework is inherited from the ``meta-cassini-distro`` Yocto
+    layer, as provided by Project Cassini. In addition, EWAOL provides
+    supporting packages such as those which enable run-time validation tests or
+    software development capabilities on the target platform.
 
   * **System software**:
 
     System software specific to the target platform, composed of firmware,
     bootloader and the operating system, as well as the Xen type-1 hypervisor
     when building an EWAOL distribution with hardware virtualization support.
-    Note that this system software is not directly developed as part of the
+    This system software is not directly developed as part of the
     EWAOL project, but is instead integrated from the meta-arm, meta-arm-bsp,
     and meta-virtualization Yocto layers in order to provide an example EWAOL
     reference stack on the N1SDP hardware target platform.
@@ -127,8 +130,6 @@ Features Overview
 EWAOL includes the following major features:
 
   * Support for two architectural use-cases (Baremetal, and Virtualization).
-  * Container engine and runtime with Docker and runc-opencontainers.
-  * Container workload orchestration with the K3s Kubernetes distribution.
   * Hardware virtualization support with the Xen type-1 hypervisor.
   * On-target development support with optionally included Software Development
     Kit.
@@ -136,12 +137,18 @@ EWAOL includes the following major features:
     build-time kernel configuration checks.
   * Tools provided for quality assurance and build support.
 
-Other features of EWAOL include:
+Other features are provided by the following distributions, which EWAOL extends:
 
-  * The features provided by the ``poky.conf`` distribution, which EWAOL
-    extends.
-  * Systemd used as the init system.
-  * RPM used as the package management system.
+  * Poky distribution (``poky.conf``) from the ``meta-poky`` Yocto layer
+
+   * Systemd used as the init system.
+   * RPM used as the package management system.
+
+  * Cassini distribution (``cassini.conf``) from the
+    ``meta-cassini-distro`` Yocto layer
+
+   * Container engine and runtime with Docker and runc-opencontainers.
+   * Container workload orchestration with the K3s Kubernetes distribution.
 
 **********************
 Documentation Overview

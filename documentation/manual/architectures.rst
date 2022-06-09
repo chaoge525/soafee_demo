@@ -20,9 +20,9 @@ Baremetal Architecture
 .. image:: ../images/baremetal_architecture.png
    :align: center
 
-An EWAOL baremetal distribution image (``ewaol-baremetal-image``) is enabled if
-``ewaol-baremetal`` is included in ``DISTRO_FEATURES``. The image includes the
-following image features by default:
+A baremetal distribution image (``ewaol-baremetal-image``) is enabled if
+``ewaol-baremetal`` is included in ``DISTRO_FEATURES``. The image inherits
+the following image features from ``meta-cassini-distro``, by default:
 
   * Container engine and runtime with Docker and runc-opencontainers
   * Container workload orchestration with the K3s kubernetes distribution

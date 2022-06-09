@@ -65,6 +65,11 @@ EWAOL depends on the following layer dependency sources:
     branch: |meta-virtualization branch|
     revision: |meta-virtualization revision|
 
+    URL: https://git.gitlab.arm.com/ewaol/meta-ewaol
+    layer: meta-cassini-distro
+    branch: |meta-cassini branch|
+    revision: |meta-cassini revision|
+
 An additional layer dependency source is conditionally required, depending on
 the specific EWAOL distribution image being built. This layer dependency source
 is the ``meta-arm`` repository, which provides three Yocto layers:
