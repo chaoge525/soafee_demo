@@ -102,7 +102,7 @@ def convert_gitstyle_pattern_to_regex(pattern):
     pattern = pattern.replace("*", r"[^/]*")
     pattern = pattern.replace("?", r"[^/]")
 
-    project_root = eval_keyword("ROOT")
+    project_root = eval_keyword("ROOT").rstrip('/')
     if pattern.startswith("/"):
         pattern = f"{project_root}{pattern}"
         pass
