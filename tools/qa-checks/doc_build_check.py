@@ -32,28 +32,35 @@ class DocBuildCheck(abstract_check.AbstractCheck):
 
     @staticmethod
     def get_vars():
-        list_vars = {}
-        plain_vars = {}
-
-        plain_vars["documentation_dir"] = ("Path to directory containing"
-                                           " documentation source. A relative"
-                                           " path will be considered relative"
-                                           " to project_root.")
-        plain_vars["output_dir"] = ("Path to directory where generated"
-                                    " documentation will be placed. A relative"
-                                    " path will be considered relative to"
-                                    " project_root. If the directory does not"
-                                    " exist, it will be created. If set to ''"
-                                    " then a temporary directory will be used"
-                                    " and deleted after the build.")
-        plain_vars["requirements"] = ("Path to pip requirements file for"
-                                      " building the documentation. A relative"
-                                      " path will be considered relative to"
-                                      " project_root.")
-
-        optional_vars = ["documentation_dir", "output_dir", "requirements"]
-
-        return list_vars, plain_vars, optional_vars
+        return [
+            abstract_check.CheckSetting(
+                "documentation_dir",
+                default=None,
+                message=("Path to directory containing"
+                         " documentation source. A relative"
+                         " path will be considered relative"
+                         " to project_root.")
+            ),
+            abstract_check.CheckSetting(
+                "output_dir",
+                default="",
+                message=("Path to directory where generated"
+                         " documentation will be placed. A relative"
+                         " path will be considered relative to"
+                         " project_root. If the directory does not"
+                         " exist, it will be created. If set to ''"
+                         " then a temporary directory will be used"
+                         " and deleted after the build.")
+            ),
+            abstract_check.CheckSetting(
+                "requirements",
+                default=None,
+                message=("Path to pip requirements file for"
+                         " building the documentation. A relative"
+                         " path will be considered relative to"
+                         " project_root.")
+            )
+        ]
 
     def __init__(self, logger, *args, **kwargs):
         self.logger = logger

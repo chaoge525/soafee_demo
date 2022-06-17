@@ -37,32 +37,45 @@ class PythonCheck(abstract_check.AbstractCheck):
 
     @staticmethod
     def get_vars():
-        list_vars = {}
-        plain_vars = {}
-        optional_var_names = []
-
-        list_vars["paths"] = ("File paths to check, or directories to recurse."
-                              " Relative paths will be considered relative to"
-                              " the root directory.")
-
-        list_vars["exclude_patterns"] = ("Patterns where if any is matched"
-                                         " with the file/directory name, the"
-                                         " check will not be applied to it or"
-                                         " continue into its subpaths.")
-
-        list_vars["file_types"] = ("String list where only files with non-MIME"
-                                   " files-types (as output by the `file`"
-                                   " utility) that contain at least one as a"
-                                   " substring will be checked.")
-
-        plain_vars["pycodestyle_args"] = ("Custom arguments to pass through to"
-                                          " the pycodestyle command. On"
-                                          " run-checks.py command line, set"
-                                          " this parameter using '=' to avoid"
-                                          " interpretation as arguments for"
-                                          " run-checks.py.")
-
-        return list_vars, plain_vars, optional_var_names
+        return [
+            abstract_check.CheckSetting(
+                "paths",
+                is_list=True,
+                default=["ROOT"],
+                message=("File paths to check, or directories to recurse."
+                         " Relative paths will be considered relative to"
+                         " the root directory.")
+            ),
+            abstract_check.CheckSetting(
+                "exclude_patterns",
+                is_list=True,
+                is_pattern=True,
+                default=["GITIGNORE_CONTENTS", "*.git"],
+                message=("Patterns where if any is matched"
+                         " with the file/directory name, the"
+                         " check will not be applied to it or"
+                         " continue into its subpaths.")
+            ),
+            abstract_check.CheckSetting(
+                "file_types",
+                is_list=True,
+                default=["python script"],
+                message=("String list where only files with non-MIME"
+                         " files-types (as output by the `file`"
+                         " utility) that contain at least one as a"
+                         " substring will be checked.")
+            ),
+            abstract_check.CheckSetting(
+                "pycodestyle_args",
+                default="",
+                message=("Custom arguments to pass through to"
+                         " the pycodestyle command. On"
+                         " run-checks.py command line, set"
+                         " this parameter using '=' to avoid"
+                         " interpretation as arguments for"
+                         " run-checks.py.")
+            )
+        ]
 
     def __init__(self, logger, *args, **kwargs):
         self.logger = logger

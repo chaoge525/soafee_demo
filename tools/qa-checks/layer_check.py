@@ -39,19 +39,23 @@ class LayerCheck(abstract_check.AbstractCheck):
 
     @staticmethod
     def get_vars():
-        list_vars = {}
-        plain_vars = {}
-        optional_var_names = []
-
-        list_vars["kas_configs"] = (
-            "Colon-separated string of kas config YAML files that provides the"
-            " build context for the layer check, as required by the"
-            " kas-runner.py script.")
-
-        list_vars["test_layers"] = ("Yocto layers to be tested, given by their"
-                                    " directory basenames.")
-
-        return list_vars, plain_vars, optional_var_names
+        return [
+            abstract_check.CheckSetting(
+                "kas_configs",
+                is_list=True,
+                required=True,
+                message=("Colon-separated string of kas config YAML files that"
+                         " provides the build context for the layer check, as"
+                         " required by the kas-runner.py script.")
+            ),
+            abstract_check.CheckSetting(
+                "test_layers",
+                is_list=True,
+                required=True,
+                message=("Yocto layers to be tested, given by their directory"
+                         " basenames.")
+            )
+        ]
 
     def __init__(self, logger, *args, **kwargs):
         self.logger = logger
