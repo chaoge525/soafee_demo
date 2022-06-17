@@ -45,25 +45,33 @@ class SpellCheck(abstract_check.AbstractCheck):
 
     @staticmethod
     def get_vars():
-        list_vars = {}
-        plain_vars = {}
-        optional_var_names = []
-
-        list_vars["paths"] = ("File paths to check, or directories to recurse."
-                              " Relative paths will be considered relative to"
-                              " the root directory.")
-
-        list_vars["exclude_patterns"] = ("Patterns where if any is matched"
-                                         " with the file/directory name, the"
-                                         " check will not be applied to it or"
-                                         " continue into its subpaths.")
-
-        plain_vars["dict_path"] = ("Path to a custom dictionary file that"
-                                   " provides additional valid words when"
-                                   " validating the spelling of files within"
-                                   " the project.")
-
-        return list_vars, plain_vars, optional_var_names
+        return [
+            abstract_check.CheckSetting(
+                "paths",
+                is_list=True,
+                default=["ROOT"],
+                message=("File paths to check, or directories to recurse."
+                         " Relative paths will be considered relative to"
+                         " the root directory.")
+            ),
+            abstract_check.CheckSetting(
+                "exclude_patterns",
+                is_list=True,
+                is_pattern=True,
+                default=["GITIGNORE_CONTENTS", "*.git"],
+                message=("Path to a custom dictionary file that"
+                         " provides additional valid words when"
+                         " validating the spelling of files within"
+                         " the project.")
+            ),
+            abstract_check.CheckSetting(
+                "dict_path",
+                message=("Path to a custom dictionary file that"
+                         " provides additional valid words when"
+                         " validating the spelling of files within"
+                         " the project.")
+            )
+        ]
 
     def __init__(self, logger, *args, **kwargs):
         self.logger = logger
@@ -222,26 +230,27 @@ class SpellCheck(abstract_check.AbstractCheck):
             self.spellcheck = spellchecker.SpellChecker()
 
             dict_path = self.dict_path
-            if not os.path.isabs(dict_path):
-                dict_path = os.path.join(self.project_root, dict_path)
+            if dict_path is not None:
+                if not os.path.isabs(dict_path):
+                    dict_path = os.path.join(self.project_root, dict_path)
 
-            if not os.path.isfile(dict_path):
-                self.logger.warning(("Could not find the dictionary file at"
-                                     f"{dict_path}."))
-            else:
-                try:
+                if not os.path.isfile(dict_path):
+                    self.logger.warning(("Could not find the dictionary file"
+                                         f" at {dict_path}."))
+                else:
+                    try:
 
-                    def simple_split(text):
-                        return text.split()
+                        def simple_split(text):
+                            return text.split()
 
-                    self.spellcheck.word_frequency.load_text_file(
-                        dict_path,
-                        tokenizer=simple_split)
+                        self.spellcheck.word_frequency.load_text_file(
+                            dict_path,
+                            tokenizer=simple_split)
 
-                except UnicodeDecodeError:
-                    self.logger.warning(("Could not UTF-8 decode the"
-                                         " dictionary file at"
-                                         f" {dict_path}."))
+                    except UnicodeDecodeError:
+                        self.logger.warning(("Could not UTF-8 decode the"
+                                             " dictionary file at"
+                                             f" {dict_path}."))
 
             for path in self.paths:
 

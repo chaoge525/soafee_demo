@@ -212,16 +212,16 @@ def parse_options():
     for check in AVAILABLE_CHECKS:
 
         name = check.name
-        list_args, args, _ = check.get_vars()
+        settings = check.get_vars()
 
         group = parser.add_argument_group(f"{name} check arguments")
 
-        for arg, msg in {**list_args, **args}.items():
+        for setting in settings:
             prefix = ""
-            if arg in list_args:
+            if setting.is_list:
                 prefix = "Comma-separated list: "
-            group.add_argument(f"--{name}_{arg}", required=False,
-                               help=(f"{prefix}{msg}"))
+            group.add_argument(f"--{name}_{setting.name}", required=False,
+                               help=(f"{prefix}{setting.message}"))
 
     default_config_file = "meta-ewaol-config/qa-checks/qa-checks_config.yml"
     parser.add_argument("--config",
@@ -401,9 +401,7 @@ def load_param_from_config(config_filename, check_name, param, list_param):
 def load_check_params(
         opts,
         check_name,
-        list_vars,
-        plain_vars,
-        optional_var_names):
+        settings):
     """ For each variable, we check if we already have a value from the command
         line arguments. If we do, we either append it to or replace the default
         in the configuration YAML file, depending on whether or not it is a
@@ -416,12 +414,12 @@ def load_check_params(
     params = dict()
     missing_params = list()
 
-    combined_list = list_vars + plain_vars
+    for setting in settings:
+        param = setting.name
 
-    for param in combined_list:
         key = f"{check_name}_{param}"
 
-        is_list = param in list_vars
+        is_list = setting.is_list
 
         # Get value from config file
         config_value = None
@@ -448,8 +446,20 @@ def load_check_params(
         if value is None:
             value = config_value
 
+        if value is None:
+            # Nothing supplied for this parameter
+
+            if not setting.required:
+                # Optional, so use its default value (which may be None)
+                value = setting.default
+                params[param] = value
+                setattr(opts, key, value)
+            else:
+                # Required, set as missing
+                missing_params.append(param)
+
         # If value is still None, then we didn't find anything for this param
-        # from command line or config file
+        # from command line or config file and the default value is None
         if value is not None:
 
             # Replace any keywords with mapped values
@@ -478,9 +488,7 @@ def load_check_params(
                     return None
 
             # If the parameter is a pattern, convert it for regex matching
-            if (not opts.no_process_patterns and
-                    (param.endswith("_pattern") or
-                     param.endswith("_patterns"))):
+            if (not opts.no_process_patterns and setting.is_pattern):
                 if is_list:
                     converted_patterns = []
                     for pattern in value:
@@ -492,17 +500,6 @@ def load_check_params(
 
             params[param] = value
             setattr(opts, key, value)
-        else:
-            # Nothing supplied for this parameter
-
-            if param in optional_var_names:
-                # Optional, so pass it through to the check module as None
-                value = None
-                params[param] = value
-                setattr(opts, key, value)
-            else:
-                # Required, set as missing
-                missing_params.append(param)
 
     if missing_params:
         logger.warning((f"Missing parameters for {check_name} check:"
@@ -524,13 +521,9 @@ def build_check_modules(opts):
         name = check_module.name
         if name in opts.checks and name not in opts.skip_checks:
 
-            list_vars, plain_vars, optional_var_names = check_module.get_vars()
+            settings = check_module.get_vars()
 
-            params = load_check_params(opts,
-                                       name,
-                                       list(list_vars.keys()),
-                                       list(plain_vars.keys()),
-                                       optional_var_names)
+            params = load_check_params(opts, name, settings)
 
             if params:
                 # All check modules have a project_root variable

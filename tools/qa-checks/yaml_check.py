@@ -35,31 +35,45 @@ class YamlCheck(abstract_check.AbstractCheck):
 
     @staticmethod
     def get_vars():
-        list_vars = {}
-        plain_vars = {}
-        optional_var_name = []
-
-        list_vars["paths"] = ("File paths to check, or directories to recurse."
-                              " Relative paths will be considered relative to"
-                              " the root directory.")
-
-        list_vars["include_patterns"] = ("Patterns where if none are matched"
-                                         " with the file/directory name, the"
-                                         " check will not be applied to it.")
-
-        list_vars["exclude_patterns"] = ("Patterns where if any is matched"
-                                         " with the file/directory name, the"
-                                         " check will not be applied to it or"
-                                         " continue into its subpaths.")
-
-        plain_vars["yamllint_args"] = ("Custom arguments to pass through to"
-                                       " the yamllint command. On"
-                                       " run-checks.py command line, set"
-                                       " this parameter using '=' to avoid"
-                                       " interpretation as arguments for"
-                                       " run-checks.py.")
-
-        return list_vars, plain_vars, optional_var_name
+        return [
+            abstract_check.CheckSetting(
+                "paths",
+                is_list=True,
+                default=["ROOT"],
+                message=("File paths to check, or directories to recurse."
+                         " Relative paths will be considered relative to"
+                         " the root directory.")
+            ),
+            abstract_check.CheckSetting(
+                "include_patterns",
+                is_list=True,
+                is_pattern=True,
+                default=["*.yml", "*.yaml"],
+                message=("Patterns where if none are matched"
+                         " with the file/directory name, the"
+                         " check will not be applied to it.")
+            ),
+            abstract_check.CheckSetting(
+                "exclude_patterns",
+                is_list=True,
+                is_pattern=True,
+                default=["GITIGNORE_CONTENTS", "*.git"],
+                message=("Patterns where if any is matched"
+                         " with the file/directory name, the"
+                         " check will not be applied to it or"
+                         " continue into its subpaths.")
+            ),
+            abstract_check.CheckSetting(
+                "yamllint_args",
+                default="",
+                message=("Custom arguments to pass through to"
+                         " the yamllint command. On"
+                         " run-checks.py command line, set"
+                         " this parameter using '=' to avoid"
+                         " interpretation as arguments for"
+                         " run-checks.py.")
+            )
+        ]
 
     def __init__(self, logger, *args, **kwargs):
         self.logger = logger

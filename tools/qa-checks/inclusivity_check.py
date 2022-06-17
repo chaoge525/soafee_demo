@@ -43,33 +43,36 @@ class InclusivityCheck(abstract_check.AbstractCheck):
 
     @staticmethod
     def get_vars():
-        list_vars = {}
-        plain_vars = {}
-
-        list_vars["paths"] = ("File paths to check, or directories to recurse."
-                              " Relative paths will be considered relative to"
-                              " the root directory.")
-
-        list_vars["exclude_patterns"] = ("Patterns where if any is matched"
-                                         " with the file/directory name, the"
-                                         " check will not be applied to it or"
-                                         " continue into its subpaths.")
-
-        plain_vars["non_inclusive_language_file"] = (
-            "Path to a file containing non inclusive terminology for the check"
-            " to find.")
-
-        optional_var_names = ["non_inclusive_language_file"]
-
-        return list_vars, plain_vars, optional_var_names
+        return [
+            abstract_check.CheckSetting(
+                "paths",
+                is_list=True,
+                default=["ROOT"],
+                message=("File paths to check, or directories to recurse."
+                         " Relative paths will be considered relative to"
+                         " the root directory.")
+            ),
+            abstract_check.CheckSetting(
+                "exclude_patterns",
+                is_list=True,
+                is_pattern=True,
+                default=["GITIGNORE_CONTENTS", "*.git"],
+                message=("Patterns where if any is matched"
+                         " with the file/directory name, the"
+                         " check will not be applied to it or"
+                         " continue into its subpaths.")
+            ),
+            abstract_check.CheckSetting(
+                "non_inclusive_language_file",
+                default="tools/qa-checks/non-inclusive-language.txt",
+                message=("Path to a file containing non inclusive terminology"
+                         " for the check to find.")
+            )
+        ]
 
     def __init__(self, logger, *args, **kwargs):
         self.logger = logger
         self.__dict__.update(kwargs)
-
-        if not self.non_inclusive_language_file:
-            self.non_inclusive_language_file = (
-                "tools/qa-checks/non-inclusive-language.txt")
 
         self.num_files_checked = 0
         self.non_inclusive_terms = list()

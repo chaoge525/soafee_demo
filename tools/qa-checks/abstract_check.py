@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-# Copyright (c) 2021, Arm Limited.
+# Copyright (c) 2021-2022, Arm Limited.
 #
 # SPDX-License-Identifier: MIT
 
@@ -16,6 +16,33 @@ result in a validation error.
 """
 
 from abc import ABC, abstractmethod
+
+
+class CheckSetting():
+    """ Class for storing information about a parameter for a qa-check module.
+        """
+
+    def __init__(self, name, is_list=False, is_pattern=False, required=False,
+                 default=None, message=""):
+        """ * name sets the name of the parameter in the config file and
+              command line when combined with the check module name.
+            * if is_list is true this parameter will be treated as a list and
+              can be set as a comma separated value on command line or a list
+              in the YAML config. If false then only one value is expected on
+              the command line and the YAML config.
+            * if is_pattern is true this parameter will be converted to a regex
+              from a gitignore style pattern.
+            * if required is true an error will be raised if the parameter is
+              not set.
+            * default sets the default value if the param is not required and
+              not set.
+            * message sets the help message to be printed by --help. """
+        self.name = name
+        self.is_list = is_list
+        self.is_pattern = is_pattern
+        self.required = required
+        self.default = default
+        self.message = message
 
 
 class AbstractCheck(ABC):
@@ -35,15 +62,8 @@ class AbstractCheck(ABC):
 
     @abstractmethod
     def get_vars(self):
-        """ Return two dicts that define the variables that are required to run
-            the check module, where each dict maps a variable name to a
-            description of the variable for usage instructions.
-
-            The first dict must correspond to list variables, each populated by
-            the user via either a YAML list in a YAML configuration file, or
-            via a comma-separated list within the command-line arguments.
-            The second dict must correspond to plain variables, each mapping to
-            a single value. """
+        """ Return a list of CheckSetting objects that define the variables
+            that are required to run the check module. """
         pass
 
     @abstractmethod
