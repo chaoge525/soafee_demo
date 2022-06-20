@@ -25,6 +25,7 @@
 # Note the "_" which renders the substitution as a hyperlink is only possible
 # because the variable is defined as a link, to be resolved as a Sphinx target.
 
+# inclusivity-exception
 yocto_release = "master"
 yocto_doc_version = "dev/"
 yocto_linux_version = "5.15"

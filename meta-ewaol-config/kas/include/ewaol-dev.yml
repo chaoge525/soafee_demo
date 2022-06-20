@@ -8,13 +8,17 @@ header:
 
 repos:
   meta-arm:
+    # inclusivity-exception
     refspec: master
 
   meta-openembedded:
+    # inclusivity-exception
     refspec: master
 
   meta-virtualization:
+    # inclusivity-exception
     refspec: master
 
   poky:
+    # inclusivity-exception
     refspec: master
