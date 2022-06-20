@@ -1,27 +1,38 @@
 1.0.0+rc93+git0+249bca0a13
+1.07.300.02b
 1.1.0+git0+b9460f26b4
 20.10.12+ce+git906f57f
 3.2.1+git0+ab4d0cf908
 3rd
 4.16+stable0+f265444922
 aarch64
+adlink_ava_backpanel.png
+adlink_ava_top.png
+adlink's
 aem
 appends
 arm-machines.yml
 armv8-a
 armv8a-crc
+ava_edk2_boot_manager_boot_screenshot.png
+ava_edk2_boot_usb_boot_screenshot.png
+ava_edk2_escape_boot_screenshot.png
+ava_edk2_initial_boot_screenshot.png
+ava_grub2_flasher_image_usb_boot_screenshot.png
 baremetal
 baremetal_architecture.png
 baremetal-sdk.yml
 baremetal.yml
 bblayers.conf
 bitbake
+bootable
 bootloader
 bsp
 bsps
 build_system
 build-time
 c
+c13
 ce_test_clean_env
 ce_test_guest_vm_basename
 ce_test_image
@@ -32,6 +43,7 @@ changelog
 cmd
 codeline
 codeline_management
+comhpc-docs
 configs
 configurable
 configures
@@ -43,6 +55,7 @@ contributing_documentation_build_validation
 customization
 customizations
 datetime
+db9
 dbg
 deprecated
 devicetree
@@ -52,8 +65,10 @@ docker's
 do_fetch
 dom0
 domu
+edk2
 efi
 e.g
+esc
 ewaol
 ewaol_admin_group.in
 ewaol-baremetal
@@ -92,6 +107,7 @@ fvp
 fvp-base
 fvp_base_revc-2xaemva_11.14_21.tgz
 gb
+gbe
 gbytes
 generic-arm64
 github
@@ -99,6 +115,7 @@ gitlab
 gitlab.arm.com
 gitlab-ci.yml
 go-fsnotify
+grub2
 hardknott
 high_level_overview.png
 hostname
@@ -106,6 +123,7 @@ html
 http
 https
 hypervisor
+i40e
 image_features
 image_rootfs_extra_space
 implementations
@@ -113,6 +131,7 @@ inclusivity-exception
 independently-configurable
 index.html
 initializes
+initramfs
 introduction_use_cases_overview
 k3s
 k3s_git.bb
@@ -142,6 +161,7 @@ manual_build_system_target_platforms
 manual_yocto_layers_layer_dependency_overview
 maxdepth
 mb
+meta-adlink-ampere
 meta-arm-bsp
 meta-ewaol
 meta-ewaol-bsp
@@ -161,6 +181,7 @@ neoverse
 nginx
 nodeport
 non-inclusive-language.txt
+nvme
 oci
 optionally
 ostree
@@ -188,6 +209,7 @@ revc
 rootfs
 rootfs_extra_space
 rpm
+rs232
 rst
 runc-opencontainers
 run-time
@@ -221,6 +243,7 @@ systemctl
 systemd
 systemready
 tests.yml
+tianocore
 titlesonly
 toctree
 top_level_test_name
@@ -234,6 +257,7 @@ use-cases
 user_accounts
 user-accounts-integration-tests.bb
 user_guide
+user_guide_reproduce_ava_images
 user_guide_reproduce_environment_setup
 v
 v1.0
@@ -257,6 +281,7 @@ wget
 wic
 with-libcap[-ng
 workloads
+www.ipi.wiki
 x86_64-linux
 xen
 xenbr0

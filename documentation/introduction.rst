@@ -42,8 +42,7 @@ software layers:
     when building an EWAOL distribution with hardware virtualization support.
     Note that this system software is not directly developed as part of the
     EWAOL project, but is instead integrated from the meta-arm, meta-arm-bsp,
-    and meta-virtualization Yocto layers in order to provide an example EWAOL
-    reference stack on the N1SDP hardware target platform.
+    and meta-virtualization Yocto layers.
 
 EWAOL is the reference implementation for SOAFEE (Scalable Open Architecture
 For Embedded Edge), the Arm lead industry initiative for extending cloud-native
@@ -52,7 +51,11 @@ functional safety. For more details, please see `<https://soafee.io>`_.
 
 More specifically, the ``meta-ewaol`` repository contains Yocto layers,
 configuration files, documentation and tools to support building EWAOL
-distribution images and validating core functionalities.
+distribution images and validating core functionalities. The project currently
+supports two hardware target platforms:
+
+  * Arm's |Neoverse N1 System Development Platform|_ (N1SDP)
+  * ADLINK's |AVA Developer Platform|_ (AVA)
 
 .. note::
   Users of this software stack must consider safety and security implications
@@ -114,9 +117,8 @@ differing according to the intended use-case, as follows:
     isolated, resource-managed Virtual Machines (VMs). An EWAOL
     virtualization distribution image will include a Control VM (Dom0) and a
     single bundled Guest VM (DomU), by default. This architecture enables the
-    deployment and
-    orchestration of application workloads on a set of distinct VMs running on a
-    single target platform.
+    deployment and orchestration of application workloads on a set of distinct
+    VMs running on a single target platform.
 
 EWAOL defines two customizable image build targets per target architecture: a
 standard EWAOL distribution image to support deployment and orchestration of an

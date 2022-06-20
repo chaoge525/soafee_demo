@@ -56,15 +56,19 @@ briefly introduced, classified into three ordered categories:
 
   * **Target Platform Configs**: Set the target platform
 
-    EWAOL currently supports the The Neoverse N1 System Development Platform
-    (N1SDP), corresponding to the ``n1sdp`` ``MACHINE`` implemented in
-    |meta-arm-bsp|_.
-    A single Target Platform Config is therefore provided:
+    EWAOL currently supports two hardware target platforms, each with its own
+    Target Platform Config:
 
-      * ``n1sdp.yml`` to select the N1SDP as the target platform.
+    * ``n1sdp.yml`` to select the Neoverse N1 System Development Platform
+      (N1SDP) as the target platform, corresponding to the ``n1sdp`` ``MACHINE``
+      implemented in |meta-arm-bsp|_.
 
-    To read documentation about the N1SDP, see the
-    |N1SDP Technical Reference Manual|_.
+      See |N1SDP Technical Reference Manual|_ for more details about the N1SDP.
+    * ``ava.yml`` to select the AVA Developer Platform (AVA) as the target
+      platform, corresponding to the ``ava`` ``MACHINE`` implemented in
+      |meta-adlink-ampere|_.
+
+      See |AVA Developer Platform|_ for more details about AVA.
 
 .. note::
   Additional information on EWAOL features such as run-time validation tests
@@ -140,32 +144,60 @@ The ``meta-ewaol`` repository can be downloaded using Git, via:
 Build
 *****
 
-As different kas configuration files with different customizable parameters are
-used to build EWAOL for different architectural use-cases, the instructions for
-building an EWAOL distribution depend on the target architecture, as follows.
+The provided kas configuration files can be combined to build and EWAOL
+distribution image for different target platforms, for different EWAOL system
+architectures, and to apply different sets of customizable parameters.
+Therefore, the following build guidance is provided as a set of alternatives
+to target each of the main supported use cases.
 
+Alternatives are distinguished first by EWAOL system architecture as distinct
+sections, then by hardware target platform or distribution image feature, with
+each alternative denoted alphabetically (e.g., A, B, ...).
 
 Baremetal Distribution
 ======================
 
-To build a baremetal distribution image for the N1SDP hardware target platform:
+To build a baremetal distribution image:
 
-  .. code-block:: console
+  A. For the N1SDP hardware target platform:
 
-    kas build --update meta-ewaol-config/kas/baremetal.yml:meta-ewaol-config/kas/n1sdp.yml
+    .. code-block:: console
 
-  The resulting baremetal distribution image will be produced at:
-  ``build/tmp_baremetal/deploy/images/n1sdp/ewaol-baremetal-image-n1sdp.*``
+      kas build --update meta-ewaol-config/kas/baremetal.yml:meta-ewaol-config/kas/n1sdp.yml
 
-To build a baremetal distribution image with the EWAOL SDK for the N1SDP
-hardware target platform:
+    The resulting baremetal distribution image will be produced at:
+    ``build/tmp_baremetal/deploy/images/n1sdp/ewaol-baremetal-image-n1sdp.*``
 
-  .. code-block:: console
+  B. For the AVA hardware target platform:
 
-    kas build --update meta-ewaol-config/kas/baremetal-sdk.yml:meta-ewaol-config/kas/n1sdp.yml
+    .. code-block:: console
 
-  The resulting baremetal distribution image will be produced at:
-  ``build/tmp_baremetal/deploy/images/n1sdp/ewaol-baremetal-sdk-image-n1sdp.*``
+      kas build --update meta-ewaol-config/kas/baremetal.yml:meta-ewaol-config/kas/ava.yml
+
+    The resulting baremetal distribution image will be produced at:
+    ``build/tmp_baremetal/deploy/images/ava/ewaol-baremetal-image-ava.*``
+
+To build a baremetal distribution image with the EWAOL SDK:
+
+  C. For the N1SDP hardware target platform:
+
+    .. code-block:: console
+
+      kas build --update meta-ewaol-config/kas/baremetal-sdk.yml:meta-ewaol-config/kas/n1sdp.yml
+
+    The resulting baremetal distribution image which includes the EWAOL SDK will
+    be produced at:
+    ``build/tmp_baremetal/deploy/images/n1sdp/ewaol-baremetal-sdk-image-n1sdp.*``
+
+  D. For the AVA hardware target platform:
+
+    .. code-block:: console
+
+      kas build --update meta-ewaol-config/kas/baremetal-sdk.yml:meta-ewaol-config/kas/ava.yml
+
+    The resulting baremetal distribution image which includes the EWAOL SDK will
+    be produced at:
+    ``build/tmp_baremetal/deploy/images/ava/ewaol-baremetal-sdk-image-ava.*``
 
 EWAOL baremetal distribution images can be modified by adding run-time
 validation tests and security hardening to the distribution. This can be done
@@ -180,25 +212,47 @@ hardening.
 Virtualization Distribution
 ===========================
 
-To build a virtualization distribution image for the N1SDP hardware target
-platform:
+To build a virtualization distribution image:
 
-  .. code-block:: console
+  A. For the N1SDP hardware target platform:
 
-    kas build --update meta-ewaol-config/kas/virtualization.yml:meta-ewaol-config/kas/n1sdp.yml
+    .. code-block:: console
 
-  The resulting virtualization distribution image will be produced:
-  ``build/tmp_virtualization/deploy/images/n1sdp/ewaol-virtualization-image-n1sdp.*``
+      kas build --update meta-ewaol-config/kas/virtualization.yml:meta-ewaol-config/kas/n1sdp.yml
 
-To build a virtualization distribution image with the EWAOL SDK for the N1SDP
-hardware target platform:
+    The resulting virtualization distribution image will be produced:
+    ``build/tmp_virtualization/deploy/images/n1sdp/ewaol-virtualization-image-n1sdp.*``
 
-  .. code-block:: console
+  B. For the AVA hardware target platform:
 
-    kas build --update meta-ewaol-config/kas/virtualization-sdk.yml:meta-ewaol-config/kas/n1sdp.yml
+    .. code-block:: console
 
-  The resulting virtualization distribution image will be produced:
-  ``build/tmp_virtualization/deploy/images/n1sdp/ewaol-virtualization-sdk-image-n1sdp.*``
+      kas build --update meta-ewaol-config/kas/virtualization.yml:meta-ewaol-config/kas/ava.yml
+
+    The resulting virtualization distribution image will be produced:
+    ``build/tmp_virtualization/deploy/images/ava/ewaol-virtualization-image-ava.*``
+
+To build a virtualization distribution image with the EWAOL SDK:
+
+  C. For the N1SDP hardware target platform:
+
+    .. code-block:: console
+
+      kas build --update meta-ewaol-config/kas/virtualization-sdk.yml:meta-ewaol-config/kas/n1sdp.yml
+
+    The resulting virtualization distribution image which includes the EWAOL SDK
+    will be produced at:
+    ``build/tmp_virtualization/deploy/images/n1sdp/ewaol-virtualization-sdk-image-n1sdp.*``
+
+  D. For the AVA hardware target platform:
+
+    .. code-block:: console
+
+      kas build --update meta-ewaol-config/kas/virtualization-sdk.yml:meta-ewaol-config/kas/ava.yml
+
+    The resulting virtualization distribution image which includes the EWAOL SDK
+    will be produced at:
+    ``build/tmp_virtualization/deploy/images/ava/ewaol-virtualization-sdk-image-ava.*``
 
 As with the EWAOL baremetal guidance above, EWAOL virtualization distribution
 images can also be modified to include run-time validation tests and security
@@ -241,11 +295,11 @@ virtualization distribution image. Additional details for this are provided at
 Deploy
 ******
 
-Instructions for deploying an EWAOL distribution image on the supported N1SDP
-hardware target platform is divided into two parts:
+This section provides instructions for deploying an EWAOL distribution image on
+the support hardware target platforms:
 
-  * `Load the Image on a USB Storage Device`_
-  * `Update the N1SDP MCC Configuration MicroSD Card`_
+  * :ref:`EWAOL distribution image deployment on N1SDP<user_guide_reproduce_deploy_n1sdp>`
+  * :ref:`EWAOL distribution image deployment on AVA<user_guide_reproduce_deploy_ava>`
 
 .. note::
   As the image filenames vary depending on the architecture and the inclusion of
@@ -254,8 +308,23 @@ hardware target platform is divided into two parts:
   numbered indexes (e.g., 1, 2, ...), and distinguishes alternative instructions
   by denoting the alternatives alphabetically (e.g., A, B, ...).
 
-Load the Image on a USB Storage Device
-======================================
+The deployment guidance requires a physical connection able to be established
+between the hardware target platform and a PC that can be used to interface with
+it. For simplicity, this PC is assumed to be the Build Host.
+
+.. _user_guide_reproduce_deploy_n1sdp:
+
+N1SDP
+=====
+
+Instructions for deploying an EWAOL distribution image on the N1SDP hardware
+target platform are divided into two parts:
+
+  * `Load the Image onto a USB Storage Device`_
+  * `Update the N1SDP MCC Configuration MicroSD Card`_
+
+Load the Image onto a USB Storage Device
+----------------------------------------
 
 EWAOL distribution images are produced as files with the ``.wic.bmap`` and
 ``.wic.gz`` extensions. They must first be loaded to a USB storage device, as
@@ -332,16 +401,14 @@ The USB storage device can then be safely ejected from the Build Host, and
 plugged into one of the USB 3.0 ports on the N1SDP.
 
 Update the N1SDP MCC Configuration MicroSD Card
-===============================================
+-----------------------------------------------
 
 .. note::
   This process doesn't need to be performed every time the USB Storage Device
   gets updated. It is only necessary to update the MCC configuration microSD
   card when the EWAOL major version changes.
 
-This guidance requires a physical connection able to be established between the
-N1SDP and a PC that can be used to interface with it, here assumed to be the
-Build Host. The instructions are as follows:
+The instructions are as follows:
 
 1. Connect a USB-B cable between the Build Host and the DBG USB port of the
    N1SDP back panel.
@@ -362,18 +429,21 @@ Build Host. The instructions are as follows:
     /dev/ttyUSB3
 
   By default the four ports are connected to the following devices:
+
     - ttyUSB<n> Motherboard Configuration Controller (MCC)
     - ttyUSB<n+1> Application processor (AP)
     - ttyUSB<n+2> System Control Processor (SCP)
     - ttyUSB<n+3> Manageability Control Processor (MCP)
 
   In this guide the ports are:
+
     - ttyUSB0: MCC
     - ttyUSB1: AP
     - ttyUSB2: SCP
     - ttyUSB3: MCP
 
   The ports are configured with the following settings:
+
     - 115200 Baud
     - 8N1
     - No hardware or software flow support
@@ -521,22 +591,381 @@ Build Host. The instructions are as follows:
       sudo umount /tmp/sdcard
       sudo rmdir /tmp/sdcard
 
-***
-Run
-***
-
-To run the deployed EWAOL distribution image, simply boot the target platform.
-For example, on the MCC console accessed via the connected machine described in
-`Deploy`_, reset the target platform and boot into the deployed EWAOL
-distribution image via:
+To run the deployed EWAOL distribution image, simply reboot the target platform
+by running the following command on the MCC console:
 
   .. code-block:: console
 
     REBOOT
 
-The resulting EWAOL distribution image can be logged into as ``ewaol`` user.
-See :ref:`User Accounts<manual/user_accounts:User Accounts>` for more
-information about user accounts and groups.
+Once the reboot has occurred, the EWAOL distribution boot process should then be
+output to the MCC console. After the boot process has completed, the EWAOL
+log-in prompt should appear and the distribution has been successfully deployed.
+
+.. _user_guide_reproduce_deploy_ava:
+
+AVA
+===
+
+.. note::
+  To use the AVA Developer Platform, please make sure the latest available
+  firmware is installed. See the ADLINK's
+  |AVA Developer Platform documentation|_ for guidance and support on installing
+  the latest firmware. The following instructions and supporting images were
+  created using Tianocore/EDK2 version ``1.07.300.02b Build 20220302``.
+
+Instructions for deploying an EWAOL distribution image on the AVA hardware
+target platform are divided into three parts:
+
+  1. :ref:`Load the AVA Flasher Image onto a USB Storage Device<user_guide_reproduce_ava_deploy_flasher_to_usb>`
+  2. :ref:`Boot AVA into the Flasher Image Loaded on the USB Storage Device<user_guide_reproduce_ava_deploy_boot_flasher>`
+  3. :ref:`Flash the EWAOL Distribution Image onto the AVA NVMe M.2 Storage Device<user_guide_reproduce_ava_deploy_flash_ewaol>`
+
+The following two images, with reference labels given in red, are provided to
+support these instructions:
+
+|
+
+.. _user_guide_reproduce_ava_images:
+
+.. image:: ../images/adlink_ava_top.png
+   :align: center
+
+.. image:: ../images/adlink_ava_backpanel.png
+   :align: center
+
+|
+
+.. _user_guide_reproduce_ava_deploy_flasher_to_usb:
+
+1. Load the AVA Flasher Image onto a USB Storage Device
+-------------------------------------------------------
+
+First, it is necessary to use the Build Host to load AVA's bootable 'Flasher
+Image' onto a USB storage device. This will later be connected to the AVA
+Developer Platform and used to boot the machine. The steps to do this are as
+follows:
+
+1. **On the Build Host:** run the following commands to download and unpack the
+   AVA Flasher Image from ADLINK's |AVA Developer Platform Downloads Page|_ into
+   an appropriate storage directory, here created as ``~/ava_flasher_image``:
+
+   .. code-block:: shell
+
+     mkdir -p ~/ava_flasher_image && cd ~/ava_flasher_image
+     wget https://hq0epm0west0us0storage.blob.core.windows.net/%24web/public/COMe/Ampere/AVA/Images/Yocto/adlink-flasher-image-ava.tar.xz
+     tar -xJf adlink-flasher-image-ava.tar.xz && cd adlink-flasher-image-ava
+
+2. **On the Build Host:** connect a USB storage device (minimum size of 64 GB)
+   and identify it using the ``lsblk`` command:
+
+   .. code-block:: shell
+
+     lsblk
+
+   This will output, for example:
+
+   .. code-block:: console
+
+     NAME   MAJ:MIN RM   SIZE RO TYPE MOUNTPOINT
+     sdc      8:0    0    64G  0 disk
+     ...
+
+.. warning::
+  In this example, the USB storage device is the ``/dev/sdc`` device. As this
+  may vary on different machines, care should be taken when copying and pasting
+  the following commands.
+
+3. **On the Build Host:** prepare for the Flasher Image copy:
+
+   .. code-block:: console
+
+     sudo umount /dev/sdc*
+     cd ~/ava_flasher_image
+
+.. warning::
+  The next step will result in all prior partitions and data on the USB storage
+  device being erased. Please backup before continuing.
+
+3. **On the Build Host:** transfer the Flasher Image onto the USB storage device
+   using the ``bmaptool`` utility:
+
+   .. code-block:: console
+
+     sudo bmaptool copy --bmap adlink-flasher-image-ava.wic.bmap adlink-flasher-image-ava.wic.gz /dev/sdc
+
+4. Safely eject the USB storage device from the Build Host.
+
+.. _user_guide_reproduce_ava_deploy_boot_flasher:
+
+2. Boot AVA into the Flasher Image Loaded on the USB Storage Device
+-------------------------------------------------------------------
+
+Next, prepare the AVA Developer Platform as follows.
+
+5. Connect a USB to RS232 female DB9 serial converter cable between the Build
+   Host and the ``Serial Console`` port on the AVA back-panel, marked ``C`` in
+   the :ref:`reference images<user_guide_reproduce_ava_images>`.
+
+6. Connect the AVA Developer Platform to the network via the ``GbE System (In
+   Band)`` ethernet port, marked ``D`` in the
+   :ref:`reference images<user_guide_reproduce_ava_images>`.
+
+7. Provide power to the AVA Developer Platform via a C13 mains power cable
+   connected to the ``Power Input`` port, marked ``E`` in the
+   :ref:`reference images<user_guide_reproduce_ava_images>`.
+
+8. Switch the AVA Developer Platform's ``Power Main Switch`` on, marked ``F`` in
+   the :ref:`reference images<user_guide_reproduce_ava_images>`.
+
+9. Connect the USB storage device containing the AVA Flasher Image to the AVA
+   Developer Platform using a USB 3.0 port, marked ``A`` in the
+   :ref:`reference images<user_guide_reproduce_ava_images>`.
+
+Then, set up the Build Host to access the AVA Developer Platform via a serial
+console:
+
+10. **On the Build Host:** find the TTY USB device in the ``/dev`` directory
+    that corresponds to the serial connection from the Build Host to the AVA
+    Developer Platform that was set up in step 5, via:
+
+    .. code-block:: shell
+
+      ls /dev/ttyUSB*
+
+    In this example, the corresponding TTY USB device is assumed to be
+    ``/dev/ttyUSB0``.
+
+    The port should be configured with the following settings:
+
+      - 115200 Baud
+      - 8N1
+      - No hardware or software flow support
+
+11. **On the Build Host:** set up a terminal to interface with the AVA Developer
+    Platform's serial console. This terminal will be referred to as the 'Serial
+    Console Terminal'. Any terminal applications such as ``putty``, ``screen``
+    or ``minicom``  will work. The  ``screen`` utility is used in the following
+    command:
+
+    .. code-block:: shell
+
+      sudo screen /dev/ttyUSB0 115200
+
+12. Power-on the AVA Developer Platform via the power button, marked ``B`` in
+    the :ref:`reference images<user_guide_reproduce_ava_images>`.
+
+    The Serial Console Terminal should then start receiving output from the AVA
+    boot process.
+
+13. **On the Serial Console Terminal:** interrupt the boot process to access
+    the boot options menu, by entering ``ESCAPE`` at the prompt (by pressing
+    the ESC key once on the keyboard) shown in the following image:
+
+    .. image:: ../images/ava_edk2_escape_boot_screenshot.png
+       :align: center
+
+|
+    This should provide access to the EDK2 interface shown in the following
+    image:
+
+    .. image:: ../images/ava_edk2_initial_boot_screenshot.png
+       :align: center
+
+|
+
+14. **On the Serial Console Terminal:** move to the ``Boot Manager`` entry using
+the arrow keys, and select it by pressing the ``ENTER`` key:
+
+    .. image:: ../images/ava_edk2_boot_manager_boot_screenshot.png
+       :align: center
+
+|
+
+15. **On the Serial Console Terminal:** the connected USB storage device
+    containing the AVA Flasher Image should then be visible in the ``Boot
+    Manager Menu``. Highlight that USB storage device entry using the arrow keys
+    and select it by pressing the ``ENTER`` key. An example ``Boot Manager
+    Menu`` showing a connected USB storage device is shown in the following
+    image:
+
+    .. image:: ../images/ava_edk2_boot_usb_boot_screenshot.png
+       :align: center
+
+|
+
+16. **On the Serial Console Terminal:** a GRUB2 boot menu will appear as shown
+    in the following image:
+
+    .. image:: ../images/ava_grub2_flasher_image_usb_boot_screenshot.png
+       :align: center
+
+|
+    Either select the highlighted entry, or wait for it to be selected
+    automatically.
+
+Output from the AVA Flasher Image boot process should then appear on the Serial
+Console Terminal, and this process should result in a Linux console, with no
+manual account log-in required, such as the following:
+
+    .. code-block:: console
+
+      Poky (Yocto Project Reference Distro) 4.0.1 ava ttyAMA0
+
+      ava login: root (automatic login)
+
+      root@ava:~#
+
+.. _user_guide_reproduce_ava_deploy_flash_ewaol:
+
+3. Flash the EWAOL Distribution Image onto the AVA NVMe M.2 Storage Device
+--------------------------------------------------------------------------
+
+To flash the EWAOL distribution image onto the AVA's persistent storage, it must
+first be transferred to the USB storage device which is running the AVA Flasher
+Image on the AVA Developer Platform. The steps for doing this are as follows:
+
+17. **On the Build Host:** create or swap to a **different** terminal from that
+    used for the Serial Console Terminal, such as the one that was used to
+    execute the ``kas build`` commands during the
+    :ref:`build instructions<user_guide_reproduce_build>` described previously.
+    This terminal will be referred to as the 'Build Host Terminal'.
+
+18. **On the Build Host Terminal:** change the working directory to the
+    directory which contains the Yocto build folder (here assumed to be
+    the root directory of the cloned ``meta-ewaol`` repository), and prepare
+    for the EWAOL distribution image copy:
+
+    A. Baremetal
+
+      .. code-block:: console
+
+        cd build/tmp_baremetal/deploy/images/ava/
+
+    B. Virtualization
+
+      .. code-block:: console
+
+        cd build/tmp_virtualization/deploy/images/ava/
+
+19. **On the Serial Console Terminal:** determine the IP address associated with
+    the AVA Flasher Image running on the AVA Developer Platform, by running the
+    following command:
+
+    .. code-block:: console
+
+      ifconfig eth0 | grep "inet addr"
+
+    Running this command will output, for example:
+
+    .. code-block:: console
+
+      inet addr:[IP]  Bcast:10.1.195.255  Mask:255.255.254.0
+
+    The relevant IP address to extract is denoted ``[IP]`` in this example
+    output, which is also used to the reference the IP address in the next step.
+
+20. **On the Serial Console Terminal:** define an environment variable to hold
+    the IP address and allow copy-pasting of the following commands, by running:
+
+    .. code-block:: console
+
+      export TARGET_IP=[IP]
+
+    Be sure to replace ``[IP]`` in this command with the IP address determined
+    in the previous step.
+
+21. **On the Build Host Terminal:** transfer the EWAOL distribution image to the
+    AVA Developer Platform using the ``scp`` utility. The command to run depends
+    on the target EWAOL distribution image:
+
+    A. Baremetal distribution image:
+
+      .. code-block:: console
+
+        scp ewaol-baremetal-image-ava.wic.* root${TARGET_IP}:/tmp/
+
+    B. Baremetal-SDK distribution image:
+
+      .. code-block:: console
+
+        scp ewaol-baremetal-sdk-image-ava.wic.* root@${TARGET_IP}:/tmp/
+
+    C. Virtualization distribution image:
+
+      .. code-block:: console
+
+        scp ewaol-virtualization-image-ava.wic.* root@${TARGET_IP}:/tmp/
+
+    D. Virtualization-SDK distribution image:
+
+      .. code-block:: console
+
+        scp ewaol-virtualization-sdk-image-ava.wic.* root@${TARGET_IP}:/tmp/
+
+22. **On the Serial Console Terminal:** once the file transfer has completed,
+    flash the EWAOL distribution image to the AVA NVMe M.2 storage device using
+    the ``bmaptool`` utility.
+
+    .. note::
+      This guidance assumes that the AVA Developer Platform storage drives and
+      partitions have not been modified, and no additional storage devices have
+      been connected other than those described in these instructions. The AVA
+      NVMe M.2 storage device therefore corresponds to the ``/dev/nvme0n1``
+      device.
+
+    .. warning::
+      The next step will result in all prior partitions and data on the AVA NVMe
+      M.2 storage device to be erased.
+
+    A. Baremetal distribution image:
+
+      .. code-block:: console
+
+        bmaptool copy --bmap /tmp/ewaol-baremetal-image-ava.wic.bmap /tmp/ewaol-baremetal-image-ava.wic.gz /dev/nvme0n1
+
+    B. Baremetal-SDK distribution image:
+
+      .. code-block:: console
+
+        bmaptool copy --bmap /tmp/ewaol-baremetal-sdk-image-ava.wic.bmap /tmp/ewaol-baremetal-sdk-image-ava.wic.gz /dev/nvme0n1
+
+    C. Virtualization distribution image:
+
+      .. code-block:: console
+
+        bmaptool copy --bmap /tmp/ewaol-virtualization-image-ava.wic.bmap /tmp/ewaol-virtualization-image-ava.wic.gz /dev/nvme0n1
+
+    D. Virtualization-SDK distribution image:
+
+      .. code-block:: console
+
+        bmaptool copy --bmap /tmp/ewaol-virtualization-sdk-image-ava.wic.bmap /tmp/ewaol-virtualization-sdk-image-ava.wic.gz /dev/nvme0n1
+
+23. On the Serial Console Terminal: once the ``bmaptool`` process has complete,
+    power-off the AVA Developer Platform by running:
+
+    .. code-block:: console
+
+      poweroff
+
+24. Remove the USB storage device containing the AVA Flasher Image from the AVA
+    Developer Platform.
+
+25. Power-on the AVA Developer Platform via the power button, marked ``B`` in
+    the :ref:`reference images<user_guide_reproduce_ava_images>`.
+
+The EWAOL distribution boot process should then be output to the Serial Console
+Terminal. After the boot process has completed, the EWAOL log-in prompt should
+appear and the distribution has been successfully deployed.
+
+***
+Run
+***
+
+The EWAOL distribution image can be logged into as ``ewaol`` user.  See
+:ref:`User Accounts<manual/user_accounts:User Accounts>` for more information
+about user accounts and groups.
 
 On an EWAOL virtualization distribution image, this will access the Control VM.
 To log into a Guest VM, the ``xl`` tool can be used. For example, on a default
@@ -684,7 +1113,8 @@ The deployment can be achieved either via Docker or via K3s, as follows:
 
               sudo kubectl get pods -o wide
 
-            The output should be similar to the following example output:
+            The output should be similar to the following example output, which
+            was captured on the N1SDP:
 
             .. code-block:: console
 
@@ -809,7 +1239,7 @@ Guest VM via K3s orchestration. This example process is as follows:
 
          The hostname of the Guest VM should appear as a node in the list, with
          a ``STATUS`` of ``ready``. The output should be similar to the
-         following example:
+         following example, produced when running this step on the N1SDP:
 
          .. code-block:: console
            :substitutions:

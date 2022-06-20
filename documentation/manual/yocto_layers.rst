@@ -23,15 +23,21 @@ Project, in the following sub-directories:
   * ``meta-ewaol-bsp``
 
     Yocto BSP layer with target platform specific extensions for particular
-    EWAOL distribution images. Currently this layer extends the ``n1sdp``
-    machine definition from the ``meta-arm-bsp`` layer for EWAOL virtualization
-    distribution images. The ``meta-ewaol-bsp`` layer contains an additional
-    grub configuration file with Xen boot entry and a custom kickstart
-    ``ewaol-virtualization-n1sdp-efidisk.wks.in`` file. There is also a
-    ``xen-devicetree.bb`` recipe, to generate a devicetree with extra modules
-    nodes required by Xen to start the Control VM (Dom0). In addition, the Xen
-    devicetree together with a Xen efi binary are included into the final wic
-    image in the ``boot`` partition.
+    EWAOL distribution images.
+
+    * For the N1SDP hardware target platform, this layer currently extends the
+      ``n1sdp`` machine definition from the ``meta-arm-bsp`` layer for EWAOL
+      virtualization distribution images.. The ``meta-ewaol-bsp`` layer contains
+      an additional grub configuration file with Xen boot entry and a custom
+      kickstart ``ewaol-virtualization-n1sdp-efidisk.wks.in`` file. There is
+      also a ``xen-devicetree.bb`` recipe, to generate a devicetree with extra
+      modules nodes required by Xen to start the Control VM (Dom0). In addition,
+      the Xen devicetree together with a Xen efi binary are included into the
+      final wic image in the ``boot`` partition.
+
+    * For the AVA hardware target platform, this layer provides additional
+      ``systemd`` configuration for ethernet interfaces based on the ``i40e`` as
+      used on the AVA Developer Platform.
 
 .. _manual_yocto_layers_layer_dependency_overview:
 
@@ -69,9 +75,11 @@ EWAOL depends on the following layer dependency sources:
     branch: |meta-virtualization branch|
     revision: |meta-virtualization revision|
 
-An additional layer dependency source is conditionally required, depending on
-the specific EWAOL distribution image being built. This layer dependency source
-is the ``meta-arm`` repository, which provides three Yocto layers:
+Additional layer dependency sources may be conditionally required, depending on
+the specific EWAOL distribution image being built.
+
+The first additional layer dependency source is the ``meta-arm`` repository,
+which provides three Yocto layers:
 
   .. code-block:: yaml
     :substitutions:
@@ -111,3 +119,17 @@ These layers are described as follows:
 
     * URL: https://git.yoctoproject.org/meta-arm/tree/meta-arm-toolchain.
     * Provides toolchain for Arm target platforms
+
+The second additional layer dependency source is the ``meta-adlink-ampere``
+repository, which provides a single Yocto layer:
+
+  .. code-block:: yaml
+    :substitutions:
+
+    URL: https://github.com/ADLINK/meta-adlink-ampere.git
+    layers: meta-adlink-ampere
+    branch: |meta-adlink-ampere branch|
+    revision: |meta-adlink-ampere revision|
+
+This Yocto layer provides BSP components required when building an EWAOL
+distribution image for the AVA hardware target platform.
