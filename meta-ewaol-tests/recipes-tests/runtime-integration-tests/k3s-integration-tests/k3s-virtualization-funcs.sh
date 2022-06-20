@@ -25,6 +25,10 @@ apply_workload() {
 
 # Override this test to validate that the pods are executed on the correct node
 # (i.e. the agent on the Guest VM)
+# First argument is the application name
+# Second argument is an optional list of pod names that will define the number
+# of pods to expect to be running, and also the names that should be excluded
+# from consideration. For example, the pod names as they were before an upgrade.
 wait_for_deployment_to_be_running() {
 
     status=1
@@ -35,9 +39,26 @@ wait_for_deployment_to_be_running() {
         return 1
     fi
 
-    # Get the names of the pods corresponding to the test deployment
+    # If we have a list of pods in the second argument, then check we have the
+    # correct number, none of which are in that list
+    if [ -n "${2}" ]; then
+
+        excluded_pods="${2}"
+        expected_pod_count=$(wc -w <<< "${excluded_pods}")
+
+        _run wait_for_success 60 10 check_running_pod_count_with_exclusions \
+           "${1}" "${expected_pod_count}" "${excluded_pods}"
+        if [ "${status}" -ne 0 ]; then
+            echo -n "Timeout reached before ${expected_pod_count} new"
+            echo " Pods were found to be running the application deployment."
+            return "${status}"
+        fi
+
+    fi
+
+    # Get the names of the current pods corresponding to the test deployment
     _run query_kubectl "pod" \
-        "--selector=app=k3s-test" "{range .items[*]}{@.metadata.name}:{end}"
+        "--selector=app=${1}" "{range .items[*]}{@.metadata.name}:{end}"
     if [ -n "${output}" ]; then
         mapfile -t pod_names < <(echo "${output}" | tr ':' '\n')
 
