@@ -33,6 +33,8 @@ xen_version = "4.16"
 kas_version = "3.0.2"
 ewaol_version = "main"
 
+n1sdp_link = "https://developer.arm.com/documentation/101489/0000"
+
 general_links = {
   "link:Yocto Project Documentation": f"https://docs.yoctoproject.org/{yocto_doc_version}",
   "link:Yocto Release Process": "https://docs.yoctoproject.org/ref-manual/release-process.html",
@@ -49,9 +51,14 @@ general_links = {
   "link:kas build tool": f"https://kas.readthedocs.io/en/{kas_version}/userguide.html",
   "link:kas Dependencies & installation": f"https://kas.readthedocs.io/en/{kas_version}/userguide.html#dependencies-installation",
   "link:meta-arm-bsp": f"https://git.yoctoproject.org/meta-arm/tree/meta-arm-bsp/documentation/n1sdp.md?h={yocto_release}",
+  "link:meta-adlink-ampere": "https://github.com/ADLINK/meta-adlink-ampere",
   "link:xl domain configuration": f"https://xenbits.xen.org/docs/{xen_version}-testing/man/xl.cfg.5.html",
   "link:xl documentation": f"https://xenbits.xen.org/docs/{xen_version}-testing/man/xl.1.html",
-  "link:N1SDP Technical Reference Manual": "https://developer.arm.com/documentation/101489/0000",
+  "link:N1SDP Technical Reference Manual": n1sdp_link,
+  "link:Neoverse N1 System Development Platform": n1sdp_link,
+  "link:AVA Developer Platform": "https://www.ipi.wiki/pages/com-hpc-altra",
+  "link:AVA Developer Platform documentation": "https://www.ipi.wiki/pages/comhpc-docs?page=index.html",
+  "link:AVA Developer Platform Downloads Page": "https://www.ipi.wiki/pages/download-ava-developer-platform",
   "link:PEP 8": "https://peps.python.org/pep-0008/",
   "link:pycodestyle Documentation": "https://pycodestyle.pycqa.org/en/latest/",
   "link:Shellcheck": "https://github.com/koalaman/shellcheck",
@@ -75,6 +82,8 @@ layer_definitions = {
   "meta-ewaol remote": "https://git.gitlab.arm.com/ewaol/meta-ewaol.git",
   "meta-ewaol branch": f"kirkstone-dev",
   "meta-ewaol version": f"{ewaol_version}",
+  "meta-adlink-ampere branch": f"{yocto_release}",
+  "meta-adlink-ampere revision": f"HEAD",
   "poky branch": f"{yocto_release}",
   "meta-openembedded branch": f"{yocto_release}",
   "meta-virtualization branch": f"{yocto_release}",

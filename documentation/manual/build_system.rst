@@ -64,9 +64,9 @@ respectively. Example usage of these kas configuration files can be found in the
 Target Platforms
 ****************
 
-There is currently one supported target platform (corresponding to the
-``MACHINE`` BitBake variable) with an associated kas configuration file, as
-follows.
+There are currently two supported target platforms (corresponding to the
+``MACHINE`` BitBake variable), each with an associated kas configuration file,
+as follows.
 
 N1SDP
 =====
@@ -75,12 +75,21 @@ N1SDP
   * **Target Platform Config**: ``meta-ewaol-config/kas/n1sdp.yml``.
 
   This supported target platform is the Neoverse N1 System Development Platform
-  (N1SDP), implemented in |meta-arm-bsp|_.
+  (N1SDP), implemented in the |meta-arm-bsp|_ Yocto BSP layer.
 
   To enable this, the ``n1sdp.yml`` Target Platform Config includes common
   configuration from the ``meta-ewaol-config/kas/include/arm-machines.yml`` kas
   configuration file, which defines the BSPs, layers, and dependencies required
   when building for the ``n1sdp``.
+
+AVA
+===
+
+  * **Corresponding value for** ``MACHINE`` **variable**: ``ava``.
+  * **Target Platform Config**: ``meta-ewaol-config/kas/ava.yml``.
+
+  This supported target platform is the AVA Developer Platform (AVA),
+  implemented in the |meta-adlink-ampere|_ Yocto BSP layer.
 
 ***************************
 Distribution Image Features
@@ -257,18 +266,19 @@ Run-Time Integration Tests
     and appends the ``ewaol-test`` feature to ``DISTRO_FEATURES`` for the build.
 
     To include run-time integration tests on an EWAOL distribution image,
-    provide the Build Modifier Config to the kas build command. For example, to
-    include the tests on an EWAOL distribution image for the N1SDP hardware
-    target platform, run the following commands depending on the target
-    architecture:
+    provide the Build Modifier Config to the kas build command.
 
-    * Baremetal architecture:
+    For example, to include the tests on an EWAOL distribution image for the
+    N1SDP hardware target platform, run the following commands depending on the
+    target architecture:
+
+    * Baremetal architecture for N1SDP:
 
       .. code-block:: console
 
         kas build meta-ewaol-config/kas/baremetal.yml:meta-ewaol-config/kas/tests.yml:meta-ewaol-config/kas/n1sdp.yml
 
-    * Virtualization architecture:
+    * Virtualization architecture for N1SDP:
 
       .. code-block:: console
 
@@ -295,18 +305,19 @@ Security Hardening
 
     To include extra security hardening on an EWAOL distribution image, provide
     the Build Modifier Config to the kas build command, which appends the
-    ``ewaol-security`` feature to ``DISTRO_FEATURES`` for the build. For
-    example, to include it on the EWAOL distribution image for the N1SDP
-    hardware target platform, run the following commands depending on the
-    target architecture:
+    ``ewaol-security`` feature to ``DISTRO_FEATURES`` for the build.
 
-    * Baremetal architecture:
+    For example, to include it on the EWAOL distribution image for the N1SDP
+    hardware target platform, run the following commands depending on the target
+    architecture:
+
+    * Baremetal architecture for N1SDP:
 
       .. code-block:: console
 
         kas build meta-ewaol-config/kas/baremetal.yml:meta-ewaol-config/kas/security.yml:meta-ewaol-config/kas/n1sdp.yml
 
-    * Virtualization architecture:
+    * Virtualization architecture for N1SDP:
 
       .. code-block:: console
 
@@ -342,17 +353,19 @@ Software Development Kit (SDK)
     Config.
 
     To include the SDK on an EWAOL distribution image, provide the appropriate
-    SDK Build Modifier Config to the kas build command. For example, to include
-    the SDK on an EWAOL distribution image for the N1SDP hardware target
-    platform, run the following commands depending on the target architecture:
+    SDK Build Modifier Config to the kas build command.
 
-    * Baremetal architecture:
+    For example, to include the SDK on an EWAOL distribution image for the N1SDP
+    hardware target platform, run the following commands depending on the target
+    architecture:
+
+    * Baremetal architecture for N1SDP:
 
       .. code-block:: console
 
         kas build meta-ewaol-config/kas/baremetal-sdk.yml:meta-ewaol-config/kas/n1sdp.yml
 
-    * Virtualization architecture:
+    * Virtualization architecture for N1SDP:
 
       .. code-block:: console
 
