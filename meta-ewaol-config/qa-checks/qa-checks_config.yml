@@ -15,6 +15,10 @@
 # value from the defaults section will be used.
 
 ---
+run_checks_settings:
+    default_check_excludes:
+        - layer
+
 defaults:
     paths:
         - ROOT

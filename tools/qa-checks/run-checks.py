@@ -69,15 +69,14 @@ AVAILABLE_CHECKS = [commit_msg_check.CommitMsgCheck,
                     yaml_check.YamlCheck,
                     ]
 
-# All checks except these will be run by default if specific checkers are not
-# requested.
-DEFAULT_EXCLUDE = [layer_check.LayerCheck]
-
 # The following keywords can be passed as values to the arguments.
 # They will be set to their correct mapped values lazily.
 KEYWORD_MAP = dict()
 KEYWORD_MAP["ROOT"] = None
 KEYWORD_MAP["GITIGNORE_CONTENTS"] = None
+
+CHECK_NAMES = [check.name for check in AVAILABLE_CHECKS]
+VALID_CHECKS = set(CHECK_NAMES + ["default", "all"])
 
 
 def convert_gitstyle_pattern_to_regex(pattern):
@@ -155,6 +154,97 @@ def eval_keyword(keyword):
     return KEYWORD_MAP[keyword]
 
 
+def parse_config(config_path):
+    """ Parse the config file and return a dictionary with all config options.
+        """
+
+    config_dict = {}
+
+    try:
+        import yaml
+
+        with open(config_path, 'r') as config_file:
+            yaml_content = yaml.safe_load(config_file)
+
+            if 'run_checks_settings' in yaml_content:
+                config_settings = yaml_content['run_checks_settings']
+                valid_settings = {'default_check_excludes'}
+                for setting_name, value in config_settings.items():
+                    if setting_name in valid_settings:
+                        config_dict[setting_name] = value
+                    else:
+                        logger.warning(
+                            f"Cannot set run_checks_settings/{setting_name}"
+                            " from config. Currently only"
+                            f" {{{','.join(sorted(valid_settings))}}} can be "
+                            "set from config.")
+
+            modules = yaml_content['modules']
+            config_dict['all_checks'] = modules.keys()
+
+    except FileNotFoundError:
+        logger.error(f"Config file '{config_filename}' was not found.")
+        exit(1)
+    except ImportError:
+        logger.error(("Could not import the Python yaml module. Either install"
+                      " 'pyyaml' via pip on the host system to load"
+                      " the YAML configuration file, or pass --no_config."))
+        exit(1)
+    except KeyError:
+        logger.error(f"Invalid config {config_filename}")
+        exit(1)
+
+    return config_dict
+
+
+def resolve_checks_list(opts, config):
+    """ Process and validate the list of checks.
+        The order of priority to use (highest first):
+            command line, config file, default.
+        If default or all is provided, these override the value.
+        """
+
+    # If no config then use hard coded all
+    if opts.no_config is True:
+        all_checks = CHECK_NAMES
+        default_checks = []
+    # If there is a config, then 'all' defined as all checks in config
+    elif 'all_checks' in config:
+        all_checks = config['all_checks']
+        # 'default' is 'all' with 'default_check_excludes' removed.
+        default_checks = [check for check in all_checks
+                          if check not in opts.default_check_excludes]
+    # If there is a config that defines no checks then 'all' and 'default' are
+    # empty
+    else:
+        all_checks = []
+        default_checks = []
+
+    # Split any comma separated checks in the list
+    checks = []
+    for check_sublist in opts.checks:
+        checks.extend(check_sublist.split(","))
+    opts.checks = checks
+
+    # Validate values
+    has_invalid_check = False
+    for check in opts.checks:
+        if check not in VALID_CHECKS:
+            logger.error(f"Argument 'check': value '{check}' is invalid."
+                         f" Choose from {VALID_CHECKS}")
+            has_invalid_check = True
+    if has_invalid_check:
+        exit(1)
+
+    # Set default here because the append action extends the argparse default
+    # rather than replaces the default
+    if len(opts.checks) == 0 or "default" in opts.checks:
+        opts.checks = default_checks
+
+    if "all" in opts.checks:
+        opts.checks = all_checks
+
+
 def parse_options():
 
     loglevels = {
@@ -162,11 +252,6 @@ def parse_options():
         "info": logging.INFO,
         "debug": logging.DEBUG
     }
-
-    check_names = [check.name for check in AVAILABLE_CHECKS]
-    excluded_check_names = [check.name for check in DEFAULT_EXCLUDE]
-    default_check_names = [name for name in check_names
-                           if name not in excluded_check_names]
 
     desc = ("run-checks.py is used to execute a set of quality-check modules"
             " on the repository. By default, a virtual Python environment is"
@@ -178,33 +263,32 @@ def parse_options():
                " to the per-check configuration within the default config YAML"
                " file.")
 
-    excluded_str = ""
-    if excluded_check_names:
-        excluded_str = ("\nAdditional non-default checks can be enabled"
-                        f" explicitly: {{{','.join(excluded_check_names)}}}.")
-    sets = (f"The default checks are: {{{','.join(default_check_names)}}}."
-            f"{excluded_str}")
+    sets = (f"The available checks are: {{{','.join(CHECK_NAMES)}}}.")
+
+    note = (" Note: only checks defined in the config file will be run by"
+            " default, unless no config is defined, or called directly.")
 
     # Parse Arguments and assign to args object
     parser = argparse.ArgumentParser(
         prog=os.path.basename(__file__),
         formatter_class=argparse.RawDescriptionHelpFormatter,
-        description=f"{desc}\n{usage}\n\n{example}\n\n{sets}")
+        description=f"{desc}\n{usage}\n\n{example}\n\n{sets}\n\n{note}")
 
-    valid_checks = set(check_names + ["default", "all"])
     parser.add_argument("--check", action="append", default=[],
                         dest="checks",
-                        metavar="{" + ",".join(sorted(valid_checks)) + "}",
+                        metavar="{" + ",".join(sorted(VALID_CHECKS)) + "}",
                         help=("Comma-separated list: Add specific checks to"
                               " run, or the 'default' set, or 'all' checks. If"
-                              " not given, then the default set will be run."
-                              " Multiple checks can be specified as a list and"
-                              " by passing the argument multiple times."))
+                              " not given, then the default config modules"
+                              " will be used as defined by the config and/or "
+                              " default_check_excludes. Multiple checks can be"
+                              " specified as a list and by passing the"
+                              " argument multiple times."))
 
     # Internal usage: a requested check may be skipped using this option (e.g.
     # due to failed dependency-installation in the virtual environment)
     parser.add_argument("--skip", action="append", default=[],
-                        choices=check_names,
+                        choices=CHECK_NAMES,
                         dest="skip_checks",
                         help=argparse.SUPPRESS)
 
@@ -279,6 +363,10 @@ def parse_options():
                         choices=["debug", "info", "warning"],
                         help="Set the log level (Default: info).")
 
+    parser.add_argument("--default_check_excludes",
+                        help=("Comma-separated list: Exclude a list of checks"
+                              " from being run as 'default'."))
+
     opts = parser.parse_args()
 
     logger.setLevel(loglevels.get(opts.log.lower()))
@@ -295,33 +383,27 @@ def parse_options():
             logger.error("Cannot skip a check that wasn't requested.")
             exit(1)
 
-    # Split each comma separated check in the list and flatten the list
-    checks = []
-    for check_sublist in opts.checks:
-        checks.extend(check_sublist.split(","))
-    opts.checks = checks
-
-    has_invalid_check = False
-    for check in opts.checks:
-        if check not in valid_checks:
-            logger.error(f"Argument 'check': value '{check}' is invalid."
-                         f" Choose from {valid_checks}")
-            has_invalid_check = True
-    if has_invalid_check:
-        exit(1)
-
-    # Set default here because the append action extends the argparse default
-    # rather than replaces the default
-    if len(opts.checks) == 0 or "default" in opts.checks:
-        opts.checks = default_check_names
-
-    if "all" in opts.checks:
-        opts.checks = check_names
-
     opts.project_root = os.path.abspath(opts.project_root)
 
     if opts.config is None:
         opts.config = os.path.join(opts.project_root, default_config_file)
+
+    if opts.no_config:
+        config = {}
+    else:
+        config = parse_config(opts.config)
+
+    # default_check_excludes
+    value = []
+    if opts.default_check_excludes is not None:
+        value.extend(opts.default_check_excludes.split(","))
+
+    if 'default_check_excludes' in config and config['default_check_excludes']:
+        value.extend(config['default_check_excludes'])
+
+    opts.default_check_excludes = value
+
+    resolve_checks_list(opts, config)
 
     # Initialize the keyword value to the user-provided root
     KEYWORD_MAP["ROOT"] = opts.project_root
@@ -359,8 +441,10 @@ def load_param_from_config(config_filename, check_name, param, list_param):
 
             # Check if there is a defined value in the config
             try:
-                value = config["modules"][check_name][param]
-                found_value = True
+                params = config["modules"][check_name]
+                if params is not None:
+                    value = config["modules"][check_name][param]
+                    found_value = True
             except KeyError:
                 pass
 
