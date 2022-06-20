@@ -138,6 +138,16 @@ teardown_file() {
         log "PASS" "${subtest}"
     fi
 
+    subtest="Get all pod names associated with workload deployed ${K3S_TEST_TARGET}"
+    _run get_pod_names_from_application "k3s-test"
+    if [ "${status}" -ne 0 ]; then
+        log "FAIL" "${subtest}"
+        return 1
+    else
+        log "PASS" "${subtest}"
+    fi
+    pod_names="${output}"
+
     subtest="Upgrade container images of workload deployed ${K3S_TEST_TARGET}"
     _run upgrade_image_of_deployment "k3s-test" "nginx=nginx:1.21"
     if [ "${status}" -ne 0 ]; then
@@ -148,7 +158,7 @@ teardown_file() {
     fi
 
     subtest="Check all upgraded pods are running ${K3S_TEST_TARGET}"
-    _run wait_for_deployment_to_be_running "k3s-test"
+    _run wait_for_deployment_to_be_running "k3s-test" "${pod_names}"
     if [ "${status}" -ne 0 ]; then
         log "FAIL" "${subtest}"
         return 1

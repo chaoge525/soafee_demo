@@ -338,16 +338,18 @@ have completed their workload.
 |    1.4. Get the IP of the node(s) running the Deployment via ``kubectl get``
 |    1.5. Ensure web service is accessible on the node(s) via ``wget``
 |    **Deployment Upgrade:**
-|    1.6. Get old image version of random Pod via ``kubectl get``
-|    1.7. Upgrade image version of Deployment via ``kubectl set``
-|    1.8. Ensure upgraded Pods are running via ``kubectl wait``
-|    1.9. Get upgraded image version of random Pod via ``kubectl get``
-|    1.10. Ensure web service is still accessible on the node(s) via ``wget``
+|    1.6. Check initial image version of running Deployment via ``kubectl get``
+|    1.7. Get all pre-upgrade Pod names running Deployment via ``kubectl get``
+|    1.8. Upgrade image version of Deployment via ``kubectl set``
+|    1.9. Ensure a new set of Pod names have been started via ``kubectl wait``
+     and ``kubectl get``
+|    1.10. Check Pods are running the upgraded image version via ``kubectl get``
+|    1.11. Ensure web service is still accessible on the node(s) via ``wget``
 |    **Server Failure Tolerance:**
-|    1.11. Stop K3s server Systemd service via ``systemctl stop``
-|    1.12. Ensure web service is still accessible on the node(s) via ``wget``
-|    1.13. Restart the Systemd service via ``systemctl start``
-|    1.14. Check K3S server is again responding to ``kubectl get``
+|    1.12. Stop K3s server Systemd service via ``systemctl stop``
+|    1.13. Ensure web service is still accessible on the node(s) via ``wget``
+|    1.14. Restart the Systemd service via ``systemctl start``
+|    1.15. Check K3S server is again responding to ``kubectl get``
 
 The tests can be customized via environment variables passed to the execution,
 each prefixed by ``K3S_`` to identify the variable as associated to the

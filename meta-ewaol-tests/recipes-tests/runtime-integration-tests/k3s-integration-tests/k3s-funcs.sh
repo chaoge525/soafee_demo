@@ -58,8 +58,32 @@ get_target_node_ips() {
     echo "localhost"
 }
 
+# First argument is the application name
+# Second argument is an optional list of pod names that will define the number
+# of pods to expect to be running, and also the names that should be excluded
+# from consideration. For example, the pod names as they were before an upgrade.
 wait_for_deployment_to_be_running() {
-    kubectl_wait "deployment" "${1}" "Available"
+    _run kubectl_wait "deployment" "${1}" "Available"
+    if [ "${status}" -ne 0 ]; then
+        return "${status}"
+    fi
+
+    # If we have a list of pods in the second argument, then check we have the
+    # correct number, none of which are in that list
+    if [ -n "${2}" ]; then
+
+        excluded_pods="${2}"
+        expected_pod_count=$(wc -w <<< "${excluded_pods}")
+
+        _run wait_for_success 60 10 check_running_pod_count_with_exclusions \
+           "${1}" "${expected_pod_count}" "${excluded_pods}"
+        if [ "${status}" -ne 0 ]; then
+            echo -n "Timeout reached before ${expected_pod_count} new"
+            echo " Pods were found to be running the application deployment."
+            return "${status}"
+        fi
+
+    fi
 }
 
 # First argument is space-separated list of IP addresses
@@ -79,6 +103,71 @@ get_random_pod_name_from_application() {
     pod_index=0
     query_kubectl "pod" "--selector=app=${1}" \
         "{.items[${pod_index}].metadata.name}"
+}
+
+get_pod_names_from_application() {
+
+    # Get the names of the pods corresponding to the test deployment
+    _run query_kubectl "pod" \
+        "--selector=app=${1}" "{range .items[*]}{@.metadata.name}:{end}"
+    if [ -n "${output}" ]; then
+        echo "${output}" | tr ':' ' '
+    else
+        echo "No pods found"
+        return 1
+    fi
+
+}
+
+# Checks that the provided number of pods exist for the provided application,
+# and are in the 'Running' state
+# Ignore any pod names which are provided in the second argument
+check_running_pod_count_with_exclusions() {
+
+    app_name="${1}"
+    expected_pod_count="${2}"
+    excluded_pod_names="${*:3}"
+
+    non_excluded_pod_count=0
+
+    # Get the names of the pods corresponding to the test deployment
+    _run query_kubectl "pod" \
+        "--selector=app=${app_name}" "{range .items[*]}{@.metadata.name}:{end}"
+    if [ -n "${output}" ]; then
+        mapfile -t pod_names < <(echo "${output}" | tr ':' '\n')
+
+        for pod_name in "${pod_names[@]}"; do
+            if [ -z "${pod_name}" ]; then
+                continue
+            fi
+
+            # If the pod name is not found in the excluded list
+            if ! echo "${excluded_pod_names}" | grep -w -q "${pod_name}"; then
+
+                _run query_kubectl "pod" "${pod_name}" "{.status.phase}"
+                if [ "${status}" -ne 0 ]; then
+                    continue
+                elif [ -z "${output}" ]; then
+                    continue
+                elif [ "${output}" != "Running" ]; then
+                    continue
+                fi
+
+                non_excluded_pod_count=$((non_excluded_pod_count+1))
+            fi
+
+        done
+
+        if [ "${non_excluded_pod_count}" -ne "${expected_pod_count}" ]; then
+            return 1
+        else
+            return 0
+        fi
+
+    else
+        return 1
+    fi
+
 }
 
 test_application_pod_image() {
