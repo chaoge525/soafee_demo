@@ -78,6 +78,14 @@ KEYWORD_MAP["GITIGNORE_CONTENTS"] = None
 CHECK_NAMES = [check.name for check in AVAILABLE_CHECKS]
 VALID_CHECKS = set(CHECK_NAMES + ["default", "all"])
 
+LOG_LEVELS = {
+    "warning": logging.WARNING,
+    "info": logging.INFO,
+    "debug": logging.DEBUG
+}
+
+DEFAULT_CONFIG_FILE = "meta-ewaol-config/qa-checks/qa-checks_config.yml"
+
 
 def convert_gitstyle_pattern_to_regex(pattern):
     """ Patterns provided as gitstyle patterns (e.g. "*.log" or /build") are
@@ -154,9 +162,136 @@ def eval_keyword(keyword):
     return KEYWORD_MAP[keyword]
 
 
+def parse_options():
+
+    desc = ("run-checks.py is used to execute a set of quality-check modules"
+            " on the repository. By default, a virtual Python environment is"
+            " created to install the Python packages necessary to run the"
+            " suite.")
+    usage = ("Optional arguments can be found by passing --help to the script")
+    example = ("\nExample:\n$ ./run-checks.py\n"
+               "to run all default checks in a virtual environment, according"
+               " to the per-check configuration within the default config YAML"
+               " file.")
+
+    sets = (f"The available checks are: {{{','.join(CHECK_NAMES)}}}.")
+
+    note = (" Note: only checks defined in the config file will be run by"
+            " default, unless no config is defined, or called directly.")
+
+    # Parse Arguments and assign to args object
+    parser = argparse.ArgumentParser(
+        prog=os.path.basename(__file__),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        description=f"{desc}\n{usage}\n\n{example}\n\n{sets}\n\n{note}")
+
+    parser.add_argument("--check", action="append", default=[],
+                        dest="checks",
+                        metavar="{" + ",".join(sorted(VALID_CHECKS)) + "}",
+                        help=("Comma-separated list: Add specific checks to"
+                              " run, or the 'default' set, or 'all' checks. If"
+                              " not given, then the default config modules"
+                              " will be used as defined by the config and/or "
+                              " default_check_excludes. Multiple checks can be"
+                              " specified as a list and by passing the"
+                              " argument multiple times."))
+
+    # Internal usage: a requested check may be skipped using this option (e.g.
+    # due to failed dependency-installation in the virtual environment)
+    parser.add_argument("--skip", action="append", default=[],
+                        choices=CHECK_NAMES,
+                        dest="skip_checks",
+                        help=argparse.SUPPRESS)
+
+    # Each check has its own path options to include/exclude
+    for check in AVAILABLE_CHECKS:
+
+        name = check.name
+        settings = check.get_vars()
+
+        group = parser.add_argument_group(f"{name} check arguments")
+
+        for setting in settings:
+            prefix = ""
+            if setting.is_list:
+                prefix = "Comma-separated list: "
+            group.add_argument(f"--{name}_{setting.name}", required=False,
+                               help=(f"{prefix}{setting.message}"))
+
+    parser.add_argument("--config",
+                        help=("YAML file that holds configuration defaults for"
+                              " the checkers (default: <PROJECT_ROOT>/"
+                              f"{DEFAULT_CONFIG_FILE})"
+                              ))
+
+    parser.add_argument("--no_config",
+                        action="store_true",
+                        help=("If set, the configuration defaults within the"
+                              " YAML file will be ignored (default: False,"
+                              " meaning user-arguments will be appended to"
+                              " the defaults given in the YAML file)."))
+
+    # Internal usage: If set, any supplied patterns will not be considered
+    # gitstyle patterns, and will therefore not be converted for regex
+    # matching. This parameter indicates that this has already been done by the
+    # caller of the script)
+    parser.add_argument("--no_process_patterns",
+                        action="store_true",
+                        help=argparse.SUPPRESS)
+
+    parser.add_argument("--venv",
+                        required=False,
+                        help=("Provide a Python virtual environment directory"
+                              " in which to run the checks (default: auto"
+                              " generate a new virtual environment directory)."
+                              " Cannot be passed with --no_venv."))
+
+    parser.add_argument("--no_venv",
+                        action="store_true",
+                        help=("Run the checks directly in the calling context"
+                              " without using up a Python virtual environment."
+                              " Cannot be passed with --venv."))
+
+    parser.add_argument("--keep_venv",
+                        action="store_true",
+                        default=False,
+                        help=("Do not delete the temporary Python virtual"
+                              " environment directory after the checks have"
+                              " been completed (Default: False)"))
+
+    default_root = f"{os.path.dirname(os.path.abspath(__file__))}/../../"
+    default_root = os.path.abspath(default_root)
+
+    parser.add_argument("--project_root",
+                        required=False,
+                        default=default_root,
+                        help=("Define the project root path, from which all"
+                              " provided relative paths will be considered"
+                              f" (Default: {default_root})"))
+
+    parser.add_argument("--log", default="info",
+                        choices=LOG_LEVELS.keys(),
+                        help="Set the log level (Default: info).")
+
+    parser.add_argument("--default_check_excludes",
+                        help=("Comma-separated list: Exclude a list of checks"
+                              " from being run as 'default'."))
+
+    opts = parser.parse_args()
+
+    return opts
+
+
 def parse_config(config_path):
     """ Parse the config file and return a dictionary with all config options.
         """
+
+    # Create a dictionary of valid checks and parameters
+    valid_params = {}
+    for check in AVAILABLE_CHECKS:
+        settings = check.get_vars()
+        valid_params[check.name] = {
+            setting.name: setting for setting in settings}
 
     config_dict = {}
 
@@ -179,8 +314,42 @@ def parse_config(config_path):
                             f" {{{','.join(sorted(valid_settings))}}} can be "
                             "set from config.")
 
+            if 'defaults' in yaml_content:
+                defaults = yaml_content['defaults']
+            else:
+                defaults = {}
+
             modules = yaml_content['modules']
             config_dict['all_checks'] = modules.keys()
+
+            for module, params in modules.items():
+
+                # Warn if there are non existent modules configured.
+                if module not in valid_params:
+                    logger.warning(f"Check module {module} was not found.")
+                    continue
+
+                valid_check_params = valid_params[module]
+
+                if params is not None:
+                    for key, value in params.items():
+                        # Warn if there are extra parameters defined.
+                        if key not in valid_check_params:
+                            logger.warning(f"Config param {module}/{key} is"
+                                           " invalid")
+                            continue
+                        config_dict[f'{module}_{key}'] = value
+
+                for key, value in defaults.items():
+                    # Ignore default if not for this module
+                    if key not in valid_check_params:
+                        continue
+
+                    full_key = f'{module}_{key}'
+                    # Ignore if value already found
+                    if full_key in config_dict:
+                        continue
+                    config_dict[full_key] = value
 
     except FileNotFoundError:
         logger.error(f"Config file '{config_filename}' was not found.")
@@ -245,155 +414,169 @@ def resolve_checks_list(opts, config):
         opts.checks = all_checks
 
 
-def parse_options():
+def resolve_check_param_from_config(key, config, setting):
+    """ Get the check param value from config (if it exists, None otherwise)
+        and perform config specific value validation. """
 
-    loglevels = {
-        "warning": logging.WARNING,
-        "info": logging.INFO,
-        "debug": logging.DEBUG
-    }
+    value = None
+    if key in config:
+        value = config[key]
+        if value is not None:
+            # Check the resulting type is as expected
+            if ((setting.is_list and type(value) is not list) or
+                    (not setting.is_list and type(value) is list)):
+                logger.error((f"Type of {check_name} {param} in"
+                              f" {config_filename} does not match type"
+                              " expected by check module. Discarding"
+                              " this value."))
+                return None
+            if setting.is_list and None in value:
+                logger.error(("Found one or more empty elements for the"
+                              f" {check_name} {param} list variable in"
+                              f" {config_filename}. Discarding this"
+                              " value."))
+                return None
+    return value
 
-    desc = ("run-checks.py is used to execute a set of quality-check modules"
-            " on the repository. By default, a virtual Python environment is"
-            " created to install the Python packages necessary to run the"
-            " suite.")
-    usage = ("Optional arguments can be found by passing --help to the script")
-    example = ("\nExample:\n$ ./run-checks.py\n"
-               "to run all default checks in a virtual environment, according"
-               " to the per-check configuration within the default config YAML"
-               " file.")
 
-    sets = (f"The available checks are: {{{','.join(CHECK_NAMES)}}}.")
+def resolve_check_param(opts, config, check_name, setting):
+    """ For a parameter, we check if we have a value from the command line
+        arguments. If we do, we either append it to or replace the default in
+        the configuration YAML file, depending on whether or not it is a list
+        variable. If no value can be found and the variable is not optional,
+        then the check will be skipped, by removing it from the opts.
 
-    note = (" Note: only checks defined in the config file will be run by"
-            " default, unless no config is defined, or called directly.")
+        If --no_config was supplied, config will be empty so config_value will
+        be None.
 
-    # Parse Arguments and assign to args object
-    parser = argparse.ArgumentParser(
-        prog=os.path.basename(__file__),
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        description=f"{desc}\n{usage}\n\n{example}\n\n{sets}\n\n{note}")
+        If the parameter is a pattern then special formatting is applied. """
+    param = setting.name
+    key = f"{check_name}_{param}"
+    is_list = setting.is_list
 
-    parser.add_argument("--check", action="append", default=[],
-                        dest="checks",
-                        metavar="{" + ",".join(sorted(VALID_CHECKS)) + "}",
-                        help=("Comma-separated list: Add specific checks to"
-                              " run, or the 'default' set, or 'all' checks. If"
-                              " not given, then the default config modules"
-                              " will be used as defined by the config and/or "
-                              " default_check_excludes. Multiple checks can be"
-                              " specified as a list and by passing the"
-                              " argument multiple times."))
+    value = None
+    try:
+        value = getattr(opts, key)
+        if value is not None and is_list:
+            value = value.split(",")
+    except AttributeError:
+        pass
 
-    # Internal usage: a requested check may be skipped using this option (e.g.
-    # due to failed dependency-installation in the virtual environment)
-    parser.add_argument("--skip", action="append", default=[],
-                        choices=CHECK_NAMES,
-                        dest="skip_checks",
-                        help=argparse.SUPPRESS)
+    config_value = resolve_check_param_from_config(key, config, setting)
+    # Merge with list from config file
+    if config_value is not None and is_list:
+        if value is not None:
+            value.extend(config_value)
 
-    # Each check has its own path options to include/exclude
+    if value is None:
+        value = config_value
+
+    if value is None:
+        # Nothing supplied for this parameter
+
+        if not setting.required:
+            # Optional, so use its default value (which may be None)
+            value = setting.default
+
+    # If value is still None, then we didn't find anything for this param
+    # from command line or config file and the default value is None
+    if value is not None:
+
+        # Replace any keywords with mapped values
+        # If it's a list, extend with the contents of the keyword
+        # If it's not a list, replace with the contents of the keyword
+        if is_list:
+            value = [eval_keyword(element) if element in KEYWORD_MAP
+                     else element for element in value]
+
+            # Make sure the list is flattened
+            flattened_list = []
+            for element in value:
+                # Make sure we don't include strings in the flattening
+                if isinstance(element, str):
+                    flattened_list.append(element)
+                else:
+                    flattened_list.extend([val for val in element])
+            value = flattened_list
+
+        else:
+            value = eval_keyword(value) if value in KEYWORD_MAP else value
+            if type(value) is list:
+                logger.warn(("Used a list keyword for a non-list"
+                             f"parameter: {check_name}_{param}. Discarding"
+                             " the value."))
+                return None
+
+        # If the parameter is a pattern, convert it for regex matching
+        if (not opts.no_process_patterns and setting.is_pattern):
+            if is_list:
+                converted_patterns = []
+                for pattern in value:
+                    converted = convert_gitstyle_pattern_to_regex(pattern)
+                    converted_patterns.append(converted)
+                value = converted_patterns
+            else:
+                value = convert_gitstyle_pattern_to_regex(value)
+
+    setattr(opts, key, value)
+
+    if value is None and setting.required:
+        return False
+    else:
+        return True
+
+
+def resolve_check_params(opts, config):
+    """ Process and validate all check settings for all checks. """
+
     for check in AVAILABLE_CHECKS:
+        check_name = check.name
 
-        name = check.name
+        if check_name not in opts.checks or check_name in opts.skip_checks:
+            continue
+
         settings = check.get_vars()
-
-        group = parser.add_argument_group(f"{name} check arguments")
+        missing_params = []
 
         for setting in settings:
-            prefix = ""
-            if setting.is_list:
-                prefix = "Comma-separated list: "
-            group.add_argument(f"--{name}_{setting.name}", required=False,
-                               help=(f"{prefix}{setting.message}"))
+            found = resolve_check_param(opts, config, check_name, setting)
+            if not found:
+                missing_params.append(setting.name)
 
-    default_config_file = "meta-ewaol-config/qa-checks/qa-checks_config.yml"
-    parser.add_argument("--config",
-                        help=("YAML file that holds configuration defaults for"
-                              " the checkers (default: <PROJECT_ROOT>/"
-                              f"{default_config_file})"
-                              ))
+        if missing_params:
+            logger.warning((f"Missing parameters for {check_name} check:"
+                            f" {missing_params}, skipping this check."))
+            opts.checks.remove(check_name)
 
-    parser.add_argument("--no_config",
-                        action="store_true",
-                        help=("If set, the configuration defaults within the"
-                              " YAML file will be ignored (default: False,"
-                              " meaning user-arguments will be appended to"
-                              " the defaults given in the YAML file)."))
 
-    # Internal usage: If set, any supplied patterns will not be considered
-    # gitstyle patterns, and will therefore not be converted for regex
-    # matching. This parameter indicates that this has already been done by the
-    # caller of the script)
-    parser.add_argument("--no_process_patterns",
-                        action="store_true",
-                        help=argparse.SUPPRESS)
+def resolve_settings(opts):
+    """ Perform validation and operations relating to the options supplied. """
 
-    parser.add_argument("--venv",
-                        required=False,
-                        help=("Provide a Python virtual environment directory"
-                              " in which to run the checks (default: auto"
-                              " generate a new virtual environment directory)."
-                              " Cannot be passed with --no_venv."))
+    # Resolve 'log'
+    logger.setLevel(LOG_LEVELS.get(opts.log.lower()))
 
-    parser.add_argument("--no_venv",
-                        action="store_true",
-                        help=("Run the checks directly in the calling context"
-                              " without using up a Python virtual environment."
-                              " Cannot be passed with --venv."))
-
-    parser.add_argument("--keep_venv",
-                        action="store_true",
-                        default=False,
-                        help=("Do not delete the temporary Python virtual"
-                              " environment directory after the checks have"
-                              " been completed (Default: False)"))
-
-    default_root = f"{os.path.dirname(os.path.abspath(__file__))}/../../"
-    default_root = os.path.abspath(default_root)
-
-    parser.add_argument("--project_root",
-                        required=False,
-                        default=default_root,
-                        help=("Define the project root path, from which all"
-                              " provided relative paths will be considered"
-                              f" (Default: {default_root})"))
-
-    parser.add_argument("--log", default="info",
-                        choices=["debug", "info", "warning"],
-                        help="Set the log level (Default: info).")
-
-    parser.add_argument("--default_check_excludes",
-                        help=("Comma-separated list: Exclude a list of checks"
-                              " from being run as 'default'."))
-
-    opts = parser.parse_args()
-
-    logger.setLevel(loglevels.get(opts.log.lower()))
-
+    # Resolve 'venv' and 'no_venv'
     # Validate the opts (venv and no_venv are mutually exclusive)
     if opts.venv is not None and opts.no_venv is True:
         logger.error((f"Cannot provide a path via --venv while also setting"
                       " --no_venv."))
         exit(1)
 
-    # Only allow a check to be skipped if it has been provided
-    if opts.skip_checks:
-        if any([skip not in opts.checks for skip in opts.skip_checks]):
-            logger.error("Cannot skip a check that wasn't requested.")
-            exit(1)
-
+    # Resolve 'project_root'
     opts.project_root = os.path.abspath(opts.project_root)
+    # Initialize the keyword value to the user-provided root
+    KEYWORD_MAP["ROOT"] = opts.project_root
 
+    # Resolve 'config'
     if opts.config is None:
-        opts.config = os.path.join(opts.project_root, default_config_file)
+        opts.config = os.path.join(opts.project_root, DEFAULT_CONFIG_FILE)
 
     if opts.no_config:
         config = {}
     else:
         config = parse_config(opts.config)
 
-    # default_check_excludes
+    # Resolve 'default_check_excludes'
     value = []
     if opts.default_check_excludes is not None:
         value.extend(opts.default_check_excludes.split(","))
@@ -403,195 +586,33 @@ def parse_options():
 
     opts.default_check_excludes = value
 
+    # Resolve 'checks'
     resolve_checks_list(opts, config)
 
-    # Initialize the keyword value to the user-provided root
-    KEYWORD_MAP["ROOT"] = opts.project_root
+    # Resolve 'skip_checks'
+    # Only allow a check to be skipped if it has been provided
+    if opts.skip_checks:
+        if any([skip not in opts.checks for skip in opts.skip_checks]):
+            logger.error("Cannot skip a check that wasn't requested.")
+            exit(1)
 
-    return opts
-
-
-def load_param_from_config(config_filename, check_name, param, list_param):
-    """ Check the config YAML file for the existance of the given parameter
-        for the given check module. The boolean list_param determines if the
-        value should read and validated as a list type.
-        If a value is not found, then a default will be taken from the defaults
-        YAML section..
-
-        Return None if no value could be found. """
-
-    value = None
-
-    try:
-        import yaml
-
-        with open(config_filename, 'r') as config_file:
-            config = yaml.safe_load(config_file)
-
-            found_value = False
-            found_default = False
-
-            # Check if there is a default
-            default = None
-            try:
-                default = config["defaults"][param]
-                found_default = True
-            except KeyError:
-                pass
-
-            # Check if there is a defined value in the config
-            try:
-                params = config["modules"][check_name]
-                if params is not None:
-                    value = config["modules"][check_name][param]
-                    found_value = True
-            except KeyError:
-                pass
-
-            if found_value:
-                pass
-            elif found_default:
-                # Replace with the default
-                value = default
-            else:
-                return None
-
-            if value is not None:
-                # Check the resulting type is as expected
-                if ((list_param and type(value) is not list) or
-                        (not list_param and type(value) is list)):
-                    logger.error((f"Type of {check_name} {param} in"
-                                  f" {config_filename} does not match type"
-                                  " expected by check module. Discarding"
-                                  " this value."))
-                    return None
-                if list_param and None in value:
-                    logger.error(("Found one or more empty elements for the"
-                                  f" {check_name} {param} list variable in"
-                                  f" {config_filename}. Discarding this"
-                                  " value."))
-                    return None
-
-    except FileNotFoundError:
-        logger.error(f"Config file '{config_filename}' was not found.")
-        exit(1)
-    except ImportError:
-        logger.error(("Could not import the Python yaml module. Either install"
-                      " 'pyyaml' via pip on the host system to load"
-                      " the YAML configuration file, or pass --no_config."))
-        exit(1)
-
-    return value
+    # Resolve all check params
+    resolve_check_params(opts, config)
 
 
 def load_check_params(
         opts,
         check_name,
         settings):
-    """ For each variable, we check if we already have a value from the command
-        line arguments. If we do, we either append it to or replace the default
-        in the configuration YAML file, depending on whether or not it is a
-        list variable. If no value can be found and the variable is not
-        optional, then the check will be skipped, by removing it from the opts.
-
-        If --no_config was supplied, the YAML file is not read at all, and
-        only the user-supplied arguments considered. """
+    """ Load check params from the resolved opts. """
 
     params = dict()
     missing_params = list()
 
     for setting in settings:
-        param = setting.name
-
-        key = f"{check_name}_{param}"
-
-        is_list = setting.is_list
-
-        # Get value from config file
-        config_value = None
-        if opts.no_config is False:
-            config_value = load_param_from_config(opts.config,
-                                                  check_name,
-                                                  param,
-                                                  is_list)
-
-        # Get value from command line args
-        value = None
-        try:
-            value = getattr(opts, key)
-            if value is not None and is_list:
-                value = value.split(",")
-        except AttributeError:
-            pass
-
-        # Merge with list from config file
-        if config_value is not None and is_list:
-            if value is not None:
-                value.extend(config_value)
-
-        if value is None:
-            value = config_value
-
-        if value is None:
-            # Nothing supplied for this parameter
-
-            if not setting.required:
-                # Optional, so use its default value (which may be None)
-                value = setting.default
-                params[param] = value
-                setattr(opts, key, value)
-            else:
-                # Required, set as missing
-                missing_params.append(param)
-
-        # If value is still None, then we didn't find anything for this param
-        # from command line or config file and the default value is None
-        if value is not None:
-
-            # Replace any keywords with mapped values
-            # If it's a list, extend with the contents of the keyword
-            # If it's not a list, replace with the contents of the keyword
-            if is_list:
-                value = [eval_keyword(element) if element in KEYWORD_MAP
-                         else element for element in value]
-
-                # Make sure the list is flattened
-                flattened_list = []
-                for element in value:
-                    # Make sure we don't include strings in the flattening
-                    if isinstance(element, str):
-                        flattened_list.append(element)
-                    else:
-                        flattened_list.extend([val for val in element])
-                value = flattened_list
-
-            else:
-                value = eval_keyword(value) if value in KEYWORD_MAP else value
-                if type(value) is list:
-                    logger.warn(("Used a list keyword for a non-list"
-                                 f"parameter: {check_name}_{param}. Discarding"
-                                 " the value."))
-                    return None
-
-            # If the parameter is a pattern, convert it for regex matching
-            if (not opts.no_process_patterns and setting.is_pattern):
-                if is_list:
-                    converted_patterns = []
-                    for pattern in value:
-                        converted = convert_gitstyle_pattern_to_regex(pattern)
-                        converted_patterns.append(converted)
-                    value = converted_patterns
-                else:
-                    value = convert_gitstyle_pattern_to_regex(value)
-
-            params[param] = value
-            setattr(opts, key, value)
-
-    if missing_params:
-        logger.warning((f"Missing parameters for {check_name} check:"
-                        f" {missing_params}, skipping this check."))
-        opts.checks.remove(check_name)
-        return None
+        key = f"{check_name}_{setting.name}"
+        value = getattr(opts, key)
+        params[setting.name] = value
 
     return params
 
@@ -675,6 +696,9 @@ def main():
 
     # Get the options that the user supplied
     opts = parse_options()
+
+    # Process and validate the options
+    resolve_settings(opts)
 
     # Build the checkers, loading configuration from the config file if
     # necessary
