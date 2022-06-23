@@ -157,6 +157,7 @@ localhost
 loopback
 lts
 m
+maintainability
 manual_build_system_target_platforms
 manual_yocto_layers_layer_dependency_overview
 maxdepth
@@ -181,10 +182,12 @@ neoverse
 nginx
 nodeport
 non-inclusive-language.txt
+number_threads
 nvme
 oci
 optionally
 ostree
+parallelized
 pc
 pep8
 png
@@ -253,6 +256,7 @@ ua_test_log_dir
 ubuntu
 ubuntu-based
 umask
+usability
 use-cases
 user_accounts
 user-accounts-integration-tests.bb
