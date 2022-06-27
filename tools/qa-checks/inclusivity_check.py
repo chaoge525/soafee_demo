@@ -103,7 +103,7 @@ class InclusivityCheck(abstract_check.AbstractCheck):
 
         text = ""
         try:
-            with open(rel_path, 'r') as f:
+            with open(path, 'r') as f:
                 text = f.read()
         except UnicodeDecodeError as e:
             file_errors[rel_path] = [("Couldn't process file due to"
