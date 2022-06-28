@@ -318,6 +318,8 @@ def parse_options():
     if "all" in opts.checks:
         opts.checks = check_names
 
+    opts.project_root = os.path.abspath(opts.project_root)
+
     if opts.config is None:
         opts.config = os.path.join(opts.project_root, default_config_file)
 
