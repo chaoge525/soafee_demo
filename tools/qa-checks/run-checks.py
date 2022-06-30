@@ -34,6 +34,8 @@ argument to this script.
 import argparse
 import inspect
 import logging
+import logging.handlers
+import multiprocessing
 import os
 import shutil
 import subprocess
@@ -276,6 +278,12 @@ def parse_options():
     parser.add_argument("--default_check_excludes",
                         help=("Comma-separated list: Exclude a list of checks"
                               " from being run as 'default'."))
+
+    parser.add_argument("--number_threads",
+                        default=min(os.cpu_count(), len(AVAILABLE_CHECKS)),
+                        type=int,
+                        help=("Set the max number of threads to use to run"
+                              " checks."))
 
     opts = parser.parse_args()
 
@@ -624,6 +632,8 @@ def build_check_modules(opts):
 
     checkers = []
 
+    queue = multiprocessing.Queue(-1)
+
     for check_module in AVAILABLE_CHECKS:
         name = check_module.name
         if name in opts.checks and name not in opts.skip_checks:
@@ -636,7 +646,10 @@ def build_check_modules(opts):
                 # All check modules have a project_root variable
                 params["project_root"] = eval_keyword("ROOT")
 
-                check = check_module(logger, **params)
+                check_logger = logging.getLogger(name)
+                check_logger.addHandler(logging.handlers.QueueHandler(queue))
+
+                check = check_module(check_logger, **params)
                 checkers.append(check)
 
     return checkers
@@ -688,6 +701,49 @@ def generate_venv_script_args_from_opts(opts):
     return args
 
 
+def run_checker(checker):
+    rc = 0
+    try:
+        rc = checker.run()
+    except Exception as e:
+        logger.error(("Caught exception when executing the"
+                      f" {checker.name} check:"))
+        logger.error(''.join(traceback.format_exception(
+            etype=type(e), value=e, tb=e.__traceback__)))
+        rc = 1
+
+    return rc
+
+
+def run_checks_parallel(checkers, failed_modules, number_threads):
+
+    logger.debug("Creating process pool")
+
+    proc_pool = multiprocessing.Pool(number_threads)
+    queue = multiprocessing.Queue(-1)
+
+    queue_listener = logging.handlers.QueueListener(
+        queue, *logger.handlers, respect_handler_level=True)
+
+    queue_listener.start()
+    logger.debug("Waiting for processes.")
+    checker_rcs = proc_pool.map(run_checker, checkers)
+
+    queue_listener.stop()
+
+    rc = 0
+
+    # Process return codes
+    for i, checker in enumerate(checkers):
+        checker_rc = checker_rcs[i]
+        if checker_rc != 0:
+            failed_modules.add(checker.name)
+
+        rc |= checker_rc
+
+    return rc
+
+
 def main():
     if sys.version_info < (3, 8):
         raise ValueError("This script requires Python 3.8 or later")
@@ -731,22 +787,8 @@ def main():
 
         failed_modules = set()
 
-        # Run the checkers
-        for checker in checkers:
-            rc = 0
-            try:
-                rc = checker.run()
-                if rc != 0:
-                    failed_modules.add(checker.name)
-            except Exception as e:
-                logger.error(("Caught exception when executing the"
-                              f" {checker.name} check:"))
-                logger.error(''.join(traceback.format_exception(
-                    etype=type(e), value=e, tb=e.__traceback__)))
-                failed_modules.add(checker.name)
-                rc = 1
-
-            exit_code |= rc
+        exit_code |= run_checks_parallel(checkers, failed_modules,
+                                         opts.number_threads)
 
         for skipped_check in opts.skip_checks:
 
