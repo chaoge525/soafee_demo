@@ -43,7 +43,7 @@ pod_does_not_exist() {
 
     status=""
 
-    _run kubectl_query "pod" "${1}" "{.status.phase}"
+    _run query_kubectl "pod" "${1}" "{.status.phase}"
     if [ "${status}" -eq 0 ]; then
         # The pod still exists
         return 1
@@ -291,7 +291,7 @@ remove_k3s_test_deployment() {
                 continue
             fi
 
-            run_ wait_for_success 60 10 pod_does_not_exist "${pod_name}"
+            _run wait_for_success 60 10 pod_does_not_exist "${pod_name}"
             if [ "${status}" -ne 0 ]; then
                 echo "Failed to delete the k3s-test Deployment"
                 return 1
