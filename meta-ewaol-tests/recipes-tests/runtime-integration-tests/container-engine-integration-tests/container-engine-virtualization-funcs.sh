@@ -9,7 +9,6 @@ run_tests_on_guest_vm() {
     expect "${TEST_COMMON_DIR}/run-command.expect" \
         -hostname "${1}" \
         -command "ptest-runner container-engine-integration-tests" \
-        -timeout "120" \
         -console "guest_vm" \
         2>"${TEST_STDERR_FILE}"
 }
