@@ -51,7 +51,7 @@
 # Defaults:
 set hostname [info hostname]
 set user "$env(USER)"
-set timeout 60
+set timeout 180
 
 # This variable holds the string used for cleaning the terminal buffer,
 # required when attaching to a console that may contain a garbled buffer.

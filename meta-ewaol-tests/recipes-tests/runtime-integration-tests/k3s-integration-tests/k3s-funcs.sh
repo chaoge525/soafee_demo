@@ -75,7 +75,7 @@ wait_for_deployment_to_be_running() {
         excluded_pods="${2}"
         expected_pod_count=$(wc -w <<< "${excluded_pods}")
 
-        _run wait_for_success 60 10 check_running_pod_count_with_exclusions \
+        _run wait_for_success 180 10 check_running_pod_count_with_exclusions \
            "${1}" "${expected_pod_count}" "${excluded_pods}"
         if [ "${status}" -ne 0 ]; then
             echo -n "Timeout reached before ${expected_pod_count} new"
@@ -90,7 +90,7 @@ wait_for_deployment_to_be_running() {
 # Second argument is the port to use to query each IP
 check_service_is_accessible() {
     for ip in ${1}; do
-        _run wait_for_success 60 10 get_from_url "http://${ip}" "${2}"
+        _run wait_for_success 180 10 get_from_url "http://${ip}" "${2}"
         if [ "${status}" -ne 0 ]; then
             echo "${output}"
             echo "Timeout reached before http://${ip} responded on port ${2}"
@@ -185,7 +185,7 @@ test_application_pod_image() {
 confirm_image_of_application_pods() {
 
     pod_index=0
-    wait_for_success 60 10 test_application_pod_image "${1}" "${2}" \
+    wait_for_success 180 10 test_application_pod_image "${1}" "${2}" \
         "${pod_index}"
 
 }
@@ -291,7 +291,7 @@ remove_k3s_test_deployment() {
                 continue
             fi
 
-            _run wait_for_success 60 10 pod_does_not_exist "${pod_name}"
+            _run wait_for_success 180 10 pod_does_not_exist "${pod_name}"
             if [ "${status}" -ne 0 ]; then
                 echo "Failed to delete the k3s-test Deployment"
                 return 1
