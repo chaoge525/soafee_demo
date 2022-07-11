@@ -1,0 +1,126 @@
+From 3425bd83e61e98f29d94d72ba77fb2663300e296 Mon Sep 17 00:00:00 2001
+From: Rahul Singh <rahul.singh@arm.com>
+Date: Thu, 22 Oct 2020 16:17:15 +0100
+Subject: [PATCH 27/78] arm/libxl: Emulated ITS device tree node in libxl
+
+libxl will create an emulated ITS device tree node in the
+device tree to enable the guest OS to discover the virtual
+ITS during guest boot.
+
+Change-Id: I7b508fdf10cd47ece33556c148f6b7bda26dc13b
+Signed-off-by: Rahul Singh <rahul.singh@arm.com>
+---
+ tools/libs/light/libxl_arm.c          | 47 ++++++++++++++++++++++++++-
+ xen/include/public/arch-arm.h         |  4 +++
+ xen/include/public/device_tree_defs.h |  1 +
+ 3 files changed, 51 insertions(+), 1 deletion(-)
+
+diff --git a/tools/libs/light/libxl_arm.c b/tools/libs/light/libxl_arm.c
+index eef1de0939..efd7ae681c 100644
+--- a/tools/libs/light/libxl_arm.c
++++ b/tools/libs/light/libxl_arm.c
+@@ -595,6 +595,38 @@ static int make_gicv2_node(libxl__gc *gc, void *fdt,
+     return 0;
+ }
+ 
++static int make_gicv3_its_node(libxl__gc *gc, void *fdt)
++{
++    int res;
++    const uint64_t its_base = GUEST_GICV3_ITS_BASE;
++    const uint64_t its_size = GUEST_GICV3_ITS_SIZE;
++    const char *name = GCSPRINTF("its@%"PRIx64, its_base);
++
++    res = fdt_begin_node(fdt, name);
++    if (res) return res;
++
++    res = fdt_property_string(fdt, "compatible", "arm,gic-v3-its");
++    if ( res ) return res;
++
++    res = fdt_property(fdt, "msi-controller", NULL, 0);
++    if ( res ) return res;
++
++    res = fdt_property_regs(gc, fdt,
++                            GUEST_ROOT_ADDRESS_CELLS, GUEST_ROOT_SIZE_CELLS,
++                            1,
++                            its_base, its_size);
++    if (res) return res;
++
++    res = fdt_property_cell(fdt, "phandle", GUEST_PHANDLE_ITS);
++    if (res) return res;
++
++    res = fdt_end_node(fdt);
++    if (res) return res;
++
++    return 0;
++
++}
++
+ static int make_gicv3_node(libxl__gc *gc, void *fdt)
+ {
+     int res;
+@@ -613,7 +645,13 @@ static int make_gicv3_node(libxl__gc *gc, void *fdt)
+     res = fdt_property_cell(fdt, "#interrupt-cells", 3);
+     if (res) return res;
+ 
+-    res = fdt_property_cell(fdt, "#address-cells", 0);
++    res = fdt_property_cell(fdt, "#address-cells", 2);
++    if (res) return res;
++
++    res = fdt_property_cell(fdt, "#size-cells", 2);
++    if (res) return res;
++
++    res = fdt_property(fdt, "ranges", NULL, 0);
+     if (res) return res;
+ 
+     res = fdt_property(fdt, "interrupt-controller", NULL, 0);
+@@ -631,6 +669,9 @@ static int make_gicv3_node(libxl__gc *gc, void *fdt)
+     res = fdt_property_cell(fdt, "phandle", GUEST_PHANDLE_GIC);
+     if (res) return res;
+ 
++    res = make_gicv3_its_node(gc, fdt);
++    if (res) return res;
++
+     res = fdt_end_node(fdt);
+     if (res) return res;
+ 
+@@ -781,6 +822,10 @@ static int make_vpci_node(libxl__gc *gc, void *fdt,
+         GUEST_VPCI_PREFETCH_MEM_SIZE);
+     if (res) return res;
+ 
++    res = fdt_property_values(gc, fdt, "msi-map", 4, 0, GUEST_PHANDLE_ITS,
++                              0, 0x10000);
++    if (res) return res;
++
+     res = fdt_end_node(fdt);
+     if (res) return res;
+ 
+diff --git a/xen/include/public/arch-arm.h b/xen/include/public/arch-arm.h
+index 94b31511dd..0e08e9eda8 100644
+--- a/xen/include/public/arch-arm.h
++++ b/xen/include/public/arch-arm.h
+@@ -425,6 +425,10 @@ typedef uint64_t xen_callback_t;
+ #define GUEST_VPCI_ECAM_BASE    xen_mk_ullong(0x10000000)
+ #define GUEST_VPCI_ECAM_SIZE    xen_mk_ullong(0x10000000)
+ 
++/* vGIC ITS mappings */
++#define GUEST_GICV3_ITS_BASE   xen_mk_ullong(0x04020000)
++#define GUEST_GICV3_ITS_SIZE   xen_mk_ullong(0x00020000)
++
+ /* ACPI tables physical address */
+ #define GUEST_ACPI_BASE xen_mk_ullong(0x20000000)
+ #define GUEST_ACPI_SIZE xen_mk_ullong(0x02000000)
+diff --git a/xen/include/public/device_tree_defs.h b/xen/include/public/device_tree_defs.h
+index 209d43de3f..d24d86b1fc 100644
+--- a/xen/include/public/device_tree_defs.h
++++ b/xen/include/public/device_tree_defs.h
+@@ -7,6 +7,7 @@
+  * onwards. Reserve a high value for the GIC phandle.
+  */
+ #define GUEST_PHANDLE_GIC (65000)
++#define GUEST_PHANDLE_ITS (64999)
+ 
+ #define GUEST_ROOT_ADDRESS_CELLS 2
+ #define GUEST_ROOT_SIZE_CELLS 2
+-- 
+2.25.1
+

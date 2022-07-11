@@ -1,0 +1,148 @@
+From 76159f46b896c430e42b72beda68dd439000dd01 Mon Sep 17 00:00:00 2001
+From: Oleksandr Andrushchenko <oleksandr_andrushchenko@epam.com>
+Date: Thu, 25 Nov 2021 13:02:48 +0200
+Subject: [PATCH 20/78] vpci: add initial support for virtual PCI bus topology
+
+Assign SBDF to the PCI devices being passed through with bus 0.
+The resulting topology is where PCIe devices reside on the bus 0 of the
+root complex itself (embedded endpoints).
+This implementation is limited to 32 devices which are allowed on
+a single PCI bus.
+
+Please note, that at the moment only function 0 of a multifunction
+device can be passed through.
+
+Signed-off-by: Oleksandr Andrushchenko <oleksandr_andrushchenko@epam.com>
+---
+ xen/drivers/vpci/vpci.c | 51 +++++++++++++++++++++++++++++++++++++++++
+ xen/include/xen/sched.h |  8 +++++++
+ xen/include/xen/vpci.h  | 11 +++++++++
+ 3 files changed, 70 insertions(+)
+
+diff --git a/xen/drivers/vpci/vpci.c b/xen/drivers/vpci/vpci.c
+index 98b12a61be..c2fb4d4db2 100644
+--- a/xen/drivers/vpci/vpci.c
++++ b/xen/drivers/vpci/vpci.c
+@@ -114,6 +114,9 @@ int vpci_add_handlers(struct pci_dev *pdev)
+     spin_lock(&pdev->vpci_lock);
+     pdev->vpci = vpci;
+     INIT_LIST_HEAD(&pdev->vpci->handlers);
++#ifdef CONFIG_HAS_VPCI_GUEST_SUPPORT
++    pdev->vpci->guest_sbdf.sbdf = ~0;
++#endif
+ 
+     header = &pdev->vpci->header;
+     for ( i = 0; i < ARRAY_SIZE(header->bars); i++ )
+@@ -145,6 +148,53 @@ int vpci_add_handlers(struct pci_dev *pdev)
+ }
+ 
+ #ifdef CONFIG_HAS_VPCI_GUEST_SUPPORT
++int vpci_add_virtual_device(struct pci_dev *pdev)
++{
++    struct domain *d = pdev->domain;
++    pci_sbdf_t sbdf = { 0 };
++    unsigned long new_dev_number;
++
++    /*
++     * Each PCI bus supports 32 devices/slots at max or up to 256 when
++     * there are multi-function ones which are not yet supported.
++     */
++    if ( pdev->info.is_extfn )
++    {
++        gdprintk(XENLOG_ERR, "%pp: only function 0 passthrough supported\n",
++                 &pdev->sbdf);
++        return -EOPNOTSUPP;
++    }
++
++    new_dev_number = find_first_zero_bit(&d->vpci_dev_assigned_map,
++                                         VPCI_MAX_VIRT_DEV);
++    if ( new_dev_number >= VPCI_MAX_VIRT_DEV )
++        return -ENOSPC;
++
++    __set_bit(new_dev_number, &d->vpci_dev_assigned_map);
++
++    /*
++     * Both segment and bus number are 0:
++     *  - we emulate a single host bridge for the guest, e.g. segment 0
++     *  - with bus 0 the virtual devices are seen as embedded
++     *    endpoints behind the root complex
++     *
++     * TODO: add support for multi-function devices.
++     */
++    sbdf.devfn = PCI_DEVFN(new_dev_number, 0);
++    pdev->vpci->guest_sbdf = sbdf;
++
++    return 0;
++
++}
++REGISTER_VPCI_INIT(vpci_add_virtual_device, VPCI_PRIORITY_MIDDLE);
++
++static void vpci_remove_virtual_device(struct domain *d,
++                                       const struct pci_dev *pdev)
++{
++    __clear_bit(pdev->vpci->guest_sbdf.dev, &d->vpci_dev_assigned_map);
++    pdev->vpci->guest_sbdf.sbdf = ~0;
++}
++
+ /* Notify vPCI that device is assigned to guest. */
+ int vpci_assign_device(struct domain *d, struct pci_dev *pdev)
+ {
+@@ -171,6 +221,7 @@ int vpci_deassign_device(struct domain *d, struct pci_dev *pdev)
+         return 0;
+ 
+     spin_lock(&pdev->vpci_lock);
++    vpci_remove_virtual_device(d, pdev);
+     vpci_remove_device_handlers_locked(pdev);
+     spin_unlock(&pdev->vpci_lock);
+ 
+diff --git a/xen/include/xen/sched.h b/xen/include/xen/sched.h
+index 28146ee404..10bff10331 100644
+--- a/xen/include/xen/sched.h
++++ b/xen/include/xen/sched.h
+@@ -444,6 +444,14 @@ struct domain
+ 
+ #ifdef CONFIG_HAS_PCI
+     struct list_head pdev_list;
++#ifdef CONFIG_HAS_VPCI_GUEST_SUPPORT
++    /*
++     * The bitmap which shows which device numbers are already used by the
++     * virtual PCI bus topology and is used to assign a unique SBDF to the
++     * next passed through virtual PCI device.
++     */
++    unsigned long vpci_dev_assigned_map;
++#endif
+ #endif
+ 
+ #ifdef CONFIG_HAS_PASSTHROUGH
+diff --git a/xen/include/xen/vpci.h b/xen/include/xen/vpci.h
+index 9c994f9889..6ea6638072 100644
+--- a/xen/include/xen/vpci.h
++++ b/xen/include/xen/vpci.h
+@@ -21,6 +21,13 @@ typedef int vpci_register_init_t(struct pci_dev *dev);
+ 
+ #define VPCI_ECAM_BDF(addr)     (((addr) & 0x0ffff000) >> 12)
+ 
++/*
++ * Maximum number of devices supported by the virtual bus topology:
++ * each PCI bus supports 32 devices/slots at max or up to 256 when
++ * there are multi-function ones which are not yet supported.
++ */
++#define VPCI_MAX_VIRT_DEV       (PCI_SLOT(~0) + 1)
++
+ #define REGISTER_VPCI_INIT(x, p)                \
+   static vpci_register_init_t *const x##_entry  \
+                __used_section(".data.vpci." p) = x
+@@ -145,6 +152,10 @@ struct vpci {
+             struct vpci_arch_msix_entry arch;
+         } entries[];
+     } *msix;
++#ifdef CONFIG_HAS_VPCI_GUEST_SUPPORT
++    /* Guest SBDF of the device. */
++    pci_sbdf_t guest_sbdf;
++#endif
+ #endif
+ };
+ 
+-- 
+2.25.1
+

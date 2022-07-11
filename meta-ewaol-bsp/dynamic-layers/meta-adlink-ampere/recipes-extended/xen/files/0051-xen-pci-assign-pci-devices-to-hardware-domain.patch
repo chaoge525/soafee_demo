@@ -1,0 +1,98 @@
+From b9740a3a18deb3d87f1d924ad0a826e5b0f38105 Mon Sep 17 00:00:00 2001
+From: Luca Fancellu <luca.fancellu@arm.com>
+Date: Thu, 16 Dec 2021 11:38:35 +0000
+Subject: [PATCH 51/78] xen/pci: assign pci devices to hardware domain
+
+Create the function assign_hwdom_pci_devices, called at boot, that
+adds every device that is not a pci bridge and it's owned by dom_io
+to the hardware domain.
+
+Issue-Id: SCM-1012
+Signed-off-by: Luca Fancellu <luca.fancellu@arm.com>
+Change-Id: I97474105f61f6f52f7615ff23c2371ef413c8b03
+---
+ xen/arch/arm/setup.c          |  4 ++++
+ xen/drivers/passthrough/pci.c | 39 +++++++++++++++++++++++++++++++++++
+ xen/include/xen/pci.h         |  1 +
+ 3 files changed, 44 insertions(+)
+
+diff --git a/xen/arch/arm/setup.c b/xen/arch/arm/setup.c
+index d5d0792ed4..146867f645 100644
+--- a/xen/arch/arm/setup.c
++++ b/xen/arch/arm/setup.c
+@@ -1031,6 +1031,10 @@ void __init start_xen(unsigned long boot_phys_offset,
+     if ( acpi_disabled )
+         create_domUs();
+ 
++#ifdef CONFIG_HAS_PCI
++    assign_hwdom_pci_devices();
++#endif
++
+     /*
+      * This needs to be called **before** heap_init_late() so modules
+      * will be scrubbed (unless suppressed).
+diff --git a/xen/drivers/passthrough/pci.c b/xen/drivers/passthrough/pci.c
+index 18704334a6..69512c311b 100644
+--- a/xen/drivers/passthrough/pci.c
++++ b/xen/drivers/passthrough/pci.c
+@@ -1522,6 +1522,45 @@ static int assign_device(struct domain *d, u16 seg, u8 bus, u8 devfn, u32 flag)
+     return rc;
+ }
+ 
++static int __init _assign_hwdom_pci_devices(struct pci_seg *pseg, void *arg)
++{
++    struct pci_dev *pdev;
++    int ret = 0;
++
++    list_for_each_entry ( pdev, &pseg->alldevs_list, alldevs_list )
++    {
++        enum pdev_type pci_dev_type = pdev_type(pdev->seg, pdev->bus,
++                                                pdev->devfn);
++        bool is_pci_endpoint = (pci_dev_type == DEV_TYPE_PCIe_ENDPOINT) ||
++                               (pci_dev_type == DEV_TYPE_PCI);
++
++        if ( is_pci_endpoint && (pdev->domain == dom_io) )
++        {
++            ret = assign_device(hardware_domain, pdev->seg, pdev->bus,
++                                pdev->devfn, 0);
++            if ( ret < 0 )
++            {
++                printk(XENLOG_ERR
++                       "%pp: Failure assigning the discovered pci device "
++                       "(Error %d)\n", &pdev->sbdf, ret);
++                break;
++            }
++        }
++    }
++
++    return ret;
++}
++
++void __init assign_hwdom_pci_devices(void)
++{
++    if ( !hardware_domain || !hwdom_uses_vpci() )
++        return;
++
++    pcidevs_lock();
++    pci_segments_iterate(_assign_hwdom_pci_devices, NULL);
++    pcidevs_unlock();
++}
++
+ static int iommu_get_device_group(
+     struct domain *d, u16 seg, u8 bus, u8 devfn,
+     XEN_GUEST_HANDLE_64(uint32) buf, int max_sdevs)
+diff --git a/xen/include/xen/pci.h b/xen/include/xen/pci.h
+index 27ace69043..0b0cb7a468 100644
+--- a/xen/include/xen/pci.h
++++ b/xen/include/xen/pci.h
+@@ -162,6 +162,7 @@ bool_t pci_known_segment(u16 seg);
+ bool_t pci_device_detect(u16 seg, u8 bus, u8 dev, u8 func);
+ int scan_pci_devices(void);
+ void add_discovered_pci_devices(void);
++void assign_hwdom_pci_devices(void);
+ void dump_pci_devices(unsigned char ch);
+ enum pdev_type pdev_type(u16 seg, u8 bus, u8 devfn);
+ int find_upstream_bridge(u16 seg, u8 *bus, u8 *devfn, u8 *secbus);
+-- 
+2.25.1
+

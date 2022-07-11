@@ -1,0 +1,61 @@
+From 5f22a0a0909831ccd0410dd71b4df993b8e789d8 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?T=C3=A9o=20Couprie=20Diaz?= <teo.coupriediaz@arm.com>
+Date: Tue, 12 Apr 2022 11:57:29 +0100
+Subject: [PATCH 67/78] xen/arm: Enable PCI-passthrough with ACPI
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Allow detecting different kinds of host bridges from
+the ACPI table OEMID.
+
+Signed-off-by: Téo Couprie Diaz <teo.coupriediaz@arm.com>
+Change-Id: Id4ce62acfcd77b97609e1e4b7a3b31d73f9659f7
+---
+ xen/arch/arm/pci/pci.c | 30 ++++++++++++++++++++++++++++--
+ 1 file changed, 28 insertions(+), 2 deletions(-)
+
+diff --git a/xen/arch/arm/pci/pci.c b/xen/arch/arm/pci/pci.c
+index ddb2ca79b6..5e05f226c3 100644
+--- a/xen/arch/arm/pci/pci.c
++++ b/xen/arch/arm/pci/pci.c
+@@ -65,8 +65,34 @@ static int __init dt_pci_init(void)
+ #ifdef CONFIG_ACPI
+ static int __init acpi_pci_init(void)
+ {
+-    printk(XENLOG_ERR "ACPI pci init not supported \n");
+-    return -EOPNOTSUPP;
++    int i;
++    int rc;
++    int host_bridge_class = ACPI_GENERIC_HOST_BRIDGE;
++    struct acpi_table_header *table_header = NULL;
++
++    if ( pci_mmcfg_config_num == 0 )
++    {
++        printk(KERN_ERR "No MMCFG config\n");
++        return -ENODEV;
++    }
++
++    /* Retrieve the table header to check for specific boards. */
++    acpi_get_table(ACPI_SIG_MCFG, 0, &table_header);
++    if ( table_header )
++    {
++        if ( !strncmp(table_header->oem_table_id, "ARMN1SDP",
++                     ACPI_OEM_TABLE_ID_SIZE) )
++            host_bridge_class = ACPI_N1SDP_HOST_BRIDGE;
++    }
++
++    for (i = 0 ; i < pci_mmcfg_config_num ; i += 1)
++    {
++        rc = acpi_device_init(DEVICE_PCI_HOSTBRIDGE, &pci_mmcfg_config[i],
++                              host_bridge_class);
++        if ( rc )
++            return rc;
++    }
++    return 0;
+ }
+ #else
+ static int __init acpi_pci_init(void)
+-- 
+2.25.1
+

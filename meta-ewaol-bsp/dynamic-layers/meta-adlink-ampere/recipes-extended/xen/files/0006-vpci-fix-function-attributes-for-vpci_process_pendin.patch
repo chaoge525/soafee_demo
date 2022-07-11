@@ -1,0 +1,36 @@
+From 2fea22fd349d206002022e10bca3479075f67804 Mon Sep 17 00:00:00 2001
+From: Oleksandr Andrushchenko <oleksandr_andrushchenko@epam.com>
+Date: Tue, 14 Dec 2021 09:44:44 +0100
+Subject: [PATCH 06/78] vpci: fix function attributes for vpci_process_pending
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+vpci_process_pending is defined with different attributes, e.g.
+with __must_check if CONFIG_HAS_VPCI enabled and not otherwise.
+Fix this by defining both of the definitions with __must_check.
+
+Fixes: 14583a590783 ("7fbb096bf345 kconfig: don't select VPCI if building a shim-only binary")
+Signed-off-by: Oleksandr Andrushchenko <oleksandr_andrushchenko@epam.com>
+Reviewed-by: Julien Grall <jgrall@amazon.com>
+Reviewed-by: Roger Pau Monné <roger.pau@citrix.com>
+---
+ xen/include/xen/vpci.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/xen/include/xen/vpci.h b/xen/include/xen/vpci.h
+index 755b4fd5c8..b877db3c58 100644
+--- a/xen/include/xen/vpci.h
++++ b/xen/include/xen/vpci.h
+@@ -249,7 +249,7 @@ static inline void vpci_write(pci_sbdf_t sbdf, unsigned int reg,
+     ASSERT_UNREACHABLE();
+ }
+ 
+-static inline bool vpci_process_pending(struct vcpu *v)
++static inline bool __must_check vpci_process_pending(struct vcpu *v)
+ {
+     ASSERT_UNREACHABLE();
+     return false;
+-- 
+2.25.1
+

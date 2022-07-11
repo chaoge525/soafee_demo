@@ -1,0 +1,191 @@
+From 338016ac26b34e548ba6a7fd1be6d9d8107b9030 Mon Sep 17 00:00:00 2001
+From: Luca Fancellu <luca.fancellu@arm.com>
+Date: Thu, 16 Dec 2021 11:36:44 +0000
+Subject: [PATCH 50/78] xen/pci: update DT for hwdom when it uses vpci
+
+When hwdom_uses_vpci() is true, the device tree for the hardware
+domain is modified in this way:
+ - Nodes with device_type equal to "pci" are removed
+ - A vpci node is created for the hwdom device tree
+ - The interrupt controller node will have the emulated ITS node.
+
+Add ranges property to the gicv3 device tree node for hwdom.
+
+Issue-Id: SCM-1012
+Signed-off-by: Luca Fancellu <luca.fancellu@arm.com>
+Change-Id: If91d7c7bf1914489b14c4d6dd70ba78dfa8f38d5
+---
+ docs/misc/xen-command-line.pandoc |   4 +-
+ xen/arch/arm/domain_build.c       | 112 +++++++++++++++++++++++++++++-
+ xen/arch/arm/gic-v3.c             |   3 +
+ 3 files changed, 117 insertions(+), 2 deletions(-)
+
+diff --git a/docs/misc/xen-command-line.pandoc b/docs/misc/xen-command-line.pandoc
+index 16131c8118..857f90cf92 100644
+--- a/docs/misc/xen-command-line.pandoc
++++ b/docs/misc/xen-command-line.pandoc
+@@ -1839,7 +1839,9 @@ Flag to enable or disable support for PCI passthrough
+ 
+ > Default: `false`
+ 
+-Flag to enable or disable Xen PCI scan at boot.
++Flag to enable or disable Xen PCI scan at boot. When the flag is enabled, the
++hardware domain cannot have access to the real PCI bus, it will see the bus
++emulated by Xen.
+ 
+ ### pcid (x86)
+ > `= <boolean> | xpti=<bool>`
+diff --git a/xen/arch/arm/domain_build.c b/xen/arch/arm/domain_build.c
+index ae21e6d404..78a9a9f2eb 100644
+--- a/xen/arch/arm/domain_build.c
++++ b/xen/arch/arm/domain_build.c
+@@ -1989,6 +1989,104 @@ static int __init handle_device(struct domain *d, struct dt_device_node *dev,
+     return 0;
+ }
+ 
++#ifdef CONFIG_HAS_VPCI_GUEST_SUPPORT
++static int __init make_vpci_node(void *fdt)
++{
++    const uint64_t vpci_ecam_base = GUEST_VPCI_ECAM_BASE;
++    const uint64_t vpci_ecam_size = GUEST_VPCI_ECAM_SIZE;
++    /* reg is sized to be used for all the needed properties below */
++    __be32 reg[((GUEST_ROOT_ADDRESS_CELLS * 2) + GUEST_ROOT_SIZE_CELLS + 1)
++               * 2];
++    __be32 *cells;
++    char buf[22]; /* pcie@ + max 16 char address + '\0' */
++    int res;
++
++    snprintf(buf, sizeof(buf), "pcie@%"PRIx64, vpci_ecam_base);
++    dt_dprintk("Create vpci node\n");
++    res = fdt_begin_node(fdt, buf);
++    if ( res )
++        return res;
++
++    res = fdt_property_string(fdt, "compatible", "pci-host-ecam-generic");
++    if ( res )
++        return res;
++
++    res = fdt_property_string(fdt, "device_type", "pci");
++    if ( res )
++        return res;
++
++    /* Create reg property */
++    cells = &reg[0];
++    dt_child_set_range(&cells, GUEST_ROOT_ADDRESS_CELLS, GUEST_ROOT_SIZE_CELLS,
++                       vpci_ecam_base, vpci_ecam_size);
++
++    res = fdt_property(fdt, "reg", reg,
++                       (GUEST_ROOT_ADDRESS_CELLS +
++                       GUEST_ROOT_SIZE_CELLS) * sizeof(*reg));
++    if ( res )
++        return res;
++
++    /* Create bus-range property */
++    cells = &reg[0];
++    dt_set_cell(&cells, 1, 0);
++    dt_set_cell(&cells, 1, 255);
++    res = fdt_property(fdt, "bus-range", reg, 2 * sizeof(*reg));
++    if ( res )
++        return res;
++
++    res = fdt_property_cell(fdt, "#address-cells", 3);
++    if ( res )
++        return res;
++
++    res = fdt_property_cell(fdt, "#size-cells", 2);
++    if ( res )
++        return res;
++
++    res = fdt_property_string(fdt, "status", "okay");
++    if ( res )
++        return res;
++
++    /*
++     * Create ranges property as:
++     * <(PCI bitfield) (PCI address) (CPU address) (Size)>
++     */
++    cells = &reg[0];
++    dt_set_cell(&cells, 1, GUEST_VPCI_ADDR_TYPE_MEM);
++    dt_set_cell(&cells, GUEST_ROOT_ADDRESS_CELLS, GUEST_VPCI_MEM_ADDR);
++    dt_set_cell(&cells, GUEST_ROOT_ADDRESS_CELLS, GUEST_VPCI_MEM_ADDR);
++    dt_set_cell(&cells, GUEST_ROOT_SIZE_CELLS, GUEST_VPCI_MEM_SIZE);
++    dt_set_cell(&cells, 1, GUEST_VPCI_ADDR_TYPE_PREFETCH_MEM);
++    dt_set_cell(&cells, GUEST_ROOT_ADDRESS_CELLS, GUEST_VPCI_PREFETCH_MEM_ADDR);
++    dt_set_cell(&cells, GUEST_ROOT_ADDRESS_CELLS, GUEST_VPCI_PREFETCH_MEM_ADDR);
++    dt_set_cell(&cells, GUEST_ROOT_SIZE_CELLS, GUEST_VPCI_PREFETCH_MEM_SIZE);
++    res = fdt_property(fdt, "ranges", reg, sizeof(reg));
++    if ( res )
++        return res;
++
++    /*
++     * Create msi-map property identity-mapped as:
++     * <0 GUEST_PHANDLE_ITS 0 0x10000>
++     */
++    cells = &reg[0];
++    dt_set_cell(&cells, 1, 0);
++    dt_set_cell(&cells, 1, GUEST_PHANDLE_ITS);
++    dt_set_cell(&cells, 1, 0);
++    dt_set_cell(&cells, 1, 0x10000);
++    res = fdt_property(fdt, "msi-map", reg, 4 * sizeof(*reg));
++    if ( res )
++        return res;
++
++    res = fdt_end_node(fdt);
++
++    return res;
++}
++#else
++static inline int __init make_vpci_node(void *fdt)
++{
++    return 0;
++}
++#endif
++
+ static int __init handle_node(struct domain *d, struct kernel_info *kinfo,
+                               struct dt_device_node *node,
+                               p2m_type_t p2mt)
+@@ -2043,7 +2141,12 @@ static int __init handle_node(struct domain *d, struct kernel_info *kinfo,
+         dt_dprintk("  Skip it (blacklisted)\n");
+         return 0;
+     }
+-
++    /* If Xen is scanning the PCI devices, don't expose real bus to hwdom */
++    if ( hwdom_uses_vpci() && dt_device_type_is_equal(node, "pci") )
++    {
++        dt_dprintk("  Skip it (pci-scan is enabled)\n");
++        return 0;
++    }
+     /*
+      * Replace these nodes with our own. Note that the original may be
+      * used_by DOMID_XEN so this check comes first.
+@@ -2166,6 +2269,13 @@ static int __init handle_node(struct domain *d, struct kernel_info *kinfo,
+             if ( res )
+                 return res;
+         }
++
++        if ( hwdom_uses_vpci() )
++        {
++            res = make_vpci_node(kinfo->fdt);
++            if ( res )
++                return res;
++        }
+     }
+ 
+     res = fdt_end_node(kinfo->fdt);
+diff --git a/xen/arch/arm/gic-v3.c b/xen/arch/arm/gic-v3.c
+index dd5cb6facd..99726b0d3f 100644
+--- a/xen/arch/arm/gic-v3.c
++++ b/xen/arch/arm/gic-v3.c
+@@ -1327,6 +1327,9 @@ static int gicv3_make_hwdom_dt_node(const struct domain *d,
+     if ( res )
+         return res;
+ 
++    if ( hwdom_uses_vpci() )
++        return gicv3_its_make_emulated_dt_node(fdt);
++
+     return gicv3_its_make_hwdom_dt_nodes(d, gic, fdt);
+ }
+ 
+-- 
+2.25.1
+

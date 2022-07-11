@@ -1,0 +1,34 @@
+From 3711e7eae74b2b7cbe5fcf7b5ad32d4560ba28c3 Mon Sep 17 00:00:00 2001
+From: Oleksandr Andrushchenko <oleksandr_andrushchenko@epam.com>
+Date: Thu, 16 Jun 2022 14:38:58 +0100
+Subject: [PATCH 38/78] xen/pci: arm: add stub for is_memory_hole
+
+Add a stub for is_memory_hole which is required for PCI passthrough
+on Arm.
+
+Signed-off-by: Oleksandr Andrushchenko <oleksandr_andrushchenko@epam.com>
+---
+ xen/arch/arm/mm.c | 7 +++++++
+ 1 file changed, 7 insertions(+)
+
+diff --git a/xen/arch/arm/mm.c b/xen/arch/arm/mm.c
+index eea926d823..6d3443f645 100644
+--- a/xen/arch/arm/mm.c
++++ b/xen/arch/arm/mm.c
+@@ -1640,6 +1640,13 @@ unsigned long get_upper_mfn_bound(void)
+     return max_page - 1;
+ }
+ 
++bool is_memory_hole(mfn_t start, mfn_t end)
++{
++    /* TODO: this needs to be properly implemented. */
++    return true;
++}
++
++
+ /*
+  * Local variables:
+  * mode: C
+-- 
+2.25.1
+

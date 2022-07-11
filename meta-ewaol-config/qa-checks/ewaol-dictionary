@@ -6,6 +6,7 @@
 3rd
 4.16+stable0+f265444922
 aarch64
+acpi
 adlink_ava_backpanel.png
 adlink_ava_top.png
 adlink's
@@ -157,6 +158,7 @@ localhost
 loopback
 lts
 m
+machine_features
 maintainability
 manual_build_system_target_platforms
 manual_yocto_layers_layer_dependency_overview
@@ -188,7 +190,9 @@ oci
 optionally
 ostree
 parallelized
+passthrough
 pc
+pci
 pep8
 png
 podman
@@ -293,6 +297,8 @@ xen-devicetree.bb
 xendomains
 xendomains.service
 xen_kernelcfg_check.bbclass
+xen-pci-passthrough
+xen_pci_passthrough.yml
 xl
 yaml
 yamllint

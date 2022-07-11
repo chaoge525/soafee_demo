@@ -1,0 +1,114 @@
+From 374097640be4fcfebd723598e21e9cc91e4c7c6c Mon Sep 17 00:00:00 2001
+From: Oleksandr Andrushchenko <oleksandr_andrushchenko@epam.com>
+Date: Thu, 25 Nov 2021 13:02:49 +0200
+Subject: [PATCH 21/78] xen/arm: translate virtual PCI bus topology for guests
+
+There are three  originators for the PCI configuration space access:
+1. The domain that owns physical host bridge: MMIO handlers are
+there so we can update vPCI register handlers with the values
+written by the hardware domain, e.g. physical view of the registers
+vs guest's view on the configuration space.
+2. Guest access to the passed through PCI devices: we need to properly
+map virtual bus topology to the physical one, e.g. pass the configuration
+space access to the corresponding physical devices.
+3. Emulated host PCI bridge access. It doesn't exist in the physical
+topology, e.g. it can't be mapped to some physical host bridge.
+So, all access to the host bridge itself needs to be trapped and
+emulated.
+
+Signed-off-by: Oleksandr Andrushchenko <oleksandr_andrushchenko@epam.com>
+---
+ xen/arch/arm/vpci.c     | 18 ++++++++++++++++++
+ xen/drivers/vpci/vpci.c | 27 +++++++++++++++++++++++++++
+ xen/include/xen/vpci.h  |  1 +
+ 3 files changed, 46 insertions(+)
+
+diff --git a/xen/arch/arm/vpci.c b/xen/arch/arm/vpci.c
+index a9fc5817f9..a8670db6f6 100644
+--- a/xen/arch/arm/vpci.c
++++ b/xen/arch/arm/vpci.c
+@@ -41,6 +41,15 @@ static int vpci_mmio_read(struct vcpu *v, mmio_info_t *info,
+     /* data is needed to prevent a pointer cast on 32bit */
+     unsigned long data;
+ 
++#ifdef CONFIG_HAS_VPCI_GUEST_SUPPORT
++    /*
++     * For the passed through devices we need to map their virtual SBDF
++     * to the physical PCI device being passed through.
++     */
++    if ( !bridge && !vpci_translate_virtual_device(v->domain, &sbdf) )
++        return 1;
++#endif
++
+     if ( vpci_ecam_read(sbdf, ECAM_REG_OFFSET(info->gpa),
+                         1U << info->dabt.size, &data) )
+     {
+@@ -59,6 +68,15 @@ static int vpci_mmio_write(struct vcpu *v, mmio_info_t *info,
+     struct pci_host_bridge *bridge = p;
+     pci_sbdf_t sbdf = vpci_sbdf_from_gpa(bridge, info->gpa);
+ 
++#ifdef CONFIG_HAS_VPCI_GUEST_SUPPORT
++    /*
++     * For the passed through devices we need to map their virtual SBDF
++     * to the physical PCI device being passed through.
++     */
++    if ( !bridge && !vpci_translate_virtual_device(v->domain, &sbdf) )
++        return 1;
++#endif
++
+     return vpci_ecam_write(sbdf, ECAM_REG_OFFSET(info->gpa),
+                            1U << info->dabt.size, r);
+ }
+diff --git a/xen/drivers/vpci/vpci.c b/xen/drivers/vpci/vpci.c
+index c2fb4d4db2..bdc8c63f73 100644
+--- a/xen/drivers/vpci/vpci.c
++++ b/xen/drivers/vpci/vpci.c
+@@ -195,6 +195,33 @@ static void vpci_remove_virtual_device(struct domain *d,
+     pdev->vpci->guest_sbdf.sbdf = ~0;
+ }
+ 
++/*
++ * Find the physical device which is mapped to the virtual device
++ * and translate virtual SBDF to the physical one.
++ */
++bool vpci_translate_virtual_device(const struct domain *d, pci_sbdf_t *sbdf)
++{
++    struct pci_dev *pdev;
++
++    for_each_pdev( d, pdev )
++    {
++        bool found;
++
++        spin_lock(&pdev->vpci_lock);
++        found = pdev->vpci && (pdev->vpci->guest_sbdf.sbdf == sbdf->sbdf);
++        spin_unlock(&pdev->vpci_lock);
++
++        if ( found )
++        {
++            /* Replace guest SBDF with the physical one. */
++            *sbdf = pdev->sbdf;
++            return true;
++        }
++    }
++
++    return false;
++}
++
+ /* Notify vPCI that device is assigned to guest. */
+ int vpci_assign_device(struct domain *d, struct pci_dev *pdev)
+ {
+diff --git a/xen/include/xen/vpci.h b/xen/include/xen/vpci.h
+index 6ea6638072..69e38c2101 100644
+--- a/xen/include/xen/vpci.h
++++ b/xen/include/xen/vpci.h
+@@ -282,6 +282,7 @@ static inline void vpci_cancel_pending_locked(struct pci_dev *pdev)
+ /* Notify vPCI that device is assigned/de-assigned to/from guest. */
+ int vpci_assign_device(struct domain *d, struct pci_dev *pdev);
+ int vpci_deassign_device(struct domain *d, struct pci_dev *pdev);
++bool vpci_translate_virtual_device(const struct domain *d, pci_sbdf_t *sbdf);
+ #else
+ static inline int vpci_assign_device(struct domain *d, struct pci_dev *pdev)
+ {
+-- 
+2.25.1
+

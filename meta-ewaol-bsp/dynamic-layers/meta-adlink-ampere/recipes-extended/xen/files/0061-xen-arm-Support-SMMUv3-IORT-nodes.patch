@@ -1,0 +1,114 @@
+From 032ff180134de9efe5cbbf9bda01921ee4337670 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?T=C3=A9o=20Couprie=20Diaz?= <teo.coupriediaz@arm.com>
+Date: Tue, 3 May 2022 16:36:50 +0100
+Subject: [PATCH 61/78] xen/arm: Support SMMUv3 IORT nodes
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Added a first loop counting the number of nodes to allocate
+an array which will store references to the SMMUv3 nodes.
+Update the SMMUv3 IORT node struct with missing fields.
+
+Signed-off-by: Téo Couprie Diaz <teo.coupriediaz@arm.com>
+Change-Id: Ic74d15f320256c27b2ee611ddbf53672a0024099
+---
+ xen/arch/arm/acpi_iort.c    | 33 +++++++++++++++++++++++++++++++++
+ xen/include/acpi/actbl2.h   |  2 ++
+ xen/include/asm-arm/iommu.h |  4 ++++
+ 3 files changed, 39 insertions(+)
+
+diff --git a/xen/arch/arm/acpi_iort.c b/xen/arch/arm/acpi_iort.c
+index 916d782919..bd5d0bcc8b 100644
+--- a/xen/arch/arm/acpi_iort.c
++++ b/xen/arch/arm/acpi_iort.c
+@@ -1,4 +1,9 @@
+ #include <asm/acpi_iort.h>
++#include <asm/iommu_fwspec.h>
++
++/* FIXME: Use Xen lists. Don't know why x86 MCFG doesn't. */
++int iort_smmuv3_nodes_num;
++struct acpi_iort_node **iort_smmuv3_nodes;
+ 
+ struct acpi_table_iort *iort_table;
+ 
+@@ -40,6 +45,8 @@ int acpi_parse_iort(struct acpi_table_header *header)
+ {
+     struct acpi_iort_node *iort_node;
+ 
++    int i, smmuv3_count;
++
+     if ( !header )
+     {
+         printk(KERN_ERR "IORT table not found, aborting.\n");
+@@ -50,6 +57,28 @@ int acpi_parse_iort(struct acpi_table_header *header)
+     iort_node = (struct acpi_iort_node *)((vaddr_t)iort_table +
+                                           iort_table->node_offset);
+ 
++    iort_smmuv3_nodes_num = 0;
++    /* Count nodes */
++    for ( i = 0 ; i < iort_table->node_count ; i++ )
++    {
++        switch ( iort_node->type )
++        {
++            case ACPI_IORT_NODE_SMMU_V3:
++                iort_smmuv3_nodes_num += 1;
++                break;
++        }
++        iort_node = (struct acpi_iort_node *)((vaddr_t)iort_node
++                                              + iort_node->length);
++    }
++
++    iort_smmuv3_nodes = xmalloc_array(struct acpi_iort_node *,
++                                      iort_smmuv3_nodes_num);
++
++    /* Go back to the first node to parse them this time. */
++    iort_node = (struct acpi_iort_node *)((vaddr_t)iort_table +
++                                          iort_table->node_offset);
++
++    smmuv3_count = 0;
+     /* Go through every node. */
+     /* TODO: Add checks to see if it mapped anything ? */
+     while ( iort_node &&
+@@ -61,6 +90,10 @@ int acpi_parse_iort(struct acpi_table_header *header)
+             case ACPI_IORT_NODE_PCI_ROOT_COMPLEX:
+                 parse_pci_root_node(iort_node);
+                 break;
++            case ACPI_IORT_NODE_SMMU_V3:
++                iort_smmuv3_nodes[smmuv3_count] = iort_node;
++                smmuv3_count += 1;
++                break;
+         }
+         iort_node = (struct acpi_iort_node *)((vaddr_t)iort_node
+                                               + iort_node->length);
+diff --git a/xen/include/acpi/actbl2.h b/xen/include/acpi/actbl2.h
+index 2ad08ea467..a1f4a78939 100644
+--- a/xen/include/acpi/actbl2.h
++++ b/xen/include/acpi/actbl2.h
+@@ -691,6 +691,8 @@ struct acpi_iort_smmu_v3 {
+ 	u32 pri_gsiv;
+ 	u32 gerr_gsiv;
+ 	u32 sync_gsiv;
++	u32 proximity_domain;
++	u32 id_mapping_index;
+ };
+ 
+ /* Masks for Flags field above */
+diff --git a/xen/include/asm-arm/iommu.h b/xen/include/asm-arm/iommu.h
+index 937edc8373..621947ad13 100644
+--- a/xen/include/asm-arm/iommu.h
++++ b/xen/include/asm-arm/iommu.h
+@@ -14,6 +14,10 @@
+ #ifndef __ARCH_ARM_IOMMU_H__
+ #define __ARCH_ARM_IOMMU_H__
+ 
++/* IORT external SMMU variables defines. */
++extern int iort_smmuv3_nodes_num;
++extern struct acpi_iort_node **iort_smmuv3_nodes;
++
+ struct arch_iommu
+ {
+     /* Private information for the IOMMU drivers */
+-- 
+2.25.1
+

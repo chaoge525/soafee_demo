@@ -1,0 +1,46 @@
+From 78dcfd6e61ca8ff45e5d6a077d001d4b5fe8648e Mon Sep 17 00:00:00 2001
+From: Rahul Singh <rahul.singh@arm.com>
+Date: Mon, 20 Sep 2021 23:29:25 +0100
+Subject: [PATCH 76/78] xen/arm: xc_domain_ioport_permission(..) not supported
+ on ARM.
+
+ARM architecture does not implement I/O ports. Ignore this call on ARM
+to avoid the overhead of making a hypercall just for Xen to return
+-ENOSYS.
+
+Signed-off-by: Rahul Singh <rahul.singh@arm.com>
+Change-Id: Idacb58ff3449def8b97af941dc46a6da26d85d3b
+---
+ tools/libs/ctrl/xc_domain.c | 9 +++++++++
+ 1 file changed, 9 insertions(+)
+
+diff --git a/tools/libs/ctrl/xc_domain.c b/tools/libs/ctrl/xc_domain.c
+index b155d6afd2..ed36a7850d 100644
+--- a/tools/libs/ctrl/xc_domain.c
++++ b/tools/libs/ctrl/xc_domain.c
+@@ -1349,6 +1349,14 @@ int xc_domain_ioport_permission(xc_interface *xch,
+                                 uint32_t nr_ports,
+                                 uint32_t allow_access)
+ {
++#if defined(__arm__) || defined(__aarch64__)
++    /*
++     * The ARM architecture does not implement I/O ports.
++     * Avoid the overhead of making a hypercall just for Xen to return -ENOSYS.
++     * It is safe to ignore this call on ARM so we just return 0.
++     */
++    return 0;
++#else
+     DECLARE_DOMCTL;
+ 
+     domctl.cmd = XEN_DOMCTL_ioport_permission;
+@@ -1358,6 +1366,7 @@ int xc_domain_ioport_permission(xc_interface *xch,
+     domctl.u.ioport_permission.allow_access = allow_access;
+ 
+     return do_domctl(xch, &domctl);
++#endif
+ }
+ 
+ int xc_availheap(xc_interface *xch,
+-- 
+2.25.1
+

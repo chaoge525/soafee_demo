@@ -1,0 +1,166 @@
+From 6354f437269648b8b64a8f2da010c42f74a76104 Mon Sep 17 00:00:00 2001
+From: Rahul Singh <rahul.singh@arm.com>
+Date: Thu, 11 Nov 2021 16:26:46 +0000
+Subject: [PATCH 37/78] xen/arm: vpci: remove PCI I/O ranges property value
+
+PCI I/O space are not mapped to dom0 when PCI passthrough is enabled,
+also there is no vpci trap handler register for IO bar.
+
+Remove PCI I/O ranges property value from dom0 device tree node so that
+dom0 linux will not allocate I/O space for PCI devices if
+pci-passthrough is enabled.
+
+Issue-Id: SCM-3780
+Signed-off-by: Rahul Singh <rahul.singh@arm.com>
+Change-Id: I63c0ad0c08716931f7f73826f85437b0b7739eeb
+---
+ xen/arch/arm/domain_build.c   | 23 ++++++++++++
+ xen/common/device_tree.c      | 69 +++++++++++++++++++++++++++++++++++
+ xen/include/xen/device_tree.h | 10 +++++
+ 3 files changed, 102 insertions(+)
+
+diff --git a/xen/arch/arm/domain_build.c b/xen/arch/arm/domain_build.c
+index 070c611dc3..3966d08345 100644
+--- a/xen/arch/arm/domain_build.c
++++ b/xen/arch/arm/domain_build.c
+@@ -648,6 +648,25 @@ static void __init allocate_static_memory(struct domain *d,
+ }
+ #endif
+ 
++
++/*
++ * PCI IO bar are not mapped to dom0 when PCI passthrough is enabled, also
++ * there is no trap handler registered for IO bar, therefore remove the IO
++ * range property from the device tree node for dom0.
++ */
++static int handle_linux_pci_io_ranges(struct kernel_info *kinfo,
++                                      const struct dt_device_node *node)
++{
++    /*
++     * The current heuristic assumes that a device is a host bridge
++     * if the type is "pci" and then parent type is not "pci".
++     */
++    if ( node->parent && dt_device_type_is_equal(node->parent, "pci") )
++        return 0;
++
++    return dt_pci_remove_io_ranges(kinfo->fdt, node);
++}
++
+ /*
+  * When PCI passthrough is available we want to keep the
+  * "linux,pci-domain" in sync for every host bridge.
+@@ -723,6 +742,10 @@ static int __init write_properties(struct domain *d, struct kernel_info *kinfo,
+     if ( iommu_node && device_get_class(iommu_node) != DEVICE_IOMMU )
+         iommu_node = NULL;
+ 
++    res = handle_linux_pci_io_ranges(kinfo, node);
++    if ( res )
++        return res;
++
+     dt_for_each_property_node (node, prop)
+     {
+         const void *prop_data = prop->value;
+diff --git a/xen/common/device_tree.c b/xen/common/device_tree.c
+index 88ab41bf9a..ce924a4116 100644
+--- a/xen/common/device_tree.c
++++ b/xen/common/device_tree.c
+@@ -2195,6 +2195,75 @@ int dt_get_pci_domain_nr(struct dt_device_node *node)
+     return (u16)domain;
+ }
+ 
++int dt_pci_remove_io_ranges(void *fdt, const struct dt_device_node *dev)
++{
++    const struct dt_device_node *parent = NULL;
++    const struct dt_bus *bus, *pbus;
++    unsigned int rlen;
++    int na, ns, pna, pns, rone;
++    const __be32 *ranges;
++    __be32 regs[((GUEST_ROOT_ADDRESS_CELLS * 2) + GUEST_ROOT_SIZE_CELLS + 1)
++               * 2];
++    __be32 *addr = &regs[0];
++
++    bus = dt_match_bus(dev);
++    if ( !bus )
++        return 0; /* device is not a bus */
++
++    parent = dt_get_parent(dev);
++    if ( !parent )
++        return -EINVAL;
++
++    ranges = dt_get_property(dev, "ranges", &rlen);
++    if ( !ranges )
++    {
++        printk(XENLOG_ERR "DT: no ranges; cannot enumerate %s\n",
++               dev->full_name);
++        return -EINVAL;
++    }
++    if ( !rlen ) /* Nothing to do */
++        return 0;
++
++    bus->count_cells(dev, &na, &ns);
++    if ( !DT_CHECK_COUNTS(na, ns) )
++    {
++        printk(XENLOG_ERR "dt_parse: Bad cell count for device %s\n",
++               dev->full_name);
++        return -EINVAL;
++    }
++
++    pbus = dt_match_bus(parent);
++    if ( !pbus )
++    {
++        printk(XENLOG_ERR "DT: %s is not a valid bus\n", parent->full_name);
++        return -EINVAL;
++    }
++
++    pbus->count_cells(dev, &pna, &pns);
++    if ( !DT_CHECK_COUNTS(pna, pns) )
++    {
++        printk(XENLOG_ERR "dt_parse: Bad cell count for parent %s\n",
++               dev->full_name);
++        return -EINVAL;
++    }
++
++    /* Now walk through the ranges */
++    rlen /= 4;
++    rone = na + pna + ns;
++    for ( ; rlen >= rone; rlen -= rone, ranges += rone )
++    {
++        unsigned int flags = bus->get_flags(ranges);
++        if ( flags & IORESOURCE_IO )
++            continue;
++
++        memcpy(addr, ranges, 4 * rone);
++
++        addr += rone;
++    }
++
++    return fdt_property(fdt, "ranges", regs, sizeof(regs));
++}
++
+ /*
+  * Local variables:
+  * mode: C
+diff --git a/xen/include/xen/device_tree.h b/xen/include/xen/device_tree.h
+index 2599b08128..45d5ad1cdf 100644
+--- a/xen/include/xen/device_tree.h
++++ b/xen/include/xen/device_tree.h
+@@ -860,6 +860,16 @@ int dt_map_id(struct dt_device_node *np, u32 id, const char *map_name,
+               const char *map_mask_name, struct dt_device_node **target,
+               u32 *id_out);
+ 
++/**
++ * dt_pci_remove_io_range - Remove the PCI I/O range property value.
++ * @fdt: Pointer to the file descriptor tree.
++ * @node: Device tree node.
++ *
++ * This function will remove the PCI IO range property from the PCI device tree
++ * node.
++ */
++int dt_pci_remove_io_ranges(void *fdt, const struct dt_device_node *node);
++
+ struct dt_device_node *dt_find_node_by_phandle(dt_phandle handle);
+ 
+ #ifdef CONFIG_DEVICE_TREE_DEBUG
+-- 
+2.25.1
+

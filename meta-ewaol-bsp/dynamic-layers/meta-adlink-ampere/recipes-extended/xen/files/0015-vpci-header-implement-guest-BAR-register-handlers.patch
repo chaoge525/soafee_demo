@@ -1,0 +1,162 @@
+From 4a60624c193a138dbd002dc561dbef9eccfe5b6a Mon Sep 17 00:00:00 2001
+From: Oleksandr Andrushchenko <oleksandr_andrushchenko@epam.com>
+Date: Thu, 25 Nov 2021 13:02:43 +0200
+Subject: [PATCH 15/78] vpci/header: implement guest BAR register handlers
+
+Add relevant vpci register handlers when assigning PCI device to a domain
+and remove those when de-assigning. This allows having different
+handlers for different domains, e.g. hwdom and other guests.
+
+Emulate guest BAR register values: this allows creating a guest view
+of the registers and emulates size and properties probe as it is done
+during PCI device enumeration by the guest.
+
+ROM BAR is only handled for the hardware domain and for guest domains
+there is a stub: at the moment PCI expansion ROM handling is supported
+for x86 only and it might not be used by other architectures without
+emulating x86. Other use-cases may include using that expansion ROM before
+Xen boots, hence no emulation is needed in Xen itself. Or when a guest
+wants to use the ROM code which seems to be rare.
+
+Signed-off-by: Oleksandr Andrushchenko <oleksandr_andrushchenko@epam.com>
+---
+ xen/drivers/vpci/header.c | 72 +++++++++++++++++++++++++++++++++++----
+ xen/include/xen/vpci.h    |  3 ++
+ 2 files changed, 69 insertions(+), 6 deletions(-)
+
+diff --git a/xen/drivers/vpci/header.c b/xen/drivers/vpci/header.c
+index ba333fb2f9..8880d34ebf 100644
+--- a/xen/drivers/vpci/header.c
++++ b/xen/drivers/vpci/header.c
+@@ -433,6 +433,48 @@ static void bar_write(const struct pci_dev *pdev, unsigned int reg,
+     pci_conf_write32(pdev->sbdf, reg, val);
+ }
+ 
++static void guest_bar_write(const struct pci_dev *pdev, unsigned int reg,
++                            uint32_t val, void *data)
++{
++    struct vpci_bar *bar = data;
++    bool hi = false;
++
++    if ( bar->type == VPCI_BAR_MEM64_HI )
++    {
++        ASSERT(reg > PCI_BASE_ADDRESS_0);
++        bar--;
++        hi = true;
++    }
++    else
++    {
++        val &= PCI_BASE_ADDRESS_MEM_MASK;
++        val |= bar->type == VPCI_BAR_MEM32 ? PCI_BASE_ADDRESS_MEM_TYPE_32
++                                           : PCI_BASE_ADDRESS_MEM_TYPE_64;
++        val |= bar->prefetchable ? PCI_BASE_ADDRESS_MEM_PREFETCH : 0;
++    }
++
++    bar->guest_reg &= ~(0xffffffffull << (hi ? 32 : 0));
++    bar->guest_reg |= (uint64_t)val << (hi ? 32 : 0);
++
++    bar->guest_reg &= ~(bar->size - 1) | ~PCI_BASE_ADDRESS_MEM_MASK;
++}
++
++static uint32_t guest_bar_read(const struct pci_dev *pdev, unsigned int reg,
++                               void *data)
++{
++    const struct vpci_bar *bar = data;
++    bool hi = false;
++
++    if ( bar->type == VPCI_BAR_MEM64_HI )
++    {
++        ASSERT(reg > PCI_BASE_ADDRESS_0);
++        bar--;
++        hi = true;
++    }
++
++    return bar->guest_reg >> (hi ? 32 : 0);
++}
++
+ static void rom_write(const struct pci_dev *pdev, unsigned int reg,
+                       uint32_t val, void *data)
+ {
+@@ -481,6 +523,17 @@ static void rom_write(const struct pci_dev *pdev, unsigned int reg,
+         rom->addr = val & PCI_ROM_ADDRESS_MASK;
+ }
+ 
++static void guest_rom_write(const struct pci_dev *pdev, unsigned int reg,
++                            uint32_t val, void *data)
++{
++}
++
++static uint32_t guest_rom_read(const struct pci_dev *pdev, unsigned int reg,
++                               void *data)
++{
++    return 0xffffffff;
++}
++
+ static int init_bars(struct pci_dev *pdev)
+ {
+     uint16_t cmd;
+@@ -489,6 +542,7 @@ static int init_bars(struct pci_dev *pdev)
+     struct vpci_header *header = &pdev->vpci->header;
+     struct vpci_bar *bars = header->bars;
+     int rc;
++    bool is_hwdom = is_hardware_domain(pdev->domain);
+ 
+     switch ( pci_conf_read8(pdev->sbdf, PCI_HEADER_TYPE) & 0x7f )
+     {
+@@ -528,8 +582,10 @@ static int init_bars(struct pci_dev *pdev)
+         if ( i && bars[i - 1].type == VPCI_BAR_MEM64_LO )
+         {
+             bars[i].type = VPCI_BAR_MEM64_HI;
+-            rc = vpci_add_register(pdev->vpci, vpci_hw_read32, bar_write, reg,
+-                                   4, &bars[i]);
++            rc = vpci_add_register(pdev->vpci,
++                                   is_hwdom ? vpci_hw_read32 : guest_bar_read,
++                                   is_hwdom ? bar_write : guest_bar_write,
++                                   reg, 4, &bars[i]);
+             if ( rc )
+             {
+                 pci_conf_write16(pdev->sbdf, PCI_COMMAND, cmd);
+@@ -569,8 +625,10 @@ static int init_bars(struct pci_dev *pdev)
+         bars[i].size = size;
+         bars[i].prefetchable = val & PCI_BASE_ADDRESS_MEM_PREFETCH;
+ 
+-        rc = vpci_add_register(pdev->vpci, vpci_hw_read32, bar_write, reg, 4,
+-                               &bars[i]);
++        rc = vpci_add_register(pdev->vpci,
++                               is_hwdom ? vpci_hw_read32 : guest_bar_read,
++                               is_hwdom ? bar_write : guest_bar_write,
++                               reg, 4, &bars[i]);
+         if ( rc )
+         {
+             pci_conf_write16(pdev->sbdf, PCI_COMMAND, cmd);
+@@ -590,8 +648,10 @@ static int init_bars(struct pci_dev *pdev)
+         header->rom_enabled = pci_conf_read32(pdev->sbdf, rom_reg) &
+                               PCI_ROM_ADDRESS_ENABLE;
+ 
+-        rc = vpci_add_register(pdev->vpci, vpci_hw_read32, rom_write, rom_reg,
+-                               4, rom);
++        rc = vpci_add_register(pdev->vpci,
++                               is_hwdom ? vpci_hw_read32 : guest_rom_read,
++                               is_hwdom ? rom_write : guest_rom_write,
++                               rom_reg, 4, rom);
+         if ( rc )
+             rom->type = VPCI_BAR_EMPTY;
+     }
+diff --git a/xen/include/xen/vpci.h b/xen/include/xen/vpci.h
+index 3bb981ee25..8e4d8dd937 100644
+--- a/xen/include/xen/vpci.h
++++ b/xen/include/xen/vpci.h
+@@ -68,7 +68,10 @@ struct vpci {
+     struct vpci_header {
+         /* Information about the PCI BARs of this device. */
+         struct vpci_bar {
++            /* Physical view of the BAR. */
+             uint64_t addr;
++            /* Guest view of the BAR: address and lower bits. */
++            uint64_t guest_reg;
+             uint64_t size;
+             enum {
+                 VPCI_BAR_EMPTY,
+-- 
+2.25.1
+

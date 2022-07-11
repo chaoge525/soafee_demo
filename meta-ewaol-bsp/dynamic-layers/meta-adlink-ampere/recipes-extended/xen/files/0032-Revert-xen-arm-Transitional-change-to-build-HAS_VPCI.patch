@@ -1,0 +1,49 @@
+From c24f4788e5f15311588ba675cb8b61c1b6ffd003 Mon Sep 17 00:00:00 2001
+From: Rahul Singh <rahul.singh@arm.com>
+Date: Thu, 18 Nov 2021 12:56:46 +0000
+Subject: [PATCH 32/78] Revert "xen/arm: Transitional change to build HAS_VPCI
+ on ARM."
+
+This reverts commit f38c8591351e29f70bdfeb7c5d360dea76fbe0a2.
+---
+ xen/drivers/vpci/header.c | 2 --
+ xen/include/asm-arm/pci.h | 8 --------
+ 2 files changed, 10 deletions(-)
+
+diff --git a/xen/drivers/vpci/header.c b/xen/drivers/vpci/header.c
+index 41dda3c43d..8614e29a2e 100644
+--- a/xen/drivers/vpci/header.c
++++ b/xen/drivers/vpci/header.c
+@@ -116,10 +116,8 @@ static void modify_decoding(const struct pci_dev *pdev, uint16_t cmd,
+      * FIXME: punching holes after the p2m has been set up might be racy for
+      * DomU usage, needs to be revisited.
+      */
+-#ifdef CONFIG_HAS_PCI_MSI
+     if ( map && !rom_only && vpci_make_msix_hole(pdev) )
+         return;
+-#endif
+ 
+     for ( i = 0; i < ARRAY_SIZE(header->bars); i++ )
+     {
+diff --git a/xen/include/asm-arm/pci.h b/xen/include/asm-arm/pci.h
+index 34c99cbcaf..e135b842c5 100644
+--- a/xen/include/asm-arm/pci.h
++++ b/xen/include/asm-arm/pci.h
+@@ -28,14 +28,6 @@ struct arch_pci_dev {
+     struct device dev;
+ };
+ 
+-/* Arch-specific MSI data for vPCI. */
+-struct vpci_arch_msi {
+-};
+-
+-/* Arch-specific MSI-X entry data for vPCI. */
+-struct vpci_arch_msix_entry {
+-};
+-
+ /*
+  * Because of the header cross-dependencies, e.g. we need both
+  * struct pci_dev and struct arch_pci_dev at the same time, this cannot be
+-- 
+2.25.1
+

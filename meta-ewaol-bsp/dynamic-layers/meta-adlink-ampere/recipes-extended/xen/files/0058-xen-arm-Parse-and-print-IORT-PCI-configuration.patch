@@ -1,0 +1,143 @@
+From 0d45adb618738adffbf2ce48f23efa5cb4607432 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?T=C3=A9o=20Couprie=20Diaz?= <teo.coupriediaz@arm.com>
+Date: Fri, 25 Feb 2022 13:10:58 +0000
+Subject: [PATCH 58/78] xen/arm: Parse and print IORT PCI configuration
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Parse IORT in order to find the interrupt number linked to each
+PCI segment and print the data on boot.
+
+Signed-off-by: Téo Couprie Diaz <teo.coupriediaz@arm.com>
+Change-Id: I096ae8ffb9576abbbf9a37b6c7ea07c3cc39e289
+---
+ xen/arch/arm/Makefile    |  1 +
+ xen/arch/arm/acpi_iort.c | 69 ++++++++++++++++++++++++++++++++++++++++
+ xen/arch/arm/acpi_iort.h |  4 +++
+ xen/arch/arm/setup.c     |  2 ++
+ 4 files changed, 76 insertions(+)
+ create mode 100644 xen/arch/arm/acpi_iort.c
+ create mode 100644 xen/arch/arm/acpi_iort.h
+
+diff --git a/xen/arch/arm/Makefile b/xen/arch/arm/Makefile
+index c3059d477e..34138ecde8 100644
+--- a/xen/arch/arm/Makefile
++++ b/xen/arch/arm/Makefile
+@@ -67,6 +67,7 @@ obj-y += vsmc.o
+ obj-y += vpsci.o
+ obj-y += vuart.o
+ 
++obj-$(CONFIG_ACPI) += acpi_iort.o
+ obj-$(CONFIG_ACPI) += acpi_mmcfg.o
+ 
+ extra-y += xen.lds
+diff --git a/xen/arch/arm/acpi_iort.c b/xen/arch/arm/acpi_iort.c
+new file mode 100644
+index 0000000000..f1da394b5f
+--- /dev/null
++++ b/xen/arch/arm/acpi_iort.c
+@@ -0,0 +1,69 @@
++#include "acpi_iort.h"
++
++
++// TODO: Use ACPI macros (acmacros.h)
++int acpi_parse_iort(struct acpi_table_header *header)
++{
++    struct acpi_table_iort *iort;
++    struct acpi_iort_node *iort_node;
++    struct acpi_iort_node *temp_node;
++    struct acpi_iort_root_complex pci_node;
++    struct acpi_iort_id_mapping mapping;
++
++    void* cursor = NULL;
++    uint32_t ITS;
++
++    if ( !header )
++    {
++        printk(KERN_ERR "IORT table not found, aborting.\n");
++        return -EINVAL;
++    }
++
++    iort = (struct acpi_table_iort *)header;
++
++    iort_node = (struct acpi_iort_node *)((vaddr_t)iort + iort->node_offset);
++    /* Go through every node and try to follow PCI nodes to an ITS */
++    /* TODO: Add checks to see if it mapped anything ? */
++    while ( iort_node &&
++            (vaddr_t)iort_node < (vaddr_t)iort + iort->header.length )
++    {
++        if ( iort_node->type != ACPI_IORT_NODE_PCI_ROOT_COMPLEX )
++        {
++            iort_node = (struct acpi_iort_node *)((vaddr_t)iort_node
++                                                  + iort_node->length);
++            continue;
++        }
++
++        pci_node = *(struct acpi_iort_root_complex *)iort_node->node_data;
++
++        cursor = iort_node;
++        temp_node = iort_node;
++        /* TODO: Prevent infinite loops ? Should not happen... */
++        while( temp_node->type != ACPI_IORT_NODE_ITS_GROUP )
++        {
++            cursor = (void *)((vaddr_t)cursor + temp_node->mapping_offset);
++            mapping = *(struct acpi_iort_id_mapping *)cursor;
++            cursor = (void *)((vaddr_t)iort + mapping.output_reference);
++            printk(KERN_INFO "\tMapping reference going to : 0x%"PRIXPTR"\n",
++                   (vaddr_t)cursor - (vaddr_t)iort);
++            temp_node = (struct acpi_iort_node *)cursor;
++        }
++
++        /* TODO: Verify there is only one possible ITS per root complex */
++        ITS = ((struct acpi_iort_its_group *)
++               &temp_node->node_data)->identifiers[0];
++
++        printk(KERN_INFO "\tSegment : 0x%X\n", pci_node.pci_segment_number);
++        printk(KERN_INFO "\tITS number : 0x%X\n", ITS);
++
++        iort_node = (struct acpi_iort_node *)((vaddr_t)iort_node
++                                               + iort_node->length);
++    }
++
++    if ( !cursor )
++    {
++        printk(KERN_ERR "No PCI host bridge node found.\n");
++        return -ENODEV;
++    }
++    return 0;
++}
+\ No newline at end of file
+diff --git a/xen/arch/arm/acpi_iort.h b/xen/arch/arm/acpi_iort.h
+new file mode 100644
+index 0000000000..e592df9c42
+--- /dev/null
++++ b/xen/arch/arm/acpi_iort.h
+@@ -0,0 +1,4 @@
++#include <xen/acpi.h>
++#include <acpi/actbl2.h>
++
++int acpi_parse_iort(struct acpi_table_header *header);
+diff --git a/xen/arch/arm/setup.c b/xen/arch/arm/setup.c
+index 96a8d08980..886c80c2db 100644
+--- a/xen/arch/arm/setup.c
++++ b/xen/arch/arm/setup.c
+@@ -54,6 +54,7 @@
+ #include <xsm/xsm.h>
+ #include <asm/acpi.h>
+ 
++#include "acpi_iort.h"
+ #include "acpi_mmcfg.h"
+ 
+ struct bootinfo __initdata bootinfo;
+@@ -1029,6 +1030,7 @@ void __init start_xen(unsigned long boot_phys_offset,
+     /* TODO: Fill PCI configuration */
+     printk("======= ACPI PCI parsing =======\n");
+     acpi_table_parse(ACPI_SIG_MCFG, acpi_parse_mcfg);
++    acpi_table_parse(ACPI_SIG_IORT, acpi_parse_iort);
+ #endif
+     /* Create initial domain 0. */
+     if ( !is_dom0less_mode() )
+-- 
+2.25.1
+

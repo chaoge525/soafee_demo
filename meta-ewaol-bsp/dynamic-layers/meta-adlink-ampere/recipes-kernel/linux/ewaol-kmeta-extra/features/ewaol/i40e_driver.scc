@@ -1,0 +1,3 @@
+define KFEATURE_DESCRIPTION "Feature enabling support for i40e network adapter driver"
+
+kconf non-hardware i40e_driver.cfg

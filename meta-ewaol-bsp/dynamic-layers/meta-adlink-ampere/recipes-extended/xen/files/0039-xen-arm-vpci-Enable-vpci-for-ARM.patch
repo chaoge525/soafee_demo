@@ -1,0 +1,28 @@
+From 792d431bdbb5fda8f0ae4ebca50cd1eca8a260ee Mon Sep 17 00:00:00 2001
+From: Rahul Singh <rahul.singh@arm.com>
+Date: Wed, 8 Dec 2021 15:58:41 +0000
+Subject: [PATCH 39/78] xen/arm: vpci: Enable vpci for ARM
+
+VPCI is disbaled on ARM. Enable it to test the PCI passthrough support.
+
+Signed-off-by: Rahul Singh <rahul.singh@arm.com>
+---
+ xen/include/asm-arm/domain.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/xen/include/asm-arm/domain.h b/xen/include/asm-arm/domain.h
+index 9b3647587a..635ad2e9e3 100644
+--- a/xen/include/asm-arm/domain.h
++++ b/xen/include/asm-arm/domain.h
+@@ -264,7 +264,7 @@ static inline void arch_vcpu_block(struct vcpu *v) {}
+ #define arch_vm_assist_valid_mask(d) (1UL << VMASST_TYPE_runstate_update_flag)
+ 
+ /* vPCI is not available on Arm */
+-#define has_vpci(d)    ({ (void)(d); false; })
++#define has_vpci(d)    ({ (void)(d); true; })
+ 
+ #endif /* __ASM_DOMAIN_H__ */
+ 
+-- 
+2.25.1
+

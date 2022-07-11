@@ -1,0 +1,79 @@
+From cdde5b8e6b8c89612ca1d71ca518ac2b6c5fd5c8 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?T=C3=A9o=20Couprie=20Diaz?= <teo.coupriediaz@arm.com>
+Date: Tue, 12 Apr 2022 11:57:02 +0100
+Subject: [PATCH 66/78] xen/arm: Add N1SDP host bridge ACPI device
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Add some identifiers for differentiating N1SDP from
+other host bridges later onbecause of its quirks.
+
+Signed-off-by: Téo Couprie Diaz <teo.coupriediaz@arm.com>
+Change-Id: Ie8fb2b87c7c6c02fce39e368311df116541a192d
+---
+ xen/arch/arm/pci/pcie-n1sdp.c | 24 ++++++++++++++++++++++++
+ xen/include/asm-arm/pci.h     |  5 +++++
+ 2 files changed, 29 insertions(+)
+
+diff --git a/xen/arch/arm/pci/pcie-n1sdp.c b/xen/arch/arm/pci/pcie-n1sdp.c
+index e3b5826413..bf92baad9e 100644
+--- a/xen/arch/arm/pci/pcie-n1sdp.c
++++ b/xen/arch/arm/pci/pcie-n1sdp.c
+@@ -28,6 +28,7 @@
+  *
+  */
+ 
++#include <xen/acpi.h>
+ #include <asm/device.h>
+ #include <asm/io.h>
+ #include <xen/pci.h>
+@@ -228,6 +229,29 @@ DT_DEVICE_START(pci_gen, "PCIE N1SDP", DEVICE_PCI_HOSTBRIDGE)
+ .init = n1sdp_pcie_dt_init,
+ DT_DEVICE_END
+ 
++
++#ifdef CONFIG_ACPI
++static int n1sdp_pcie_acpi_init(const void *data)
++{
++    struct acpi_mcfg_allocation *mcfg_config;
++
++    mcfg_config = (struct acpi_mcfg_allocation *)data;
++
++    switch (mcfg_config->pci_segment) {
++        case 0:
++            return acpi_pci_host_common_probe(mcfg_config, &pci_n1sdp_pcie_ecam_ops);
++        case 1:
++            return acpi_pci_host_common_probe(mcfg_config, &pci_n1sdp_ccix_ecam_ops);
++    }
++
++    return -EINVAL;
++}
++ACPI_DEVICE_START(apci_gen, "PCIE N1SDP", DEVICE_PCI_HOSTBRIDGE)
++.class_type = ACPI_N1SDP_HOST_BRIDGE,
++.init = n1sdp_pcie_acpi_init,
++ACPI_DEVICE_END
++#endif
++
+ /*
+  * Local variables:
+  * mode: C
+diff --git a/xen/include/asm-arm/pci.h b/xen/include/asm-arm/pci.h
+index 9545a64503..4f1c62c4bb 100644
+--- a/xen/include/asm-arm/pci.h
++++ b/xen/include/asm-arm/pci.h
+@@ -21,6 +21,11 @@
+ 
+ #define pci_to_dev(pcidev) (&(pcidev)->arch.dev)
+ 
++#ifdef CONFIG_ACPI
++#define ACPI_GENERIC_HOST_BRIDGE 0x00
++#define ACPI_N1SDP_HOST_BRIDGE   0x01
++#endif
++
+ extern bool pci_passthrough_enabled;
+ extern bool pci_scan_enabled;
+ 
+-- 
+2.25.1
+

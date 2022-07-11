@@ -1,0 +1,60 @@
+From 0759724c9b7003edf5d622c7ffe7994e0b015c80 Mon Sep 17 00:00:00 2001
+From: Oleksandr Tyshchenko <oleksandr_tyshchenko@epam.com>
+Date: Tue, 5 Oct 2021 16:47:10 +0100
+Subject: [PATCH 26/78] pci/arm: Use iommu_add_pci_device() instead of arch
+ hook
+
+On Arm we need to parse DT PCI-IOMMU specifier and provide it to
+the driver (for describing the relationship between PCI devices
+and IOMMUs) before adding a device to it.
+
+Also clarify the check of the return value as iommu_add_pci_device
+can return >0 if a device doesn't need to be protected by the IOMMU
+and print a warning if iommu_add_pci_device failed.
+
+Signed-off-by: Oleksandr Tyshchenko <oleksandr_tyshchenko@epam.com>
+Change-Id: I67598f4ff9983408e5258bae47b68c7b3c6e13b9
+---
+ xen/drivers/passthrough/pci.c | 17 +++++++++++++++--
+ 1 file changed, 15 insertions(+), 2 deletions(-)
+
+diff --git a/xen/drivers/passthrough/pci.c b/xen/drivers/passthrough/pci.c
+index 2a9bd54535..6718e029dc 100644
+--- a/xen/drivers/passthrough/pci.c
++++ b/xen/drivers/passthrough/pci.c
+@@ -1328,17 +1328,30 @@ static int iommu_add_device(struct pci_dev *pdev)
+     if ( !is_iommu_enabled(pdev->domain) )
+         return 0;
+ 
++#ifdef CONFIG_ARM
++    rc = iommu_add_pci_device(pdev->devfn, pdev);
++#else
+     rc = hd->platform_ops->add_device(pdev->devfn, pci_to_dev(pdev));
+-    if ( rc || !pdev->phantom_stride )
++#endif
++    if ( rc < 0 || !pdev->phantom_stride )
++    {
++        if ( rc < 0 )
++            printk(XENLOG_WARNING "IOMMU: add %pp failed (%d)\n",
++                   &pdev->sbdf, rc);
+         return rc;
++    }
+ 
+     for ( devfn = pdev->devfn ; ; )
+     {
+         devfn += pdev->phantom_stride;
+         if ( PCI_SLOT(devfn) != PCI_SLOT(pdev->devfn) )
+             return 0;
++#ifdef CONFIG_ARM
++        rc = iommu_add_pci_device(pdev->devfn, pdev);
++#else
+         rc = hd->platform_ops->add_device(devfn, pci_to_dev(pdev));
+-        if ( rc )
++#endif
++        if ( rc < 0 )
+             printk(XENLOG_WARNING "IOMMU: add %pp failed (%d)\n",
+                    &pdev->sbdf, rc);
+     }
+-- 
+2.25.1
+

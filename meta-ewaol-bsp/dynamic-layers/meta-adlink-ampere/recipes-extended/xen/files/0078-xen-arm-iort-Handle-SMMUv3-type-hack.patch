@@ -1,0 +1,36 @@
+From 53bad54a096110a8bc63ef3ddef799c28b0f6c3b Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?T=C3=A9o=20Couprie=20Diaz?= <teo.coupriediaz@arm.com>
+Date: Fri, 17 Jun 2022 14:16:38 +0100
+Subject: [PATCH 78/78] xen/arm: iort: Handle SMMUv3 type hack
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+In order to deactivate the SMMUv3 for the dom0 kernel we currently
+change the type of the IORT node to 0xFF. This way the kernel does not
+use the SMMUv3 but we need to take it into account while setting up SMMUv3
+for Xen as it is done after this change in the ACPI table.
+
+Change-Id: Ib5298cb5967a64f189dd611f86f8fa23d5361296
+Signed-off-by: Téo Couprie Diaz <teo.coupriediaz@arm.com>
+---
+ xen/arch/arm/acpi_iort.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/xen/arch/arm/acpi_iort.c b/xen/arch/arm/acpi_iort.c
+index 49d814961e..f82be54b47 100644
+--- a/xen/arch/arm/acpi_iort.c
++++ b/xen/arch/arm/acpi_iort.c
+@@ -219,7 +219,8 @@ struct acpi_iort_node *iort_node_map_id(struct acpi_iort_node *node,
+          * FIXME: This is because we are currently disabling SMMUv3 by changing its type in Xen.
+          *        We should modify the dom0 table instead.
+          */
+-        if ( IORT_TYPE_MASK(node->type) & type_mask )
++        if ( IORT_TYPE_MASK(node->type) & type_mask ||
++            ((type_mask & IORT_IOMMU_TYPE) && node->type == 0xFF) )
+         {
+             if (id_out)
+                 *id_out = id;
+-- 
+2.25.1
+

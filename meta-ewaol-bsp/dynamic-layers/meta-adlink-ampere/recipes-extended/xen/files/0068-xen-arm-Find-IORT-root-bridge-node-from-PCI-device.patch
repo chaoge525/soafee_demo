@@ -1,0 +1,154 @@
+From e84af4b11f165b6ea8ea11802ca68a40f3e450dc Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?T=C3=A9o=20Couprie=20Diaz?= <teo.coupriediaz@arm.com>
+Date: Wed, 4 May 2022 17:00:58 +0100
+Subject: [PATCH 68/78] xen/arm: Find IORT root bridge node from PCI device
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Signed-off-by: Téo Couprie Diaz <teo.coupriediaz@arm.com>
+Change-Id: I6b34ef3546b91a7635fa6effcc7c0cb8275b6df2
+---
+ xen/arch/arm/acpi_iort.c           | 18 +++++++++++++++++-
+ xen/arch/arm/pci/pci-host-common.c | 30 ++++++++++++++++++++++++++++++
+ xen/include/asm-arm/pci.h          |  5 +++++
+ 3 files changed, 52 insertions(+), 1 deletion(-)
+
+diff --git a/xen/arch/arm/acpi_iort.c b/xen/arch/arm/acpi_iort.c
+index bd5d0bcc8b..6e3b0d3f6b 100644
+--- a/xen/arch/arm/acpi_iort.c
++++ b/xen/arch/arm/acpi_iort.c
+@@ -5,6 +5,9 @@
+ int iort_smmuv3_nodes_num;
+ struct acpi_iort_node **iort_smmuv3_nodes;
+ 
++int iort_pci_root_nodes_num;
++struct acpi_iort_node **iort_pci_root_nodes;
++
+ struct acpi_table_iort *iort_table;
+ 
+ void parse_pci_root_node(struct acpi_iort_node *node)
+@@ -45,7 +48,7 @@ int acpi_parse_iort(struct acpi_table_header *header)
+ {
+     struct acpi_iort_node *iort_node;
+ 
+-    int i, smmuv3_count;
++    int i, smmuv3_count, pci_root_count;
+ 
+     if ( !header )
+     {
+@@ -58,6 +61,7 @@ int acpi_parse_iort(struct acpi_table_header *header)
+                                           iort_table->node_offset);
+ 
+     iort_smmuv3_nodes_num = 0;
++    iort_pci_root_nodes_num = 0;
+     /* Count nodes */
+     for ( i = 0 ; i < iort_table->node_count ; i++ )
+     {
+@@ -66,6 +70,9 @@ int acpi_parse_iort(struct acpi_table_header *header)
+             case ACPI_IORT_NODE_SMMU_V3:
+                 iort_smmuv3_nodes_num += 1;
+                 break;
++            case ACPI_IORT_NODE_PCI_ROOT_COMPLEX:
++                iort_pci_root_nodes_num += 1;
++                break;
+         }
+         iort_node = (struct acpi_iort_node *)((vaddr_t)iort_node
+                                               + iort_node->length);
+@@ -73,12 +80,15 @@ int acpi_parse_iort(struct acpi_table_header *header)
+ 
+     iort_smmuv3_nodes = xmalloc_array(struct acpi_iort_node *,
+                                       iort_smmuv3_nodes_num);
++    iort_pci_root_nodes = xmalloc_array(struct acpi_iort_node *,
++                                        iort_pci_root_nodes_num);
+ 
+     /* Go back to the first node to parse them this time. */
+     iort_node = (struct acpi_iort_node *)((vaddr_t)iort_table +
+                                           iort_table->node_offset);
+ 
+     smmuv3_count = 0;
++    pci_root_count = 0;
+     /* Go through every node. */
+     /* TODO: Add checks to see if it mapped anything ? */
+     while ( iort_node &&
+@@ -88,7 +98,13 @@ int acpi_parse_iort(struct acpi_table_header *header)
+         switch ( iort_node->type )
+         {
+             case ACPI_IORT_NODE_PCI_ROOT_COMPLEX:
++                /*
++                 * Store the position of the node to be able to follow the
++                 * ID mappings later during PCI device mapping.
++                 */
++                iort_pci_root_nodes[pci_root_count] = iort_node;
+                 parse_pci_root_node(iort_node);
++                pci_root_count += 1;
+                 break;
+             case ACPI_IORT_NODE_SMMU_V3:
+                 iort_smmuv3_nodes[smmuv3_count] = iort_node;
+diff --git a/xen/arch/arm/pci/pci-host-common.c b/xen/arch/arm/pci/pci-host-common.c
+index 5ae596bee6..81dc136c81 100644
+--- a/xen/arch/arm/pci/pci-host-common.c
++++ b/xen/arch/arm/pci/pci-host-common.c
+@@ -403,6 +403,36 @@ struct dt_device_node *pci_find_host_bridge_node(struct device *dev)
+     }
+     return bridge->dt_node;
+ }
++
++#ifdef CONFIG_ACPI
++struct acpi_iort_node *pci_find_host_bridge_iort_node(struct device *dev)
++{
++    struct acpi_iort_node *bridge;
++    struct acpi_iort_root_complex *root_complex;
++    struct pci_dev *pdev = dev_to_pci(dev);
++    int i;
++
++    for ( i = 0 ; i < iort_pci_root_nodes_num ; i += 1 )
++    {
++        bridge = iort_pci_root_nodes[i];
++        root_complex = (struct acpi_iort_root_complex *)bridge->node_data;
++        /* IORT nodes only carry segment information, not bus. */
++        if ( root_complex->pci_segment_number == pdev->seg )
++            return bridge;
++    }
++
++    printk(XENLOG_ERR "Unable to find PCI brdige for %pp\n", &pdev->sbdf);
++    return NULL;
++}
++#else
++struct acpi_iort_node *pci_find_host_bridge_iort_node(struct device *dev)
++{
++    printk(XENLOG_ERR "ACPI is not enabled, this should not happen.\n");
++    ASSERT_UNREACHABLE();
++	return NULL;
++}
++#endif
++
+ /*
+  * This function will lookup an hostbridge based on the segment and bus
+  * number.
+diff --git a/xen/include/asm-arm/pci.h b/xen/include/asm-arm/pci.h
+index 4f1c62c4bb..ea48a6cfcb 100644
+--- a/xen/include/asm-arm/pci.h
++++ b/xen/include/asm-arm/pci.h
+@@ -33,6 +33,10 @@ extern bool pci_scan_enabled;
+ extern int pci_mmcfg_config_num;
+ extern struct acpi_mcfg_allocation *pci_mmcfg_config;
+ 
++/* IORT external variable defines */
++extern int iort_pci_root_nodes_num;
++extern struct acpi_iort_node **iort_pci_root_nodes;
++
+ /* Arch pci dev struct */
+ struct arch_pci_dev {
+     struct device dev;
+@@ -126,6 +130,7 @@ bool pci_ecam_need_p2m_hwdom_mapping(struct domain *d,
+                                      uint64_t addr);
+ struct pci_host_bridge *pci_find_host_bridge(uint16_t segment, uint8_t bus);
+ struct dt_device_node *pci_find_host_bridge_node(struct device *dev);
++struct acpi_iort_node *pci_find_host_bridge_iort_node(struct device *dev);
+ int pci_get_host_bridge_segment(const struct dt_device_node *node,
+                                 uint16_t *segment);
+ 
+-- 
+2.25.1
+

@@ -1,0 +1,117 @@
+From be9262448a7239efd9116e51cb623bde963258cb Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?T=C3=A9o=20Couprie=20Diaz?= <teo.coupriediaz@arm.com>
+Date: Wed, 4 May 2022 12:43:22 +0100
+Subject: [PATCH 63/78] arm/iommu: Support ACPI setup
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Added an acpi_iommu_setup function and go through the SMMUs detected from IORT.
+
+Signed-off-by: Téo Couprie Diaz <teo.coupriediaz@arm.com>
+Change-Id: If789b1ecfe805e26a4f9f795276d9067f276123b
+---
+ xen/drivers/passthrough/arm/iommu.c | 61 +++++++++++++++++++++++++++--
+ 1 file changed, 58 insertions(+), 3 deletions(-)
+
+diff --git a/xen/drivers/passthrough/arm/iommu.c b/xen/drivers/passthrough/arm/iommu.c
+index 62d956bcab..4c5d778494 100644
+--- a/xen/drivers/passthrough/arm/iommu.c
++++ b/xen/drivers/passthrough/arm/iommu.c
+@@ -1,5 +1,5 @@
+ /*
+- * Generic IOMMU framework via the device tree
++ * Generic IOMMU framework
+  *
+  * Julien Grall <julien.grall@linaro.org>
+  * Copyright (c) 2014 Linaro Limited.
+@@ -15,6 +15,7 @@
+  * GNU General Public License for more details.
+  */
+ 
++#include <xen/acpi.h>
+ #include <xen/device_tree.h>
+ #include <xen/iommu.h>
+ #include <xen/lib.h>
+@@ -49,9 +50,9 @@ void __init iommu_set_ops(const struct iommu_ops *ops)
+     iommu_ops = ops;
+ }
+ 
+-int __init iommu_hardware_setup(void)
++int __init dt_iommu_setup(void)
+ {
+-    struct dt_device_node *np, *tmp;
++    struct dt_device_node *np;
+     int rc;
+     unsigned int num_iommus = 0;
+ 
+@@ -85,12 +86,66 @@ int __init iommu_hardware_setup(void)
+             return rc;
+     }
+ 
++    return num_iommus;
++}
++
++#ifdef CONFIG_ACPI
++int __init acpi_iommu_setup(void)
++{
++    int i;
++    int rc;
++    unsigned int num_iommus = 0;
++
++    if ( iort_smmuv3_nodes_num == 0 )
++    {
++        printk(KERN_ERR "No SMMU nodes in IORT\n");
++        return -ENODEV;
++    }
++
++    for (i = 0 ; i < iort_smmuv3_nodes_num ; i += 1)
++    {
++        rc = acpi_device_init(DEVICE_IOMMU, iort_smmuv3_nodes[i], 0);
++
++        if ( !rc )
++            num_iommus++;
++        else if ( rc == -EAGAIN )
++            /* TODO: Do stuff ? */
++            printk(XENLOG_WARNING "EGAIN on ACPI SMMUv3 init currently not handled.\n");
++        else
++            return rc;
++    }
++    return num_iommus;
++}
++#else
++int __init acpi_iommu_setup(void)
++{
++    return -EINVAL;
++}
++#endif
++
++int __init iommu_hardware_setup(void)
++{
++    struct dt_device_node *np, *tmp;
++    int rc;
++    unsigned int num_iommus = 0;
++
++    if ( acpi_disabled )
++        rc = dt_iommu_setup();
++    else
++        rc = acpi_iommu_setup();
++
++    if ( rc < 0 )
++        return rc;
++
++    num_iommus = rc;
++
+     /* Return immediately if there are no initialized devices. */
+     if ( !num_iommus )
+         return list_empty(&deferred_probe_list) ? -ENODEV : -EAGAIN;
+ 
+     rc = 0;
+ 
++    /* TODO: Deferred with ACPI ? */
+     /*
+      * Process devices in the deferred list if it is not empty.
+      * Check that at least one device is initialized at each loop, otherwise
+-- 
+2.25.1
+

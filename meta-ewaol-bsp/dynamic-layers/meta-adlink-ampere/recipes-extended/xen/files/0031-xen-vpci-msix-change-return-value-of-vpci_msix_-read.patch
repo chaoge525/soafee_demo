@@ -1,0 +1,173 @@
+From 571eed5ebfbe2dead9f23fd301025ea0d64f0190 Mon Sep 17 00:00:00 2001
+From: Rahul Singh <rahul.singh@arm.com>
+Date: Fri, 11 Feb 2022 11:50:50 +0000
+Subject: [PATCH 31/78] xen/vpci: msix: change return value of
+ vpci_msix_{read,write}
+
+Return value is different for the MMIO handler on ARM and x86
+architecture.
+
+To make the code common for both architectures change the return value
+of vpci_msix_{read, write} to bool. Architecture-specific return value
+will be handled in arch code.
+
+Issue-Id: SCM-3780
+Signed-off-by: Rahul Singh <rahul.singh@arm.com>
+Change-Id: I72cb005f8493a85826fa223693854dbae621f0d3
+---
+ xen/arch/x86/hvm/vmsi.c | 10 ++++++++--
+ xen/drivers/vpci/msix.c | 28 ++++++++++++++--------------
+ xen/include/xen/vpci.h  |  8 ++++----
+ 3 files changed, 26 insertions(+), 20 deletions(-)
+
+diff --git a/xen/arch/x86/hvm/vmsi.c b/xen/arch/x86/hvm/vmsi.c
+index b02626976f..0ec3184b13 100644
+--- a/xen/arch/x86/hvm/vmsi.c
++++ b/xen/arch/x86/hvm/vmsi.c
+@@ -1002,7 +1002,10 @@ static int x86_msix_write(struct vcpu *v, unsigned long addr,
+     const struct domain *d = v->domain;
+     struct vpci_msix *msix = vpci_msix_find(d, addr);
+ 
+-    return vpci_msix_write(msix, addr, len, data);
++    if( !vpci_msix_write(msix, addr, len, data) )
++        return X86EMUL_RETRY;
++
++    return X86EMUL_OKAY;
+ }
+ 
+ static int x86_msix_read(struct vcpu *v, unsigned long addr,
+@@ -1011,7 +1014,10 @@ static int x86_msix_read(struct vcpu *v, unsigned long addr,
+     const struct domain *d = v->domain;
+     struct vpci_msix *msix = vpci_msix_find(d, addr);
+ 
+-    return vpci_msix_read(msix, addr, len, data);
++    if ( !vpci_msix_read(msix, addr, len, data) )
++        return X86EMUL_RETRY;
++
++    return X86EMUL_OKAY;
+ }
+ 
+ static const struct hvm_mmio_ops vpci_msix_table_ops = {
+diff --git a/xen/drivers/vpci/msix.c b/xen/drivers/vpci/msix.c
+index 21b330ba7a..2c638d39ac 100644
+--- a/xen/drivers/vpci/msix.c
++++ b/xen/drivers/vpci/msix.c
+@@ -187,8 +187,8 @@ static void __iomem *get_pba(struct vpci *vpci)
+     return read_atomic(&msix->pba);
+ }
+ 
+-int vpci_msix_read(struct vpci_msix *msix, unsigned long addr,
+-                   unsigned int len, unsigned long *data)
++bool vpci_msix_read(struct vpci_msix *msix, unsigned long addr,
++                    unsigned int len, unsigned long *data)
+ {
+     const struct vpci_msix_entry *entry;
+     unsigned int offset;
+@@ -196,10 +196,10 @@ int vpci_msix_read(struct vpci_msix *msix, unsigned long addr,
+     *data = ~0ul;
+ 
+     if ( !msix )
+-        return X86EMUL_RETRY;
++        return false;
+ 
+     if ( !access_allowed(msix->pdev, addr, len) )
+-        return X86EMUL_OKAY;
++        return true;
+ 
+     if ( VMSIX_ADDR_IN_RANGE(addr, msix->pdev->vpci, VPCI_MSIX_PBA) )
+     {
+@@ -219,7 +219,7 @@ int vpci_msix_read(struct vpci_msix *msix, unsigned long addr,
+             gprintk(XENLOG_WARNING,
+                     "%pp: unable to map MSI-X PBA, report all pending\n",
+                     &msix->pdev->sbdf);
+-            return X86EMUL_OKAY;
++            return true;
+         }
+ 
+         switch ( len )
+@@ -237,7 +237,7 @@ int vpci_msix_read(struct vpci_msix *msix, unsigned long addr,
+             break;
+         }
+ 
+-        return X86EMUL_OKAY;
++        return true;
+     }
+ 
+     spin_lock(&msix->pdev->vpci_lock);
+@@ -271,21 +271,21 @@ int vpci_msix_read(struct vpci_msix *msix, unsigned long addr,
+     }
+     spin_unlock(&msix->pdev->vpci_lock);
+ 
+-    return X86EMUL_OKAY;
++    return true;
+ }
+ 
+-int vpci_msix_write(struct vpci_msix *msix, unsigned long addr,
+-                    unsigned int len, unsigned long data)
++bool vpci_msix_write(struct vpci_msix *msix, unsigned long addr,
++                     unsigned int len, unsigned long data)
+ {
+     const struct domain *d = msix->pdev->domain;
+     struct vpci_msix_entry *entry;
+     unsigned int offset;
+ 
+     if ( !msix )
+-        return X86EMUL_RETRY;
++        return false;
+ 
+     if ( !access_allowed(msix->pdev, addr, len) )
+-        return X86EMUL_OKAY;
++        return true;
+ 
+     if ( VMSIX_ADDR_IN_RANGE(addr, msix->pdev->vpci, VPCI_MSIX_PBA) )
+     {
+@@ -302,7 +302,7 @@ int vpci_msix_write(struct vpci_msix *msix, unsigned long addr,
+                 gprintk(XENLOG_WARNING,
+                         "%pp: unable to map MSI-X PBA, write ignored\n",
+                         &msix->pdev->sbdf);
+-                return X86EMUL_OKAY;
++                return true;
+             }
+ 
+             switch ( len )
+@@ -321,7 +321,7 @@ int vpci_msix_write(struct vpci_msix *msix, unsigned long addr,
+             }
+         }
+ 
+-        return X86EMUL_OKAY;
++        return true;
+     }
+ 
+     spin_lock(&msix->pdev->vpci_lock);
+@@ -399,7 +399,7 @@ int vpci_msix_write(struct vpci_msix *msix, unsigned long addr,
+     }
+     spin_unlock(&msix->pdev->vpci_lock);
+ 
+-    return X86EMUL_OKAY;
++    return true;
+ }
+ 
+ static int init_msix(struct pci_dev *pdev)
+diff --git a/xen/include/xen/vpci.h b/xen/include/xen/vpci.h
+index 947247c6b1..1ae479dfd1 100644
+--- a/xen/include/xen/vpci.h
++++ b/xen/include/xen/vpci.h
+@@ -245,11 +245,11 @@ bool vpci_ecam_read(pci_sbdf_t sbdf, unsigned int reg, unsigned int len,
+ 
+ void vpci_msix_arch_register(struct vpci_msix *msix, struct domain *d);
+ 
+-int vpci_msix_write(struct vpci_msix *msix, unsigned long addr,
+-                    unsigned int len, unsigned long data);
++bool vpci_msix_write(struct vpci_msix *msix, unsigned long addr,
++                     unsigned int len, unsigned long data);
+ 
+-int vpci_msix_read(struct vpci_msix *msix, unsigned long addr,
+-                   unsigned int len, unsigned long *data);
++bool vpci_msix_read(struct vpci_msix *msix, unsigned long addr,
++                    unsigned int len, unsigned long *data);
+ 
+ #endif /* __XEN__ */
+ 
+-- 
+2.25.1
+

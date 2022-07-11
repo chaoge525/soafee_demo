@@ -1,0 +1,184 @@
+From 43e8f284cc840ae6099af838ecc87ad4bb7c0a4a Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?T=C3=A9o=20Couprie=20Diaz?= <teo.coupriediaz@arm.com>
+Date: Wed, 4 May 2022 16:17:03 +0100
+Subject: [PATCH 56/78] xen/arm: Move iommu_add_pci_device from dt to iommu
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+This commit prepares for the generalization of iommu_add_pci_device to both ACPI and device tree,
+so move it with the rest of iommu functions for Arm.
+Change some functions to be accessible outside of device_tree.c to support the move.
+
+Signed-off-by: Téo Couprie Diaz <teo.coupriediaz@arm.com>
+Change-Id: I970fd8619ebc06371e72aacd30cc8c7866afa306
+---
+ xen/drivers/passthrough/arm/iommu.c   | 57 +++++++++++++++++++++++++++
+ xen/drivers/passthrough/device_tree.c | 53 +------------------------
+ xen/include/xen/device_tree.h         |  2 +
+ 3 files changed, 60 insertions(+), 52 deletions(-)
+
+diff --git a/xen/drivers/passthrough/arm/iommu.c b/xen/drivers/passthrough/arm/iommu.c
+index ee653a9c48..62d956bcab 100644
+--- a/xen/drivers/passthrough/arm/iommu.c
++++ b/xen/drivers/passthrough/arm/iommu.c
+@@ -18,8 +18,10 @@
+ #include <xen/device_tree.h>
+ #include <xen/iommu.h>
+ #include <xen/lib.h>
++#include <xen/pci.h>
+ 
+ #include <asm/device.h>
++#include <asm/iommu_fwspec.h>
+ 
+ /*
+  * Deferred probe list is used to keep track of devices for which driver
+@@ -117,6 +119,61 @@ int __init iommu_hardware_setup(void)
+     return rc;
+ }
+ 
++#ifdef CONFIG_HAS_PCI
++int iommu_add_pci_device(uint8_t devfn, struct pci_dev *pdev)
++{
++#define NO_IOMMU 1
++    const struct iommu_ops *ops = iommu_get_ops();
++    struct dt_phandle_args iommu_spec = { .args_count = 1 };
++    struct device *dev = pci_to_dev(pdev);
++    struct dt_device_node *np;
++    int rc = NO_IOMMU;
++
++    if ( !iommu_enabled )
++        return NO_IOMMU;
++
++    if ( !ops )
++        return -EINVAL;
++
++    if ( dev_iommu_fwspec_get(dev) )
++        return -EEXIST;
++
++    np = pci_find_host_bridge_node(dev);
++    if ( !np )
++        return -ENODEV;
++
++    /*
++     * According to the Documentation/devicetree/bindings/pci/pci-iommu.txt
++     * from Linux.
++     */
++    rc = dt_map_id(np, PCI_BDF2(pdev->bus, devfn), "iommu-map",
++                   "iommu-map-mask", &iommu_spec.np, iommu_spec.args);
++    if ( rc )
++        return rc == -ENODEV ? NO_IOMMU : rc;
++
++    /*
++     * The driver which supports generic PCI-IOMMU DT bindings must have
++     * these callback implemented.
++     */
++    if ( !ops->add_device || !ops->dt_xlate )
++        return -EINVAL;
++
++    rc = dt_iommu_xlate(dev, &iommu_spec);
++
++    /*
++     * Add master device to the IOMMU if latter is present and available.
++     * The driver is responsible to mark that device as protected.
++     */
++    if ( !rc )
++        rc = ops->add_device(devfn, dev);
++
++    if ( rc < 0 )
++        iommu_fwspec_free(dev);
++
++    return rc;
++}
++#endif
++
+ void __hwdom_init arch_iommu_check_autotranslated_hwdom(struct domain *d)
+ {
+     /* ARM doesn't require specific check for hwdom */
+diff --git a/xen/drivers/passthrough/device_tree.c b/xen/drivers/passthrough/device_tree.c
+index 1edc1f5509..41f7d4cca8 100644
+--- a/xen/drivers/passthrough/device_tree.c
++++ b/xen/drivers/passthrough/device_tree.c
+@@ -130,7 +130,7 @@ int iommu_release_dt_devices(struct domain *d)
+ /* This correlation must not be altered */
+ #define NO_IOMMU    1
+ 
+-static int dt_iommu_xlate(struct device *dev,
++int dt_iommu_xlate(struct device *dev,
+                           struct dt_phandle_args *iommu_spec)
+ {
+     const struct iommu_ops *ops = iommu_get_ops();
+@@ -237,57 +237,6 @@ int dt_map_id(struct dt_device_node *np, u32 id, const char *map_name,
+     return -EFAULT;
+ }
+ 
+-int iommu_add_pci_device(uint8_t devfn, struct pci_dev *pdev)
+-{
+-    const struct iommu_ops *ops = iommu_get_ops();
+-    struct dt_phandle_args iommu_spec = { .args_count = 1 };
+-    struct device *dev = pci_to_dev(pdev);
+-    struct dt_device_node *np;
+-    int rc = NO_IOMMU;
+-
+-    if ( !iommu_enabled )
+-        return NO_IOMMU;
+-
+-    if ( !ops )
+-        return -EINVAL;
+-
+-    if ( dev_iommu_fwspec_get(dev) )
+-        return -EEXIST;
+-
+-    np = pci_find_host_bridge_node(dev);
+-    if ( !np )
+-        return -ENODEV;
+-
+-    /*
+-     * According to the Documentation/devicetree/bindings/pci/pci-iommu.txt
+-     * from Linux.
+-     */
+-    rc = dt_map_id(np, PCI_BDF2(pdev->bus, devfn), "iommu-map",
+-                   "iommu-map-mask", &iommu_spec.np, iommu_spec.args);
+-    if ( rc )
+-        return rc == -ENODEV ? NO_IOMMU : rc;
+-
+-    /*
+-     * The driver which supports generic PCI-IOMMU DT bindings must have
+-     * these callback implemented.
+-     */
+-    if ( !ops->add_device || !ops->dt_xlate )
+-        return -EINVAL;
+-
+-    rc = dt_iommu_xlate(dev, &iommu_spec);
+-
+-    /*
+-     * Add master device to the IOMMU if latter is present and available.
+-     * The driver is responsible to mark that device as protected.
+-     */
+-    if ( !rc )
+-        rc = ops->add_device(devfn, dev);
+-
+-    if ( rc < 0 )
+-        iommu_fwspec_free(dev);
+-
+-    return rc;
+-}
+ #endif
+ 
+ int iommu_add_dt_device(struct dt_device_node *np)
+diff --git a/xen/include/xen/device_tree.h b/xen/include/xen/device_tree.h
+index 45d5ad1cdf..543bd118c8 100644
+--- a/xen/include/xen/device_tree.h
++++ b/xen/include/xen/device_tree.h
+@@ -872,6 +872,8 @@ int dt_pci_remove_io_ranges(void *fdt, const struct dt_device_node *node);
+ 
+ struct dt_device_node *dt_find_node_by_phandle(dt_phandle handle);
+ 
++int dt_iommu_xlate(struct device *dev, struct dt_phandle_args *iommu_spec);
++
+ #ifdef CONFIG_DEVICE_TREE_DEBUG
+ #define dt_dprintk(fmt, args...)  \
+     printk(XENLOG_DEBUG fmt, ## args)
+-- 
+2.25.1
+

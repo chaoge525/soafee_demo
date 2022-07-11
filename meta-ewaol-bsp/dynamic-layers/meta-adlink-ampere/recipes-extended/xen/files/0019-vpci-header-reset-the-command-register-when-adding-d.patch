@@ -1,0 +1,61 @@
+From deee3f1dae655e110b455cbd4322f709667242d4 Mon Sep 17 00:00:00 2001
+From: Oleksandr Andrushchenko <oleksandr_andrushchenko@epam.com>
+Date: Thu, 25 Nov 2021 13:02:47 +0200
+Subject: [PATCH 19/78] vpci/header: reset the command register when adding
+ devices
+
+Reset the command register when passing through a PCI device:
+it is possible that when passing through a PCI device its memory
+decoding bits in the command register are already set. Thus, a
+guest OS may not write to the command register to update memory
+decoding, so guest mappings (guest's view of the BARs) are
+left not updated.
+
+Signed-off-by: Oleksandr Andrushchenko <oleksandr_andrushchenko@epam.com>
+---
+ xen/drivers/vpci/header.c | 15 ++++++++++++---
+ 1 file changed, 12 insertions(+), 3 deletions(-)
+
+diff --git a/xen/drivers/vpci/header.c b/xen/drivers/vpci/header.c
+index 2e44055946..41dda3c43d 100644
+--- a/xen/drivers/vpci/header.c
++++ b/xen/drivers/vpci/header.c
+@@ -491,8 +491,7 @@ static void cmd_write(const struct pci_dev *pdev, unsigned int reg,
+         pci_conf_write16(pdev->sbdf, reg, cmd);
+ }
+ 
+-static void guest_cmd_write(const struct pci_dev *pdev, unsigned int reg,
+-                            uint32_t cmd, void *data)
++static uint32_t emulate_cmd_reg(const struct pci_dev *pdev, uint32_t cmd)
+ {
+     /* TODO: Add proper emulation for all bits of the command register. */
+ 
+@@ -504,7 +503,13 @@ static void guest_cmd_write(const struct pci_dev *pdev, unsigned int reg,
+     }
+ #endif
+ 
+-    cmd_write(pdev, reg, cmd, data);
++    return cmd;
++}
++
++static void guest_cmd_write(const struct pci_dev *pdev, unsigned int reg,
++                            uint32_t cmd, void *data)
++{
++    cmd_write(pdev, reg, emulate_cmd_reg(pdev, cmd), data);
+ }
+ 
+ static void bar_write(const struct pci_dev *pdev, unsigned int reg,
+@@ -678,6 +683,10 @@ static int init_bars(struct pci_dev *pdev)
+         return -EOPNOTSUPP;
+     }
+ 
++    /* Reset the command register for the guest. */
++    if ( !is_hwdom )
++        pci_conf_write16(pdev->sbdf, PCI_COMMAND, emulate_cmd_reg(pdev, 0));
++
+     /* Setup a handler for the command register. */
+     rc = vpci_add_register(pdev->vpci, vpci_hw_read16,
+                            is_hwdom ? cmd_write : guest_cmd_write,
+-- 
+2.25.1
+

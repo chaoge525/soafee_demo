@@ -1,0 +1,14 @@
+# Copyright (c) 2022, Arm Limited.
+#
+# SPDX-License-Identifier: MIT
+
+---
+header:
+  version: 10
+
+env:
+  EWAOL_GUEST_VM1_PCI_PASSTHROUGH_DEVICE: "0000:01:00.0"
+
+local_conf_header:
+  xen_pci_passthrough: |
+    MACHINE_FEATURES:append = " xen-pci-passthrough"

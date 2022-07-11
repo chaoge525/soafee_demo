@@ -1,0 +1,106 @@
+From e1d2128ff040c6091dba735bfd888e7e76a7ae8f Mon Sep 17 00:00:00 2001
+From: Rahul Singh <rahul.singh@arm.com>
+Date: Thu, 9 Jun 2022 15:15:59 +0100
+Subject: [PATCH 77/78] xen/arm: libxl: Add interrupt-map property node for
+ vpci node
+
+Nvidia GPU requires to have the interrupt-map property node in PCI host
+bridge node to get the probed works. Add dummy interrupt-map property
+node in emulated vpci node.
+
+Signed-off-by: Rahul Singh <rahul.singh@arm.com>
+Change-Id: I8f44867b0901c1d0f8c10f75269b31a427cb67fe
+---
+ tools/libs/light/libxl_arm.c | 69 ++++++++++++++++++++++++++++++++++++
+ 1 file changed, 69 insertions(+)
+
+diff --git a/tools/libs/light/libxl_arm.c b/tools/libs/light/libxl_arm.c
+index efd7ae681c..c65fb39c4e 100644
+--- a/tools/libs/light/libxl_arm.c
++++ b/tools/libs/light/libxl_arm.c
+@@ -337,6 +337,56 @@ static int fdt_property_vpci_ranges(libxl__gc *gc, void *fdt,
+     return fdt_property(fdt, "ranges", regs, sizeof(regs));
+ }
+ 
++static int fdt_property_vpci_interrupt_map(libxl__gc *gc, void *fdt,
++        unsigned child_unit_addr_cells,
++        unsigned child_interrupt_specifier_cells,
++        unsigned parent_unit_addr_cells,
++        unsigned parent_interrupt_specifier_cells,
++        unsigned num_regs, ...)
++{
++    uint32_t interrupt_map[num_regs * (child_unit_addr_cells +
++            child_interrupt_specifier_cells + parent_unit_addr_cells
++            + parent_interrupt_specifier_cells + 1)];
++    be32 *cells = &interrupt_map[0];
++    int i,j;
++    va_list ap;
++    uint64_t arg;
++
++    va_start(ap, num_regs);
++    for (i = 0 ; i < num_regs; i++) {
++        /* Set the child unit address*/
++        for (j = 0 ; j < child_unit_addr_cells; j++) {
++            arg = va_arg(ap, uint32_t);
++            set_cell(&cells, 1 , arg);
++        }
++
++        /* Set the child interrupt specifier*/
++        for (j = 0 ; j < child_interrupt_specifier_cells ; j++) {
++            arg = va_arg(ap, uint32_t);
++            set_cell(&cells, 1 , arg);
++        }
++
++        /* Set the interrupt-parent*/
++        set_cell(&cells, 1 , GUEST_PHANDLE_GIC);
++
++        /* Set the parent unit address*/
++        for (j = 0 ; j < parent_unit_addr_cells; j++) {
++            arg = va_arg(ap, uint32_t);
++            set_cell(&cells, 1 , arg);
++        }
++
++        /* Set the parent interrupt specifier*/
++        for (j = 0 ; j < parent_interrupt_specifier_cells; j++) {
++            arg = va_arg(ap, uint32_t);
++            set_cell(&cells, 1 , arg);
++        }
++    }
++    va_end(ap);
++
++    return fdt_property(fdt, "interrupt-map", interrupt_map,
++                                sizeof(interrupt_map));
++}
++
+ static int make_root_properties(libxl__gc *gc,
+                                 const libxl_version_info *vers,
+                                 void *fdt)
+@@ -822,6 +872,25 @@ static int make_vpci_node(libxl__gc *gc, void *fdt,
+         GUEST_VPCI_PREFETCH_MEM_SIZE);
+     if (res) return res;
+ 
++    res = fdt_property_cell(fdt, "#interrupt-cells", 1);
++    if (res) return res;
++
++    res = fdt_property_values(gc, fdt, "interrupt-map-mask", 4, 0, 0, 0, 7);
++    if (res) return res;
++
++    /*
++     * Legacy interrupt is forced and assigned to the guest.
++     * This will be removed once we have implementation for MSI support.
++     *
++     */
++    res = fdt_property_vpci_interrupt_map(gc, fdt, 3, 1, 3, 2,
++            4,
++            0, 0, 0, 1, 0, 0, 0, 169, DT_IRQ_TYPE_LEVEL_HIGH,
++            0, 0, 0, 2, 0, 0, 0, 170, DT_IRQ_TYPE_LEVEL_HIGH,
++            0, 0, 0, 3, 0, 0, 0, 171, DT_IRQ_TYPE_LEVEL_HIGH,
++            0, 0, 0, 4, 0, 0, 0, 172, DT_IRQ_TYPE_LEVEL_HIGH);
++    if (res) return res;
++
+     res = fdt_property_values(gc, fdt, "msi-map", 4, 0, GUEST_PHANDLE_ITS,
+                               0, 0x10000);
+     if (res) return res;
+-- 
+2.25.1
+

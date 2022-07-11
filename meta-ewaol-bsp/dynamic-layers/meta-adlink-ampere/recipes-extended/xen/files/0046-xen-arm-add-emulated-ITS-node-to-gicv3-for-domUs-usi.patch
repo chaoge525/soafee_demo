@@ -1,0 +1,149 @@
+From 986bae0caf649db02120ac27cd988ee8fe7c42ba Mon Sep 17 00:00:00 2001
+From: Luca Fancellu <luca.fancellu@arm.com>
+Date: Thu, 25 Nov 2021 14:59:09 +0000
+Subject: [PATCH 46/78] xen/arm: add emulated ITS node to gicv3 for domUs using
+ vpci
+
+Add the emulated ITS node to the gicv3 node when a guest domU, created
+by Xen, is using vpci.
+
+Issue-Id: SCM-1012
+Signed-off-by: Luca Fancellu <luca.fancellu@arm.com>
+Change-Id: I726d41a478e4cb90aeba83d644f4dea4e181c066
+---
+ xen/arch/arm/domain_build.c      | 13 +++++---
+ xen/arch/arm/gic-v3-its.c        | 54 ++++++++++++++++++++++++++++++++
+ xen/include/asm-arm/gic_v3_its.h |  7 +++++
+ 3 files changed, 70 insertions(+), 4 deletions(-)
+
+diff --git a/xen/arch/arm/domain_build.c b/xen/arch/arm/domain_build.c
+index 3966d08345..ae21e6d404 100644
+--- a/xen/arch/arm/domain_build.c
++++ b/xen/arch/arm/domain_build.c
+@@ -19,6 +19,7 @@
+ #include <xen/warning.h>
+ #include <acpi/actables.h>
+ #include <asm/device.h>
++#include <asm/gic_v3_its.h>
+ #include <asm/kernel.h>
+ #include <asm/setup.h>
+ #include <asm/tee/tee.h>
+@@ -2233,10 +2234,6 @@ static int __init make_gicv3_domU_node(struct kernel_info *kinfo)
+     if ( res )
+         return res;
+ 
+-    res = fdt_property_cell(fdt, "#address-cells", 0);
+-    if ( res )
+-        return res;
+-
+     res = fdt_property_cell(fdt, "#interrupt-cells", 3);
+     if ( res )
+         return res;
+@@ -2267,6 +2264,14 @@ static int __init make_gicv3_domU_node(struct kernel_info *kinfo)
+     if (res)
+         return res;
+ 
++    /* Add ITS node only if domain will use vpci */
++    if ( is_pci_scan_enabled() )
++        res = gicv3_its_make_emulated_dt_node(fdt);
++    else
++        res = fdt_property_cell(fdt, "#address-cells", 0);
++    if ( res )
++        return res;
++
+     res = fdt_end_node(fdt);
+ 
+     return res;
+diff --git a/xen/arch/arm/gic-v3-its.c b/xen/arch/arm/gic-v3-its.c
+index 6568b044e8..ce257168d2 100644
+--- a/xen/arch/arm/gic-v3-its.c
++++ b/xen/arch/arm/gic-v3-its.c
+@@ -1040,6 +1040,60 @@ int gicv3_its_make_hwdom_dt_nodes(const struct domain *d,
+     return res;
+ }
+ 
++int __init gicv3_its_make_emulated_dt_node(void *fdt)
++{
++    const uint64_t its_base = GUEST_GICV3_ITS_BASE;
++    const uint64_t its_size = GUEST_GICV3_ITS_SIZE;
++    __be32 reg[GUEST_ROOT_ADDRESS_CELLS + GUEST_ROOT_SIZE_CELLS];
++    __be32 *cells;
++    char buf[21]; /* its@ + max 16 char address + '\0' */
++    int res;
++
++    /* Create correct properties for ITS node on the gicv3 node */
++    res = fdt_property_cell(fdt, "#address-cells", 2);
++    if ( res )
++        return res;
++
++    res = fdt_property_cell(fdt, "#size-cells", 2);
++    if ( res )
++        return res;
++
++    res = fdt_property(fdt, "ranges", NULL, 0);
++    if ( res )
++        return res;
++
++    snprintf(buf, sizeof(buf), "its@%"PRIx64, its_base);
++    dt_dprintk("Create emulated its node\n");
++    res = fdt_begin_node(fdt, buf);
++    if ( res )
++        return res;
++
++    res = fdt_property_string(fdt, "compatible", "arm,gic-v3-its");
++    if ( res )
++        return res;
++
++    res = fdt_property(fdt, "msi-controller", NULL, 0);
++    if ( res )
++        return res;
++
++    /* Create reg property */
++    cells = &reg[0];
++    dt_child_set_range(&cells, GUEST_ROOT_ADDRESS_CELLS, GUEST_ROOT_SIZE_CELLS,
++                       its_base, its_size);
++
++    res = fdt_property(fdt, "reg", reg, sizeof(reg));
++    if ( res )
++        return res;
++
++    res = fdt_property_cell(fdt, "phandle", GUEST_PHANDLE_ITS);
++    if ( res )
++        return res;
++
++    res = fdt_end_node(fdt);
++
++    return res;
++}
++
+ /* Common function for adding to host_its_list */
+ static void add_to_host_its_list(paddr_t addr, paddr_t size,
+                                  const struct dt_device_node *node)
+diff --git a/xen/include/asm-arm/gic_v3_its.h b/xen/include/asm-arm/gic_v3_its.h
+index bc793a3a5c..9b0560d323 100644
+--- a/xen/include/asm-arm/gic_v3_its.h
++++ b/xen/include/asm-arm/gic_v3_its.h
+@@ -171,6 +171,8 @@ int gicv3_its_make_hwdom_dt_nodes(const struct domain *d,
+                                   const struct dt_device_node *gic,
+                                   void *fdt);
+ 
++int gicv3_its_make_emulated_dt_node(void *fdt);
++
+ /*
+  * Map a device on the host by allocating an ITT on the host (ITS).
+  * "nr_event" specifies how many events (interrupts) this device will need.
+@@ -276,6 +278,11 @@ static inline int gicv3_its_make_hwdom_dt_nodes(const struct domain *d,
+     return 0;
+ }
+ 
++static inline int gicv3_its_make_emulated_dt_node(void *fdt)
++{
++    return 0;
++}
++
+ static inline int gicv3_its_map_translation_register(struct domain *d)
+ {
+     /* We should never get here without an ITS. */
+-- 
+2.25.1
+

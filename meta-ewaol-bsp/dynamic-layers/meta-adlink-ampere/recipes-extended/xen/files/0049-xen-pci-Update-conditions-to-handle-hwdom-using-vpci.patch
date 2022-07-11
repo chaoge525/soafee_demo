@@ -1,0 +1,203 @@
+From d3a9968cb63aec74261debd4c61b46dfbad7a4b6 Mon Sep 17 00:00:00 2001
+From: Luca Fancellu <luca.fancellu@arm.com>
+Date: Thu, 16 Dec 2021 11:26:17 +0000
+Subject: [PATCH 49/78] xen/pci: Update conditions to handle hwdom using vpci
+
+Add helper macro is_hardware_pci_domain(...) to check if the passed
+domain is an hardware domain and it is not using the emulated pci
+bus from Xen.
+
+Update conditions to let the hardware domain that is using the vpci
+bus emulated by Xen, to use the right addresses instead of the real
+host addresses.
+
+When using the emulated bus, update init_bars to don't write in the
+bars configuration as it will erase the previous firmware
+configuration.
+
+Issue-Id: SCM-1012
+Signed-off-by: Luca Fancellu <luca.fancellu@arm.com>
+Change-Id: I4d31c0d342be94a8d5c3cec814f5b53b3d69a92a
+---
+ xen/arch/arm/vgic-v3-its.c            | 9 +++++----
+ xen/arch/arm/vpci.c                   | 4 ++--
+ xen/drivers/passthrough/arm/smmu-v3.c | 2 +-
+ xen/drivers/vpci/arm_msix.c           | 2 +-
+ xen/drivers/vpci/header.c             | 7 +++++--
+ xen/drivers/vpci/msix.c               | 2 +-
+ xen/drivers/vpci/vpci.c               | 4 ++--
+ xen/include/xen/vpci.h                | 2 ++
+ 8 files changed, 19 insertions(+), 13 deletions(-)
+
+diff --git a/xen/arch/arm/vgic-v3-its.c b/xen/arch/arm/vgic-v3-its.c
+index 94f8959d6a..fd3aef544e 100644
+--- a/xen/arch/arm/vgic-v3-its.c
++++ b/xen/arch/arm/vgic-v3-its.c
+@@ -313,7 +313,7 @@ static uint32_t its_get_host_devid(struct domain *d, uint32_t guest_devid)
+     if ( !pci_passthrough_enabled )
+         return guest_devid;
+ 
+-    if ( !is_hardware_domain(d) )
++    if ( !is_hardware_domain(d) || hwdom_uses_vpci() )
+     {
+         pci_sbdf_t sbdf = (pci_sbdf_t)guest_devid;
+         const struct pci_dev *pdev;
+@@ -760,7 +760,7 @@ static int its_handle_mapd(struct virt_its *its, uint64_t *cmdptr)
+      * announce pass-through of devices.
+      */
+ 
+-    if ( !is_hardware_domain(its->d) )
++    if ( !is_hardware_domain(its->d) || hwdom_uses_vpci() )
+         host_doorbell_address = its_get_host_doorbell(its, guest_devid);
+     else
+         host_doorbell_address = its->doorbell_address;
+@@ -1575,7 +1575,7 @@ unsigned int vgic_v3_its_count(const struct domain *d)
+     unsigned int ret = 0;
+ 
+     /* Only Dom0 can use emulated ITSes so far. */
+-    if ( !is_hardware_domain(d) )
++    if ( !is_hardware_domain(d) || hwdom_uses_vpci() )
+         return 0;
+ 
+     list_for_each_entry(hw_its, &host_its_list, entry)
+@@ -1587,6 +1587,7 @@ unsigned int vgic_v3_its_count(const struct domain *d)
+ /*
+  * For a hardware domain, this will iterate over the host ITSes
+  * and map one virtual ITS per host ITS at the same address.
++ * If pci-scan is enabled, the hardware domain will not use the real host ITSes.
+  */
+ int vgic_v3_its_init_domain(struct domain *d)
+ {
+@@ -1598,7 +1599,7 @@ int vgic_v3_its_init_domain(struct domain *d)
+     spin_lock_init(&d->arch.vgic.its_devices_lock);
+     d->arch.vgic.its_devices = RB_ROOT;
+ 
+-    if ( is_hardware_domain(d) )
++    if ( is_hardware_pci_domain(d) )
+     {
+         struct host_its *hw_its;
+ 
+diff --git a/xen/arch/arm/vpci.c b/xen/arch/arm/vpci.c
+index 75f37c8872..4f713c89c5 100644
+--- a/xen/arch/arm/vpci.c
++++ b/xen/arch/arm/vpci.c
+@@ -108,7 +108,7 @@ int domain_vpci_init(struct domain *d)
+      * physical host bridge.
+      * Guests get the virtual platform layout: one virtual host bridge for now.
+      */
+-    if ( is_hardware_domain(d) )
++    if ( is_hardware_pci_domain(d) )
+     {
+         int ret;
+ 
+@@ -137,7 +137,7 @@ unsigned int domain_vpci_get_num_mmio_handlers(struct domain *d)
+     if ( !has_vpci(d) )
+         return 0;
+ 
+-    if ( is_hardware_domain(d) )
++    if ( is_hardware_pci_domain(d) )
+     {
+         int ret = pci_host_iterate_bridges_and_count(d, vpci_get_num_handlers_cb);
+ 
+diff --git a/xen/drivers/passthrough/arm/smmu-v3.c b/xen/drivers/passthrough/arm/smmu-v3.c
+index 31304872dc..72e9f1655d 100644
+--- a/xen/drivers/passthrough/arm/smmu-v3.c
++++ b/xen/drivers/passthrough/arm/smmu-v3.c
+@@ -3325,7 +3325,7 @@ static int arm_smmu_assign_dev(struct domain *d, u8 devfn,
+ 	struct arm_smmu_xen_domain *xen_domain = dom_iommu(d)->arch.priv;
+ 
+ #ifdef CONFIG_HAS_PCI
+-	if (dev_is_pci(dev) && !is_hardware_domain(d))
++	if (dev_is_pci(dev) && (!is_hardware_domain(d) || hwdom_uses_vpci()))
+ 	{
+ 		struct pci_dev *pdev = dev_to_pci(dev);
+ 
+diff --git a/xen/drivers/vpci/arm_msix.c b/xen/drivers/vpci/arm_msix.c
+index 46fc3bad9a..0a6bf77c8f 100644
+--- a/xen/drivers/vpci/arm_msix.c
++++ b/xen/drivers/vpci/arm_msix.c
+@@ -53,7 +53,7 @@ int vpci_make_msix_hole(const struct pci_dev *pdev)
+ 
+     for ( int i = 0; msix && i < ARRAY_SIZE(msix->tables); i++ )
+     {
+-        if ( is_hardware_domain(pdev->domain) )
++        if ( is_hardware_pci_domain(pdev->domain) )
+             addr = vmsix_table_addr(pdev->vpci, VPCI_MSIX_TABLE);
+         else
+             addr = vmsix_guest_table_addr(pdev->vpci, VPCI_MSIX_TABLE);
+diff --git a/xen/drivers/vpci/header.c b/xen/drivers/vpci/header.c
+index 32dfea763f..2eb1947466 100644
+--- a/xen/drivers/vpci/header.c
++++ b/xen/drivers/vpci/header.c
+@@ -43,7 +43,7 @@ static int map_range(unsigned long s, unsigned long e, void *data,
+     for ( ; ; )
+     {
+         /* Start address of the BAR as seen by the guest. */
+-        gfn_t start_gfn = _gfn(PFN_DOWN(is_hardware_domain(map->d)
++        gfn_t start_gfn = _gfn(PFN_DOWN(is_hardware_pci_domain(map->d)
+                                         ? map->bar->addr
+                                         : map->bar->guest_reg));
+         /* Physical start address of the BAR. */
+@@ -666,7 +666,7 @@ static int init_bars(struct pci_dev *pdev)
+     struct vpci_header *header = &pdev->vpci->header;
+     struct vpci_bar *bars = header->bars;
+     int rc;
+-    bool is_hwdom = is_hardware_domain(pdev->domain);
++    bool is_hwdom = is_hardware_pci_domain(pdev->domain);
+ 
+     switch ( pci_conf_read8(pdev->sbdf, PCI_HEADER_TYPE) & 0x7f )
+     {
+@@ -676,6 +676,9 @@ static int init_bars(struct pci_dev *pdev)
+         break;
+ 
+     case PCI_HEADER_TYPE_BRIDGE:
++        /* Don't touch bars on bridges when firmware has done enumeration */
++        if ( hwdom_uses_vpci() )
++            return 0;
+         num_bars = PCI_HEADER_BRIDGE_NR_BARS;
+         rom_reg = PCI_ROM_ADDRESS1;
+         break;
+diff --git a/xen/drivers/vpci/msix.c b/xen/drivers/vpci/msix.c
+index c3ade79c28..81741d0acf 100644
+--- a/xen/drivers/vpci/msix.c
++++ b/xen/drivers/vpci/msix.c
+@@ -154,7 +154,7 @@ static struct vpci_msix_entry *get_entry(struct vpci_msix *msix,
+ {
+     paddr_t start;
+ 
+-    if ( is_hardware_domain(current->domain) )
++    if ( is_hardware_pci_domain(current->domain) )
+         start = vmsix_table_addr(msix->pdev->vpci, VPCI_MSIX_TABLE);
+     else
+         start = vmsix_guest_table_addr(msix->pdev->vpci, VPCI_MSIX_TABLE);
+diff --git a/xen/drivers/vpci/vpci.c b/xen/drivers/vpci/vpci.c
+index bdc8c63f73..59deb988e3 100644
+--- a/xen/drivers/vpci/vpci.c
++++ b/xen/drivers/vpci/vpci.c
+@@ -243,8 +243,8 @@ int vpci_assign_device(struct domain *d, struct pci_dev *pdev)
+ /* Notify vPCI that device is de-assigned from guest. */
+ int vpci_deassign_device(struct domain *d, struct pci_dev *pdev)
+ {
+-    /* It only makes sense to de-assign from hwdom or guest domain. */
+-    if ( is_system_domain(d) || !has_vpci(d) )
++    /* It only makes sense to de-assign from hwdom/domIO or guest domain. */
++    if ( ( !hwdom_uses_vpci() && is_system_domain(d) ) || !has_vpci(d) )
+         return 0;
+ 
+     spin_lock(&pdev->vpci_lock);
+diff --git a/xen/include/xen/vpci.h b/xen/include/xen/vpci.h
+index 4eaf42cc94..7be5dc550f 100644
+--- a/xen/include/xen/vpci.h
++++ b/xen/include/xen/vpci.h
+@@ -321,6 +321,8 @@ static inline int vpci_deassign_device(struct domain *d, struct pci_dev *pdev)
+ };
+ #endif
+ 
++#define is_hardware_pci_domain(d) (is_hardware_domain(d) && !hwdom_uses_vpci())
++
+ #endif
+ 
+ /*
+-- 
+2.25.1
+
