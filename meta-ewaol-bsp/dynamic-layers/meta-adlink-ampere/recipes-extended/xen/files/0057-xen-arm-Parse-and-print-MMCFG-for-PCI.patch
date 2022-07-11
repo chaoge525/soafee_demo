@@ -1,0 +1,141 @@
+From b31c807d5c7c7474e670ba753671e51eba448967 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?T=C3=A9o=20Couprie=20Diaz?= <teo.coupriediaz@arm.com>
+Date: Fri, 25 Feb 2022 12:49:08 +0000
+Subject: [PATCH 57/78] xen/arm: Parse and print MMCFG for PCI
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Parse the content of MMCFG in order to find PCI host bridge configuration and
+print the result on boot.
+This is mostly the x86 implementation but with elements we don't need removed.
+
+Signed-off-by: Téo Couprie Diaz <teo.coupriediaz@arm.com>
+Change-Id: I38d39461409ea94eef21e40189f8f58b464bb58f
+---
+ xen/arch/arm/Makefile     |  4 +++
+ xen/arch/arm/acpi_mmcfg.c | 57 +++++++++++++++++++++++++++++++++++++++
+ xen/arch/arm/acpi_mmcfg.h |  4 +++
+ xen/arch/arm/setup.c      |  8 ++++++
+ 4 files changed, 73 insertions(+)
+ create mode 100644 xen/arch/arm/acpi_mmcfg.c
+ create mode 100644 xen/arch/arm/acpi_mmcfg.h
+
+diff --git a/xen/arch/arm/Makefile b/xen/arch/arm/Makefile
+index 07f634508e..c3059d477e 100644
+--- a/xen/arch/arm/Makefile
++++ b/xen/arch/arm/Makefile
+@@ -67,6 +67,10 @@ obj-y += vsmc.o
+ obj-y += vpsci.o
+ obj-y += vuart.o
+ 
++obj-$(CONFIG_ACPI) += acpi_mmcfg.o
++
++extra-y += xen.lds
++
+ #obj-bin-y += ....o
+ 
+ ifneq ($(CONFIG_DTB_FILE),"")
+diff --git a/xen/arch/arm/acpi_mmcfg.c b/xen/arch/arm/acpi_mmcfg.c
+new file mode 100644
+index 0000000000..975646a9a4
+--- /dev/null
++++ b/xen/arch/arm/acpi_mmcfg.c
+@@ -0,0 +1,57 @@
++#include <xen/acpi.h>
++#include <xen/err.h>
++#include <xen/init.h>
++#include <xen/string.h>
++
++#include "acpi_mmcfg.h"
++
++int __init acpi_parse_mcfg(struct acpi_table_header *header)
++{
++    struct acpi_table_mcfg *mcfg;
++    struct acpi_mcfg_allocation *pci_config;
++    unsigned long i;
++    int pci_conf_count;
++
++    if ( !header )
++    {
++        printk(KERN_ERR "MCFG table not found, aborting.\n");
++        return -EINVAL;
++    }
++
++    mcfg = (struct acpi_table_mcfg *)header;
++
++    /* how many config structures do we have */
++    pci_conf_count = 0;
++    i = header->length - sizeof(struct acpi_table_mcfg);
++    while ( i >= sizeof(struct acpi_mcfg_allocation) ) {
++        ++pci_conf_count;
++        i -= sizeof(struct acpi_mcfg_allocation);
++    };
++    if ( pci_conf_count == 0 ) {
++        printk(KERN_ERR "MMCONFIG has no entries\n");
++        return -ENODEV;
++    }
++
++    pci_config = xmalloc_array(struct acpi_mcfg_allocation,
++                                     pci_conf_count);
++    if ( !pci_config ) {
++        printk(KERN_WARNING "No memory for MCFG config tables\n");
++        return -ENOMEM;
++    }
++
++    memcpy(pci_config, &mcfg[1],
++           pci_conf_count * sizeof(*pci_config));
++
++    for (i = 0; i < pci_conf_count; ++i) {
++        printk(KERN_INFO "PCI Segment : \n");
++        printk(KERN_INFO "\tAddress : 0x%018"PRIX64"\n",
++               pci_config[i].address);
++        printk(KERN_INFO "\tSegment : %d\n", pci_config[i].pci_segment);
++        printk(KERN_INFO "\tStart bus number : %d\n",
++               pci_config[i].start_bus_number);
++        printk(KERN_INFO "\tEnd bus number : %d\n",
++               pci_config[i].end_bus_number);
++    }
++
++    return 0;
++}
+\ No newline at end of file
+diff --git a/xen/arch/arm/acpi_mmcfg.h b/xen/arch/arm/acpi_mmcfg.h
+new file mode 100644
+index 0000000000..d3c618e871
+--- /dev/null
++++ b/xen/arch/arm/acpi_mmcfg.h
+@@ -0,0 +1,4 @@
++#include <xen/acpi.h>
++#include <acpi/actbl.h>
++
++int acpi_parse_mcfg(struct acpi_table_header *header);
+diff --git a/xen/arch/arm/setup.c b/xen/arch/arm/setup.c
+index 146867f645..96a8d08980 100644
+--- a/xen/arch/arm/setup.c
++++ b/xen/arch/arm/setup.c
+@@ -54,6 +54,8 @@
+ #include <xsm/xsm.h>
+ #include <asm/acpi.h>
+ 
++#include "acpi_mmcfg.h"
++
+ struct bootinfo __initdata bootinfo;
+ 
+ /*
+@@ -1022,6 +1024,12 @@ void __init start_xen(unsigned long boot_phys_offset,
+     apply_alternatives_all();
+     enable_errata_workarounds();
+ 
++#ifdef CONFIG_ACPI
++    /* TODO: Configuration option to deactivate even if ACPI */
++    /* TODO: Fill PCI configuration */
++    printk("======= ACPI PCI parsing =======\n");
++    acpi_table_parse(ACPI_SIG_MCFG, acpi_parse_mcfg);
++#endif
+     /* Create initial domain 0. */
+     if ( !is_dom0less_mode() )
+         create_dom0();
+-- 
+2.25.1
+

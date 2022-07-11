@@ -1,0 +1,393 @@
+From df78452e97332c2ac1617342913705bf8e471ad4 Mon Sep 17 00:00:00 2001
+From: Rahul Singh <rahul.singh@arm.com>
+Date: Wed, 8 Dec 2021 21:01:19 +0000
+Subject: [PATCH 33/78] xen/arm: Enable the existing MSI-X and MSI handlers
+ support for ARM
+
+The existing MSI-X and MSI handlers support available for X86 is adapted
+for Arm.
+
+Enable existing MSIX handlers for accesses to the MSI-X message control
+field on the PCI configuration space, and traps for accesses to the
+memory region that contains the MSI-X table and PBA for ARM. This traps
+detect attempts from the guest to configure MSI-X interrupts and
+properly sets them up.
+
+Enable existing handlers for the MSI control, address, data and mask
+fields in order to detect accesses to them and setup the interrupts as
+requested by the guest.
+
+Signed-off-by: Rahul Singh <rahul.singh@arm.com>
+---
+ xen/drivers/vpci/Makefile   |   4 +-
+ xen/drivers/vpci/arm_msix.c |  78 +++++++++++++++++
+ xen/drivers/vpci/arm_vmsi.c | 165 ++++++++++++++++++++++++++++++++++++
+ xen/drivers/vpci/msix.c     |  11 ++-
+ xen/include/asm-arm/pci.h   |  15 ++++
+ xen/include/xen/vpci.h      |  13 +++
+ 6 files changed, 282 insertions(+), 4 deletions(-)
+ create mode 100644 xen/drivers/vpci/arm_msix.c
+ create mode 100644 xen/drivers/vpci/arm_vmsi.c
+
+diff --git a/xen/drivers/vpci/Makefile b/xen/drivers/vpci/Makefile
+index 1a1413b93e..850593cf51 100644
+--- a/xen/drivers/vpci/Makefile
++++ b/xen/drivers/vpci/Makefile
+@@ -1,2 +1,2 @@
+-obj-y += vpci.o header.o
+-obj-$(CONFIG_HAS_PCI_MSI) += msi.o msix.o
++obj-y += vpci.o header.o msi.o msix.o
++obj-$(CONFIG_ARM) += arm_msix.o arm_vmsi.o
+diff --git a/xen/drivers/vpci/arm_msix.c b/xen/drivers/vpci/arm_msix.c
+new file mode 100644
+index 0000000000..46fc3bad9a
+--- /dev/null
++++ b/xen/drivers/vpci/arm_msix.c
+@@ -0,0 +1,78 @@
++/*
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms and conditions of the GNU General Public
++ * License, version 2, as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ * General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public
++ * License along with this program; If not, see <http://www.gnu.org/licenses/>.
++ */
++
++#include <xen/sched.h>
++#include <xen/vpci.h>
++
++#include <asm/io.h>
++
++void vpci_msix_arch_register(struct vpci_msix *msix, struct domain *d) { }
++
++static int arm_msix_read(struct vcpu *v, mmio_info_t *info,
++                         register_t *data, void *priv)
++{
++    struct vpci *vpci = (struct vpci *)priv;
++    struct vpci_msix *msix = vpci->msix;
++    unsigned int len = 1U << info->dabt.size;
++    unsigned long addr = info->gpa;
++
++    return vpci_msix_read(msix, addr, len, data);
++}
++
++static int arm_msix_write(struct vcpu *v, mmio_info_t *info,
++                          register_t data, void *priv)
++{
++    struct vpci *vpci = (struct vpci *)priv;
++    struct vpci_msix *msix = vpci->msix;
++    unsigned int len = 1U << info->dabt.size;
++    unsigned long addr = info->gpa;
++
++    return vpci_msix_write(msix, addr, len, data);
++}
++
++static const struct mmio_handler_ops vpci_msi_mmio_handler = {
++    .read  = arm_msix_read,
++    .write = arm_msix_write,
++};
++
++int vpci_make_msix_hole(const struct pci_dev *pdev)
++{
++    struct vpci_msix *msix = pdev->vpci->msix;
++    paddr_t addr,size;
++
++    for ( int i = 0; msix && i < ARRAY_SIZE(msix->tables); i++ )
++    {
++        if ( is_hardware_domain(pdev->domain) )
++            addr = vmsix_table_addr(pdev->vpci, VPCI_MSIX_TABLE);
++        else
++            addr = vmsix_guest_table_addr(pdev->vpci, VPCI_MSIX_TABLE);
++
++        size = vmsix_table_size(pdev->vpci, VPCI_MSIX_TABLE) - 1;
++
++        register_mmio_handler(pdev->domain, &vpci_msi_mmio_handler,
++                              addr, size, pdev->vpci);
++    }
++
++    return 0;
++}
++/*
++ * Local variables:
++ * mode: C
++ * c-file-style: "BSD"
++ * c-basic-offset: 4
++ * tab-width: 4
++ * indent-tabs-mode: nil
++ * End:
++ */
++
+diff --git a/xen/drivers/vpci/arm_vmsi.c b/xen/drivers/vpci/arm_vmsi.c
+new file mode 100644
+index 0000000000..13e0350cf0
+--- /dev/null
++++ b/xen/drivers/vpci/arm_vmsi.c
+@@ -0,0 +1,165 @@
++/*
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms and conditions of the GNU General Public
++ * License, version 2, as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ * General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public
++ * License along with this program; If not, see <http://www.gnu.org/licenses/>.
++ */
++
++#include <xen/msi.h>
++#include <xen/sched.h>
++#include <xen/vpci.h>
++#include <xen/vmap.h>
++
++#include <asm/gic_v3_its.h>
++#include <asm/io.h>
++
++#define upper_32_bits(n) ((u32)(((n) >> 16) >> 16))
++#define lower_32_bits(n) ((u32)((n) & 0xffffffff))
++
++void vpci_msi_arch_init(struct vpci_msi *msi) { }
++void vpci_msi_arch_print(const struct vpci_msi *msi) { }
++void vpci_msi_arch_disable(struct vpci_msi *msi,
++                           const struct pci_dev *pdev) { }
++void vpci_msix_arch_init_entry(struct vpci_msix_entry *entry) {}
++void vpci_msi_arch_update(struct vpci_msi *msi, const struct pci_dev *pdev) {}
++int vpci_msix_arch_print(const struct vpci_msix *msix)
++{
++    return 0;
++}
++
++static int vpci_get_msi_base(const struct pci_dev *pdev, u64 *msi_base)
++{
++    struct pci_host_bridge *bridge;
++
++    bridge = pci_find_host_bridge(pdev->seg, pdev->bus);
++    if ( unlikely(!bridge) )
++    {
++        gprintk(XENLOG_ERR, "Unable to find PCI bridge for %pp\n",
++                &pdev->sbdf);
++        return -ENODEV;
++    }
++
++    *msi_base = bridge->its_msi_base + ITS_DOORBELL_OFFSET ;
++
++    return 0;
++}
++
++int vpci_msi_arch_enable(struct vpci_msi *msi, const struct pci_dev *pdev,
++                         unsigned int vectors)
++{
++    u64 msi_base = 0;
++    int ret;
++    uint8_t slot = PCI_SLOT(pdev->devfn), func = PCI_FUNC(pdev->devfn);
++    unsigned int pos = pci_find_cap_offset(pdev->seg, pdev->bus, slot, func,
++                                           PCI_CAP_ID_MSI);
++
++    if ( msi->address )
++    {
++        ret = vpci_get_msi_base(pdev, &msi_base);
++        if ( ret )
++        {
++            return ret;
++        }
++        pci_conf_write32(pdev->sbdf, msi_lower_address_reg(pos),
++                         lower_32_bits(msi_base));
++    }
++
++    if ( pdev->vpci->msi->address64 )
++    {
++        pci_conf_write32(pdev->sbdf, msi_upper_address_reg(pos),
++                         upper_32_bits(msi_base));
++    }
++
++    if ( msi->data )
++    {
++        pci_conf_write16(pdev->sbdf, msi_data_reg(pos,
++                         pdev->vpci->msi->address64), msi->data);
++    }
++    return 0;
++}
++
++void vpci_msi_arch_mask(struct vpci_msi *msi, const struct pci_dev *pdev,
++                        unsigned int entry, bool mask)
++{
++    uint8_t slot = PCI_SLOT(pdev->devfn), func = PCI_FUNC(pdev->devfn);
++    unsigned int pos = pci_find_cap_offset(pdev->seg, pdev->bus, slot, func,
++                                           PCI_CAP_ID_MSI);
++
++    pci_conf_write32(pdev->sbdf, msi->mask,
++                     msi_mask_bits_reg(pos,pdev->vpci->msi->address64));
++}
++
++int vpci_msix_arch_disable_entry(struct vpci_msix_entry *entry,
++                                 const struct pci_dev *pdev)
++{
++    vpci_msix_arch_mask_entry(entry, pdev, true);
++
++    return 0;
++}
++
++void vpci_msix_arch_mask_entry(struct vpci_msix_entry *entry,
++                               const struct pci_dev *pdev, bool mask)
++{
++    u32 mask_bits;
++    paddr_t phys_addr = vmsix_table_addr(pdev->vpci, VPCI_MSIX_TABLE);
++    u32 entry_nr = vmsix_entry_nr(pdev->vpci->msix, entry);
++    void __iomem *desc_addr = ioremap_nocache(phys_addr +
++                                              entry_nr * PCI_MSIX_ENTRY_SIZE,
++                                              PCI_MSIX_ENTRY_SIZE);
++
++    mask_bits = readl(desc_addr + PCI_MSIX_ENTRY_VECTOR_CTRL_OFFSET);
++    mask_bits &= ~PCI_MSIX_VECTOR_BITMASK;
++    if ( mask )
++        mask_bits |= PCI_MSIX_VECTOR_BITMASK;
++    writel(mask_bits, desc_addr + PCI_MSIX_ENTRY_VECTOR_CTRL_OFFSET);
++
++    readl(desc_addr + PCI_MSIX_ENTRY_VECTOR_CTRL_OFFSET);
++
++    iounmap(desc_addr);
++}
++
++int vpci_msix_arch_enable_entry(struct vpci_msix_entry *entry,
++                                const struct pci_dev *pdev, paddr_t table_base)
++{
++    int ret;
++    u64 msi_base;
++    paddr_t phys_addr = vmsix_table_addr(pdev->vpci, VPCI_MSIX_TABLE);
++    u32 entry_nr = vmsix_entry_nr(pdev->vpci->msix, entry);
++    void __iomem *desc_addr = ioremap_nocache(phys_addr +
++                                              entry_nr * PCI_MSIX_ENTRY_SIZE,
++                                              PCI_MSIX_ENTRY_SIZE);
++
++    ret = vpci_get_msi_base(pdev, &msi_base);
++    if ( ret )
++    {
++        return ret;
++    }
++
++    writel(lower_32_bits(msi_base),
++           desc_addr + PCI_MSIX_ENTRY_LOWER_ADDR_OFFSET);
++    writel(upper_32_bits(msi_base),
++           desc_addr + PCI_MSIX_ENTRY_UPPER_ADDR_OFFSET);
++    writel(entry->data, desc_addr + PCI_MSIX_ENTRY_DATA_OFFSET);
++
++    iounmap(desc_addr);
++
++    vpci_msix_arch_mask_entry(entry, pdev, false);
++
++    return 0;
++}
++/*
++ * Local variables:
++ * mode: C
++ * c-file-style: "BSD"
++ * c-basic-offset: 4
++ * tab-width: 4
++ * indent-tabs-mode: nil
++ * End:
++ */
+diff --git a/xen/drivers/vpci/msix.c b/xen/drivers/vpci/msix.c
+index 2c638d39ac..c3ade79c28 100644
+--- a/xen/drivers/vpci/msix.c
++++ b/xen/drivers/vpci/msix.c
+@@ -19,8 +19,10 @@
+ 
+ #include <xen/msi.h>
+ #include <xen/sched.h>
++#include <xen/vmap.h>
+ #include <xen/vpci.h>
+ 
++#include <asm/io.h>
+ #include <asm/p2m.h>
+ 
+ static uint32_t control_read(const struct pci_dev *pdev, unsigned int reg,
+@@ -150,7 +152,12 @@ static bool access_allowed(const struct pci_dev *pdev, unsigned long addr,
+ static struct vpci_msix_entry *get_entry(struct vpci_msix *msix,
+                                          paddr_t addr)
+ {
+-    paddr_t start = vmsix_table_addr(msix->pdev->vpci, VPCI_MSIX_TABLE);
++    paddr_t start;
++
++    if ( is_hardware_domain(current->domain) )
++        start = vmsix_table_addr(msix->pdev->vpci, VPCI_MSIX_TABLE);
++    else
++        start = vmsix_guest_table_addr(msix->pdev->vpci, VPCI_MSIX_TABLE);
+ 
+     return &msix->entries[(addr - start) / PCI_MSIX_ENTRY_SIZE];
+ }
+@@ -294,7 +301,7 @@ bool vpci_msix_write(struct vpci_msix *msix, unsigned long addr,
+         {
+             struct vpci *vpci = msix->pdev->vpci;
+             unsigned int idx = addr - vmsix_table_addr(vpci, VPCI_MSIX_PBA);
+-            const void __iomem *pba = get_pba(vpci);
++            void __iomem *pba = get_pba(vpci);
+ 
+             if ( !pba )
+             {
+diff --git a/xen/include/asm-arm/pci.h b/xen/include/asm-arm/pci.h
+index e135b842c5..0fc6b6c56a 100644
+--- a/xen/include/asm-arm/pci.h
++++ b/xen/include/asm-arm/pci.h
+@@ -28,6 +28,14 @@ struct arch_pci_dev {
+     struct device dev;
+ };
+ 
++/* Arch-specific MSI data for vPCI. */
++struct vpci_arch_msi {
++};
++
++/* Arch-specific MSI-X entry data for vPCI. */
++struct vpci_arch_msix_entry {
++};
++
+ /*
+  * Because of the header cross-dependencies, e.g. we need both
+  * struct pci_dev and struct arch_pci_dev at the same time, this cannot be
+@@ -118,6 +126,13 @@ int pci_host_iterate_bridges_and_count(struct domain *d,
+ 
+ int pci_host_bridge_mappings(struct domain *d);
+ 
++static inline int
++pci_msi_conf_write_intercept(struct pci_dev *pdev, unsigned int reg,
++                             unsigned int size, uint32_t *data)
++{
++    return 0;
++}
++
+ #else   /*!CONFIG_HAS_PCI*/
+ 
+ struct arch_pci_dev { };
+diff --git a/xen/include/xen/vpci.h b/xen/include/xen/vpci.h
+index 1ae479dfd1..4eaf42cc94 100644
+--- a/xen/include/xen/vpci.h
++++ b/xen/include/xen/vpci.h
+@@ -215,6 +215,19 @@ static inline paddr_t vmsix_table_addr(const struct vpci *vpci, unsigned int nr)
+            (vpci->msix->tables[nr] & ~PCI_MSIX_BIRMASK);
+ }
+ 
++static inline paddr_t vmsix_guest_table_base(const struct vpci *vpci,
++                                             unsigned int nr)
++{
++    return (vpci->header.bars[vpci->msix->tables[nr] &
++           PCI_MSIX_BIRMASK].guest_reg & PCI_BASE_ADDRESS_MEM_MASK);
++}
++
++static inline paddr_t vmsix_guest_table_addr(const struct vpci *vpci,
++                                             unsigned int nr)
++{
++    return vmsix_guest_table_base(vpci, nr) +
++           (vpci->msix->tables[nr] & ~PCI_MSIX_BIRMASK);
++}
+ /*
+  * Note regarding the size calculation of the PBA: the spec mentions "The last
+  * QWORD will not necessarily be fully populated", so it implies that the PBA
+-- 
+2.25.1
+

@@ -1,0 +1,170 @@
+From fa96e9eed6fb82d2f9d54ba3650e32f56421d19e Mon Sep 17 00:00:00 2001
+From: Luca Fancellu <luca.fancellu@arm.com>
+Date: Thu, 25 Nov 2021 15:08:30 +0000
+Subject: [PATCH 53/78] xen/arm: pci device passthrough for dom0less guests
+
+Introduce the xen,pci-assigned property for the passthrough
+node that is used to assign pci devices to a dom0less guest.
+
+When the property is found, the addressed pci device is
+assigned to the guest and the vpci DT node is added to the
+guest DT.
+
+Update the documentation about this property.
+
+Issue-Id: SCM-1012
+Signed-off-by: Luca Fancellu <luca.fancellu@arm.com>
+Change-Id: I568aea739c1731f6d925a0bfbe581581187e6301
+---
+ docs/misc/arm/passthrough.txt | 29 +++++++++++++
+ xen/arch/arm/domain_build.c   | 82 +++++++++++++++++++++++++++++++++++
+ 2 files changed, 111 insertions(+)
+
+diff --git a/docs/misc/arm/passthrough.txt b/docs/misc/arm/passthrough.txt
+index 219d1cca57..2f9cce088a 100644
+--- a/docs/misc/arm/passthrough.txt
++++ b/docs/misc/arm/passthrough.txt
+@@ -186,6 +186,35 @@ assign a network card to a dom0-less guest on Xilinx Ultrascale+ MPSoC:
+     };
+ };
+ 
++Dom0-less PCI Device Passthrough
++================================
++
++PCI devices can be assigned to the domU guests by using the partial device tree.
++To address one or more PCI devices to be assigned, use the xen,pci-assigned
++property for the passthrough node as in the example below.
++
++/dts-v1/;
++
++/ {
++    #address-cells = <2>;
++    #size-cells = <1>;
++
++
++    passthrough {
++        compatible = "simple-bus";
++        ranges;
++        #address-cells = <2>;
++        #size-cells = <1>;
++        xen,pci-assigned = <0 7 0>, <0xFE 0xBC 0x8>;
++    };
++};
++
++The example is assigning to the guest the PCI devices at these addresses:
++ - 0000:07:00.0
++ - 00FE:BC:01.0
++
++so xen,pci-assigned values are <segment bus device_function>.
++
+ 
+ [arm,gic.txt]: https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tree/Documentation/devicetree/bindings/interrupt-controller/arm,gic.txt
+ [arm,gic-v3.txt]: https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tree/Documentation/devicetree/bindings/interrupt-controller/arm,gic-v3.txt
+diff --git a/xen/arch/arm/domain_build.c b/xen/arch/arm/domain_build.c
+index 78a9a9f2eb..05062d3fd5 100644
+--- a/xen/arch/arm/domain_build.c
++++ b/xen/arch/arm/domain_build.c
+@@ -2080,11 +2080,89 @@ static int __init make_vpci_node(void *fdt)
+ 
+     return res;
+ }
++
++static int __init domu_assign_pci_device(struct domain *d,
++                                         struct kernel_info *kinfo,
++                                         const void *pfdt,
++                                         int nodeoffset)
++{
++    const struct fdt_property *prop;
++    const __be32 *cell;
++    unsigned int count;
++    int rc;
++
++    if ( !is_pci_passthrough_enabled() || !is_pci_scan_enabled() )
++        return 0;
++
++    prop = fdt_get_property(pfdt, nodeoffset, "xen,pci-assigned", NULL);
++    /* If the property is not found, return without errors */
++    if ( !prop )
++        return 0;
++
++    if ( !prop->len )
++    {
++        printk(XENLOG_ERR"xen,pci-assigned property cannot be empty.\n");
++        return -EINVAL;
++    }
++
++    cell = (const __be32 *)prop->data;
++    count = fdt32_to_cpu(prop->len) / sizeof(u32);
++
++    if ( (count % 3) != 0 )
++    {
++        printk(XENLOG_ERR
++               "xen,pci-assigned values count must be multiple of 3.\n");
++        return -EINVAL;
++    }
++
++    while( count > 0 )
++    {
++        u32 seg, bus, devfn;
++
++        seg = dt_next_cell(1, &cell);
++        bus = dt_next_cell(1, &cell);
++        devfn = dt_next_cell(1, &cell);
++
++        if ( (seg & ~0xFFFF) || (bus & ~0xFF) || (devfn & ~0xFF) )
++        {
++            printk(XENLOG_ERR
++                   "Invalid device identifier in xen,pci-assigned property: "
++                   "<%04x %02x %02x> \n", seg, bus, devfn);
++            return -EINVAL;
++        }
++
++        printk(XENLOG_INFO
++               "Assign PCI device %04x:%02x:%02x.%x to domain domU%d\n", seg,
++               bus, PCI_SLOT(devfn), PCI_FUNC(devfn), d->domain_id);
++
++        rc = pci_assign_device(d, seg, bus, devfn, 0);
++        if ( rc < 0 )
++        {
++            printk(XENLOG_ERR
++                   "Failure assigning the pci device (Error %d) \n", rc);
++            return rc;
++        }
++        count -= 3;
++    }
++
++    rc = make_vpci_node(kinfo->fdt);
++    if ( rc )
++        return rc;
++
++    return 0;
++}
+ #else
+ static inline int __init make_vpci_node(void *fdt)
+ {
+     return 0;
+ }
++static inline int __init domu_assign_pci_device(struct domain *d,
++                                                struct kernel_info *kinfo,
++                                                const void *pfdt,
++                                                int nodeoffset)
++{
++    return 0;
++}
+ #endif
+ 
+ static int __init handle_node(struct domain *d, struct kernel_info *kinfo,
+@@ -2731,6 +2809,10 @@ static int __init domain_handle_dtb_bootmodule(struct domain *d,
+         }
+         if ( dt_node_cmp(name, "passthrough") == 0 )
+         {
++            res = domu_assign_pci_device(d, kinfo, pfdt, node_next);
++            if ( res )
++                return res;
++
+             res = scan_pfdt_node(kinfo, pfdt, node_next,
+                                  DT_ROOT_NODE_ADDR_CELLS_DEFAULT,
+                                  DT_ROOT_NODE_SIZE_CELLS_DEFAULT,
+-- 
+2.25.1
+

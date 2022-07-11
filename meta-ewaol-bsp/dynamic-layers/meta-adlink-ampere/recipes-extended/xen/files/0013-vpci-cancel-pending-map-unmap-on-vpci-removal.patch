@@ -1,0 +1,175 @@
+From 23299416d446bdbdba51641f0e37825eba0fb1f2 Mon Sep 17 00:00:00 2001
+From: Oleksandr Andrushchenko <oleksandr_andrushchenko@epam.com>
+Date: Thu, 25 Nov 2021 13:02:41 +0200
+Subject: [PATCH 13/78] vpci: cancel pending map/unmap on vpci removal
+
+When a vPCI is removed for a PCI device it is possible that we have
+scheduled a delayed work for map/unmap operations for that device.
+For example, the following scenario can illustrate the problem:
+
+pci_physdev_op
+   pci_add_device
+       init_bars -> modify_bars -> defer_map -> raise_softirq(SCHEDULE_SOFTIRQ)
+   iommu_add_device <- FAILS
+   vpci_remove_device -> xfree(pdev->vpci)
+
+leave_hypervisor_to_guest
+   vpci_process_pending: v->vpci.mem != NULL; v->vpci.pdev->vpci == NULL
+
+For the hardware domain we continue execution as the worse that
+could happen is that MMIO mappings are left in place when the
+device has been deassigned.
+
+For unprivileged domains that get a failure in the middle of a vPCI
+{un}map operation we need to destroy them, as we don't know in which
+state the p2m is. This can only happen in vpci_process_pending for
+DomUs as they won't be allowed to call pci_add_device.
+
+Signed-off-by: Oleksandr Andrushchenko <oleksandr_andrushchenko@epam.com>
+---
+ xen/drivers/vpci/header.c | 49 ++++++++++++++++++++++++++++++---------
+ xen/drivers/vpci/vpci.c   |  2 ++
+ xen/include/xen/pci.h     |  5 ++++
+ xen/include/xen/vpci.h    |  6 +++++
+ 4 files changed, 51 insertions(+), 11 deletions(-)
+
+diff --git a/xen/drivers/vpci/header.c b/xen/drivers/vpci/header.c
+index bd23c0274d..ba333fb2f9 100644
+--- a/xen/drivers/vpci/header.c
++++ b/xen/drivers/vpci/header.c
+@@ -131,7 +131,13 @@ static void modify_decoding(const struct pci_dev *pdev, uint16_t cmd,
+ 
+ bool vpci_process_pending(struct vcpu *v)
+ {
+-    if ( v->vpci.mem )
++    struct pci_dev *pdev = v->vpci.pdev;
++
++    if ( !pdev )
++        return false;
++
++    spin_lock(&pdev->vpci_lock);
++    if ( !pdev->vpci_cancel_pending && v->vpci.mem )
+     {
+         struct map_data data = {
+             .d = v->domain,
+@@ -140,32 +146,53 @@ bool vpci_process_pending(struct vcpu *v)
+         int rc = rangeset_consume_ranges(v->vpci.mem, map_range, &data);
+ 
+         if ( rc == -ERESTART )
++        {
++            spin_unlock(&pdev->vpci_lock);
+             return true;
++        }
+ 
+-        spin_lock(&v->vpci.pdev->vpci_lock);
+-        if ( v->vpci.pdev->vpci )
++        if ( pdev->vpci )
+             /* Disable memory decoding unconditionally on failure. */
+-            modify_decoding(v->vpci.pdev,
++            modify_decoding(pdev,
+                             rc ? v->vpci.cmd & ~PCI_COMMAND_MEMORY : v->vpci.cmd,
+                             !rc && v->vpci.rom_only);
+-        spin_unlock(&v->vpci.pdev->vpci_lock);
+ 
+-        rangeset_destroy(v->vpci.mem);
+-        v->vpci.mem = NULL;
+         if ( rc )
++        {
+             /*
+              * FIXME: in case of failure remove the device from the domain.
+              * Note that there might still be leftover mappings. While this is
+-             * safe for Dom0, for DomUs the domain will likely need to be
+-             * killed in order to avoid leaking stale p2m mappings on
+-             * failure.
++             * safe for Dom0, for DomUs the domain needs to be killed in order
++             * to avoid leaking stale p2m mappings on failure.
+              */
+-            vpci_remove_device(v->vpci.pdev);
++            if ( is_hardware_domain(v->domain) )
++                vpci_remove_device_locked(pdev);
++            else
++                domain_crash(v->domain);
++        }
+     }
++    spin_unlock(&pdev->vpci_lock);
+ 
+     return false;
+ }
+ 
++void vpci_cancel_pending_locked(struct pci_dev *pdev)
++{
++    struct vcpu *v;
++
++    ASSERT(spin_is_locked(&pdev->vpci_lock));
++
++    /* Cancel any pending work now on all vCPUs. */
++    for_each_vcpu( pdev->domain, v )
++    {
++        if ( v->vpci.mem && (v->vpci.pdev == pdev) )
++        {
++            rangeset_destroy(v->vpci.mem);
++            v->vpci.mem = NULL;
++        }
++    }
++}
++
+ static int __init apply_map(struct domain *d, const struct pci_dev *pdev,
+                             struct rangeset *mem, uint16_t cmd)
+ {
+diff --git a/xen/drivers/vpci/vpci.c b/xen/drivers/vpci/vpci.c
+index ceaac4516f..37103e2076 100644
+--- a/xen/drivers/vpci/vpci.c
++++ b/xen/drivers/vpci/vpci.c
+@@ -54,7 +54,9 @@ void vpci_remove_device_locked(struct pci_dev *pdev)
+ {
+     ASSERT(spin_is_locked(&pdev->vpci_lock));
+ 
++    pdev->vpci_cancel_pending = true;
+     vpci_remove_device_handlers_locked(pdev);
++    vpci_cancel_pending_locked(pdev);
+     xfree(pdev->vpci->msix);
+     xfree(pdev->vpci->msi);
+     xfree(pdev->vpci);
+diff --git a/xen/include/xen/pci.h b/xen/include/xen/pci.h
+index 3f60d6c6c6..52d302ac5f 100644
+--- a/xen/include/xen/pci.h
++++ b/xen/include/xen/pci.h
+@@ -135,6 +135,11 @@ struct pci_dev {
+ 
+     /* Data for vPCI. */
+     spinlock_t vpci_lock;
++    /*
++     * Set if PCI device is being removed now and we need to cancel any
++     * pending map/unmap operations.
++     */
++    bool vpci_cancel_pending;
+     struct vpci *vpci;
+ };
+ 
+diff --git a/xen/include/xen/vpci.h b/xen/include/xen/vpci.h
+index 07aae66b23..37ded09a45 100644
+--- a/xen/include/xen/vpci.h
++++ b/xen/include/xen/vpci.h
+@@ -57,6 +57,7 @@ uint32_t vpci_hw_read32(const struct pci_dev *pdev, unsigned int reg,
+  * should not run.
+  */
+ bool __must_check vpci_process_pending(struct vcpu *v);
++void vpci_cancel_pending_locked(struct pci_dev *pdev);
+ 
+ struct vpci {
+     /* List of vPCI handlers for a device. */
+@@ -255,6 +256,11 @@ static inline bool __must_check vpci_process_pending(struct vcpu *v)
+     ASSERT_UNREACHABLE();
+     return false;
+ }
++
++static inline void vpci_cancel_pending_locked(struct pci_dev *pdev)
++{
++    ASSERT_UNREACHABLE();
++}
+ #endif
+ 
+ #endif
+-- 
+2.25.1
+

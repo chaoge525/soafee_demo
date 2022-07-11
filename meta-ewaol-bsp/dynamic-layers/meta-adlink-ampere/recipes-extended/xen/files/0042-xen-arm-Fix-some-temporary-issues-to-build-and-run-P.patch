@@ -1,0 +1,116 @@
+From 173d1e56263b5ca0daa62c89cdb2dd5e97590969 Mon Sep 17 00:00:00 2001
+From: Rahul Singh <rahul.singh@arm.com>
+Date: Wed, 10 Nov 2021 15:52:41 +0000
+Subject: [PATCH 42/78] xen/arm: Fix some temporary issues to build and run PCI
+ ..
+
+passthrough code.
+It is not possible to do DMA below address 0x40000000 for N1SDP board if
+DOMU guest RAM0 base is 0x40000000.Modify GUEST_RAM0_BASE from
+0x40000000 to 0xa0000000 so that DOMU guest should be able to do
+DMA trasactions.
+
+On N1SDP board memory decoding is enabled for some PCI devices. Allow
+writing BAR with memory decoding enabled.
+
+SMMUv3 driver throws error when ACPI and SMMUv3 is enabled together.
+Didsable ACPI in SMMUv3 code.
+
+Signed-off-by: Rahul Singh <rahul.singh@arm.com>
+---
+ xen/common/Kconfig                    | 1 -
+ xen/drivers/passthrough/arm/smmu-v3.c | 4 ++--
+ xen/drivers/passthrough/device_tree.c | 3 ---
+ xen/drivers/vpci/header.c             | 5 ++++-
+ xen/include/public/arch-arm.h         | 4 ++--
+ 5 files changed, 8 insertions(+), 9 deletions(-)
+
+diff --git a/xen/common/Kconfig b/xen/common/Kconfig
+index 6443943889..7b5c07907f 100644
+--- a/xen/common/Kconfig
++++ b/xen/common/Kconfig
+@@ -265,7 +265,6 @@ config XSM_FLASK_AVC_STATS
+ 
+ config XSM_FLASK_POLICY
+ 	bool "Compile Xen with a built-in FLASK security policy"
+-	default y if "$(XEN_HAS_CHECKPOLICY)" = "y"
+ 	depends on XSM_FLASK
+ 	---help---
+ 	  This includes a default XSM policy in the hypervisor so that the
+diff --git a/xen/drivers/passthrough/arm/smmu-v3.c b/xen/drivers/passthrough/arm/smmu-v3.c
+index b8ba41795a..31304872dc 100644
+--- a/xen/drivers/passthrough/arm/smmu-v3.c
++++ b/xen/drivers/passthrough/arm/smmu-v3.c
+@@ -90,6 +90,8 @@
+ #include <asm/iommu_fwspec.h>
+ #include <asm/platform.h>
+ 
++/* Temorary fix to build XEN for N1SDP board if SMMUV3 and ACPI in enabled*/
++#undef CONFIG_ACPI
+ 
+ #define ARM_SMMU_VTCR_SH_IS		3
+ #define ARM_SMMU_VTCR_RGN_WBWA		1
+@@ -2217,8 +2219,6 @@ static int arm_smmu_add_device(u8 devfn, struct device *dev)
+ 	/* Let Xen know that the master device is protected by an IOMMU. */
+ 	device_set_protected(dev);
+ 
+-	dev_info(dev, "Added master device (SMMUv3 %s StreamIds %u)\n",
+-			dev_name(fwspec->iommu_dev), fwspec->num_ids);
+ 
+ #ifdef CONFIG_HAS_PCI
+ 	if (dev_is_pci(dev))
+diff --git a/xen/drivers/passthrough/device_tree.c b/xen/drivers/passthrough/device_tree.c
+index a5621d5d9b..1edc1f5509 100644
+--- a/xen/drivers/passthrough/device_tree.c
++++ b/xen/drivers/passthrough/device_tree.c
+@@ -224,9 +224,6 @@ int dt_map_id(struct dt_device_node *np, u32 id, const char *map_name,
+         if ( id_out )
+             *id_out = masked_id - id_base + out_base;
+ 
+-        printk(XENLOG_DEBUG "%pOF: %s, using mask %08x, id-base: %08x, out-base: %08x, length: %08x, id: %08x -> %08x\n",
+-               np, map_name, map_mask, id_base, out_base, id_len, id,
+-               masked_id - id_base + out_base);
+         return 0;
+     }
+ 
+diff --git a/xen/drivers/vpci/header.c b/xen/drivers/vpci/header.c
+index 6b065799c7..32dfea763f 100644
+--- a/xen/drivers/vpci/header.c
++++ b/xen/drivers/vpci/header.c
+@@ -532,7 +532,6 @@ static void bar_write(const struct pci_dev *pdev, unsigned int reg,
+             gprintk(XENLOG_WARNING,
+                     "%pp: ignored BAR %zu write with memory decoding enabled\n",
+                     &pdev->sbdf, bar - pdev->vpci->header.bars + hi);
+-        return;
+     }
+ 
+ 
+@@ -552,6 +551,10 @@ static void bar_write(const struct pci_dev *pdev, unsigned int reg,
+     }
+ 
+     pci_conf_write32(pdev->sbdf, reg, val);
++    if ( pci_conf_read16(pdev->sbdf, PCI_COMMAND) & PCI_COMMAND_MEMORY )
++    {
++        modify_bars(pdev, pci_conf_read16(pdev->sbdf, PCI_COMMAND), false);
++    }
+ }
+ 
+ static void guest_bar_write(const struct pci_dev *pdev, unsigned int reg,
+diff --git a/xen/include/public/arch-arm.h b/xen/include/public/arch-arm.h
+index 0e08e9eda8..d592b8dbbd 100644
+--- a/xen/include/public/arch-arm.h
++++ b/xen/include/public/arch-arm.h
+@@ -459,8 +459,8 @@ typedef uint64_t xen_callback_t;
+  * address space) relies on the fact that the regions reserved for the RAM
+  * below are big enough to also accommodate such regions.
+  */
+-#define GUEST_RAM0_BASE   xen_mk_ullong(0x40000000) /* 3GB of low RAM @ 1GB */
+-#define GUEST_RAM0_SIZE   xen_mk_ullong(0xc0000000)
++#define GUEST_RAM0_BASE   xen_mk_ullong(0xa0000000) /* 3GB of low RAM @ 1GB */
++#define GUEST_RAM0_SIZE   xen_mk_ullong(0x60000000)
+ 
+ /* 4GB @ 4GB Prefetch Memory for VPCI */
+ #define GUEST_VPCI_ADDR_TYPE_PREFETCH_MEM   xen_mk_ullong(0x42000000)
+-- 
+2.25.1
+

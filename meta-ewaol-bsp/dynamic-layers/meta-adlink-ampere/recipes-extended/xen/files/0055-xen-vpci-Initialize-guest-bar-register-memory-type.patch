@@ -1,0 +1,37 @@
+From 69926d2d7b2fcd517e4cacab4cdf5d44c089aeb0 Mon Sep 17 00:00:00 2001
+From: Rahul Singh <rahul.singh@arm.com>
+Date: Wed, 15 Jun 2022 12:02:04 +0100
+Subject: [PATCH 55/78] xen/vpci: Initialize guest bar register memory type
+
+Initialize the guest bar register memory type to 32 bit or 64 bit based
+on physical bar memory type. Also initialize the memory type to
+prefetchable based on on physical bar memory space bar.
+
+Signed-off-by: Rahul Singh <rahul.singh@arm.com>
+Change-Id: Ib5d1437fd0bd29671fcb6c6af0ca673f8a63ca9c
+---
+ xen/drivers/vpci/header.c | 8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+diff --git a/xen/drivers/vpci/header.c b/xen/drivers/vpci/header.c
+index 2eb1947466..c7a4939f47 100644
+--- a/xen/drivers/vpci/header.c
++++ b/xen/drivers/vpci/header.c
+@@ -766,6 +766,14 @@ static int init_bars(struct pci_dev *pdev)
+             pci_conf_write16(pdev->sbdf, PCI_COMMAND, cmd);
+             return rc;
+         }
++
++        if ( !is_hwdom )
++        {
++            bars[i].guest_reg |= bars[i].type == VPCI_BAR_MEM32 ?
++                PCI_BASE_ADDRESS_MEM_TYPE_32 : PCI_BASE_ADDRESS_MEM_TYPE_64;
++            bars[i].guest_reg |= bars[i].prefetchable ?
++                                PCI_BASE_ADDRESS_MEM_PREFETCH : 0;
++        }
+     }
+ 
+     /* Check expansion ROM. */
+-- 
+2.25.1
+

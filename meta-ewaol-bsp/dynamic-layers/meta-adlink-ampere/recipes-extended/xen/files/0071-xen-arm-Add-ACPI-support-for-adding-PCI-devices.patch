@@ -1,0 +1,125 @@
+From 1e95a878b0297735dbd5e6d87b96ee9213e33a0f Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?T=C3=A9o=20Couprie=20Diaz?= <teo.coupriediaz@arm.com>
+Date: Wed, 4 May 2022 17:26:34 +0100
+Subject: [PATCH 71/78] xen/arm: Add ACPI support for adding PCI devices
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Add ACPI handling in iommu_add_pci_device.
+Enable SMMUv3 with ACPI in Kconfig.
+
+Signed-off-by: Téo Couprie Diaz <teo.coupriediaz@arm.com>
+Change-Id: I97b226262def69ca2756e98e4eab5e2e71d448df
+---
+ xen/drivers/passthrough/Kconfig     |  2 +-
+ xen/drivers/passthrough/arm/iommu.c | 55 +++++++++++++++++++++++------
+ 2 files changed, 46 insertions(+), 11 deletions(-)
+
+diff --git a/xen/drivers/passthrough/Kconfig b/xen/drivers/passthrough/Kconfig
+index 09505aa983..58a64e1aa2 100644
+--- a/xen/drivers/passthrough/Kconfig
++++ b/xen/drivers/passthrough/Kconfig
+@@ -15,7 +15,7 @@ config ARM_SMMU
+ 
+ config ARM_SMMU_V3
+ 	bool "ARM Ltd. System MMU Version 3 (SMMUv3) Support" if EXPERT
+-	depends on ARM_64 && (!ACPI || BROKEN)
++	depends on ARM_64
+ 	---help---
+ 	 Support for implementations of the ARM System MMU architecture
+ 	 version 3. Driver is in experimental stage and should not be used in
+diff --git a/xen/drivers/passthrough/arm/iommu.c b/xen/drivers/passthrough/arm/iommu.c
+index 4c5d778494..df3f20c01d 100644
+--- a/xen/drivers/passthrough/arm/iommu.c
++++ b/xen/drivers/passthrough/arm/iommu.c
+@@ -21,6 +21,8 @@
+ #include <xen/lib.h>
+ #include <xen/pci.h>
+ 
++#include <acpi/actbl2.h>
++#include <asm/acpi_iort.h>
+ #include <asm/device.h>
+ #include <asm/iommu_fwspec.h>
+ 
+@@ -182,6 +184,9 @@ int iommu_add_pci_device(uint8_t devfn, struct pci_dev *pdev)
+     struct dt_phandle_args iommu_spec = { .args_count = 1 };
+     struct device *dev = pci_to_dev(pdev);
+     struct dt_device_node *np;
++    struct acpi_iort_node *pci_root_complex;
++    struct acpi_iort_node *parent_iommu = NULL;
++    u32 streamid;
+     int rc = NO_IOMMU;
+ 
+     if ( !iommu_enabled )
+@@ -193,16 +198,34 @@ int iommu_add_pci_device(uint8_t devfn, struct pci_dev *pdev)
+     if ( dev_iommu_fwspec_get(dev) )
+         return -EEXIST;
+ 
+-    np = pci_find_host_bridge_node(dev);
+-    if ( !np )
+-        return -ENODEV;
++    if ( acpi_disabled )
++    {
++        np = pci_find_host_bridge_node(dev);
++        if ( !np )
++            return -ENODEV;
++        /*
++        * According to the Documentation/devicetree/bindings/pci/pci-iommu.txt
++        * from Linux.
++        */
++        rc = dt_map_id(np, PCI_BDF2(pdev->bus, devfn), "iommu-map",
++                    "iommu-map-mask", &iommu_spec.np, iommu_spec.args);
++    }
++    else
++    {
++        pci_root_complex = pci_find_host_bridge_iort_node(dev);
++        if ( !pci_root_complex )
++            return -ENODEV;
+ 
+-    /*
+-     * According to the Documentation/devicetree/bindings/pci/pci-iommu.txt
+-     * from Linux.
+-     */
+-    rc = dt_map_id(np, PCI_BDF2(pdev->bus, devfn), "iommu-map",
+-                   "iommu-map-mask", &iommu_spec.np, iommu_spec.args);
++        parent_iommu = iort_node_map_id(pci_root_complex,
++                                        PCI_BDF2(pdev->bus, devfn), &streamid,
++                                        IORT_IOMMU_TYPE);
++
++        if ( !parent_iommu )
++
++            return -ENODEV;
++        /* FIXME: Probably something better to do. */
++        rc = 0;
++    }
+     if ( rc )
+         return rc == -ENODEV ? NO_IOMMU : rc;
+ 
+@@ -210,10 +233,22 @@ int iommu_add_pci_device(uint8_t devfn, struct pci_dev *pdev)
+      * The driver which supports generic PCI-IOMMU DT bindings must have
+      * these callback implemented.
+      */
++#ifdef CONFIG_HAS_DEVICE_TREE
+     if ( !ops->add_device || !ops->dt_xlate )
+         return -EINVAL;
++#endif
++#ifdef CONFIG_ACPI
++    if ( !ops->add_device || !ops->acpi_xlate )
++        return -EINVAL;
++#endif
+ 
+-    rc = dt_iommu_xlate(dev, &iommu_spec);
++    if ( acpi_disabled )
++        rc = dt_iommu_xlate(dev, &iommu_spec);
++    else
++    {
++        rc = iort_iommu_xlate(dev, parent_iommu, streamid);
++        printk(XENLOG_INFO "(IORT IOMMU Xlate) Mapped streamID : 0x%X\n", streamid);
++    }
+ 
+     /*
+      * Add master device to the IOMMU if latter is present and available.
+-- 
+2.25.1
+

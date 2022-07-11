@@ -1,0 +1,194 @@
+From b1e904da97e627d1b6167be2159267f302e975b8 Mon Sep 17 00:00:00 2001
+From: Edward Pickup <Edward.Pickup@arm.com>
+Date: Wed, 22 Sep 2021 14:44:44 +0100
+Subject: [PATCH 43/78] arm/pci: Add pci-scan boot argument
+
+This patch adds a Xen boot arguments that, if enabled, causes a call to
+existing code to scan pci devices enumerated by the firmware.
+
+This patch also makes an existing debug function viewable outside its
+translation unit, and uses this to dump the PCI devices found.
+The debug message is controlled by an additional configurable added to
+arch/arm/Kconfig.debug.
+
+Additionally, this patch modifies segment loading to ensure that PCI
+devices on other segments are properly found.
+
+This will be needed ahead of dom0less support for pci passthrough on
+arm.
+
+Issue-Id: SCM-1368
+Signed-off-by: Luca Fancellu <luca.fancellu@arm.com>
+Signed-off-by: Edward Pickup <Edward.Pickup@arm.com>
+Change-Id: I79eb1325019fb37fe0c7951070efe5745fed6905
+---
+ docs/misc/xen-command-line.pandoc  |  7 +++++++
+ xen/arch/arm/Kconfig.debug         |  7 +++++++
+ xen/arch/arm/pci/pci-host-common.c |  2 +-
+ xen/arch/arm/pci/pci.c             | 28 +++++++++++++++++++++++++---
+ xen/drivers/passthrough/pci.c      |  2 +-
+ xen/include/asm-arm/pci.h          | 11 +++++++++++
+ xen/include/xen/pci.h              |  1 +
+ 7 files changed, 53 insertions(+), 5 deletions(-)
+
+diff --git a/docs/misc/xen-command-line.pandoc b/docs/misc/xen-command-line.pandoc
+index 1d08fb7e9a..16131c8118 100644
+--- a/docs/misc/xen-command-line.pandoc
++++ b/docs/misc/xen-command-line.pandoc
+@@ -1834,6 +1834,13 @@ This option can be specified more than once (up to 8 times at present).
+ 
+ Flag to enable or disable support for PCI passthrough
+ 
++### pci-scan (arm)
++> `= <boolean>`
++
++> Default: `false`
++
++Flag to enable or disable Xen PCI scan at boot.
++
+ ### pcid (x86)
+ > `= <boolean> | xpti=<bool>`
+ 
+diff --git a/xen/arch/arm/Kconfig.debug b/xen/arch/arm/Kconfig.debug
+index 35ccd13273..798e892d6e 100644
+--- a/xen/arch/arm/Kconfig.debug
++++ b/xen/arch/arm/Kconfig.debug
+@@ -287,3 +287,10 @@ config EARLY_PRINTK_INC
+ 	default "debug-mvebu.inc" if EARLY_UART_MVEBU
+ 	default "debug-pl011.inc" if EARLY_UART_PL011
+ 	default "debug-scif.inc" if EARLY_UART_SCIF
++
++config CONFIG_PCI_DEVICE_DEBUG
++	bool "PCI device debug messages"
++	depends on HAS_PCI
++	help
++		PCI device debug
++		If unsure say N
+diff --git a/xen/arch/arm/pci/pci-host-common.c b/xen/arch/arm/pci/pci-host-common.c
+index dd8081e7ac..dbded1d1db 100644
+--- a/xen/arch/arm/pci/pci-host-common.c
++++ b/xen/arch/arm/pci/pci-host-common.c
+@@ -254,7 +254,7 @@ int pci_host_common_probe(struct dt_device_node *dev,
+         BUG();
+     }
+     pci_add_host_bridge(bridge);
+-
++    pci_add_segment(bridge->segment);
+     pci_set_msi_base(bridge);
+ 
+     return 0;
+diff --git a/xen/arch/arm/pci/pci.c b/xen/arch/arm/pci/pci.c
+index 78b97beaef..caf2816888 100644
+--- a/xen/arch/arm/pci/pci.c
++++ b/xen/arch/arm/pci/pci.c
+@@ -79,21 +79,43 @@ static int __init acpi_pci_init(void)
+ bool __read_mostly pci_passthrough_enabled;
+ boolean_param("pci-passthrough", pci_passthrough_enabled);
+ 
++/* By default pci scan is disabled. */
++bool __read_mostly pci_scan_enabled;
++boolean_param("pci-scan", pci_scan_enabled);
++
+ static int __init pci_init(void)
+ {
++    int ret;
+     /*
+      * Enable PCI passthrough when has been enabled explicitly
+      * (pci-passthrough=on).
+      */
+-    if ( !pci_passthrough_enabled )
++    if ( !is_pci_passthrough_enabled() )
+         return 0;
+ 
+     pci_segments_init();
+ 
+     if ( acpi_disabled )
+-        return dt_pci_init();
++        ret = dt_pci_init();
+     else
+-        return acpi_pci_init();
++        ret = acpi_pci_init();
++
++    if ( ret < 0 )
++        return ret;
++
++    if ( is_pci_scan_enabled() )
++    {
++        ret = scan_pci_devices();
++
++        if ( ret < 0 )
++            return ret;
++
++#ifdef CONFIG_PCI_DEVICE_DEBUG
++        dump_pci_devices('c');
++#endif
++    }
++
++    return 0;
+ }
+ __initcall(pci_init);
+ 
+diff --git a/xen/drivers/passthrough/pci.c b/xen/drivers/passthrough/pci.c
+index 6718e029dc..6cb37e81df 100644
+--- a/xen/drivers/passthrough/pci.c
++++ b/xen/drivers/passthrough/pci.c
+@@ -1298,7 +1298,7 @@ static int _dump_pci_devices(struct pci_seg *pseg, void *arg)
+     return 0;
+ }
+ 
+-static void dump_pci_devices(unsigned char ch)
++void dump_pci_devices(unsigned char ch)
+ {
+     printk("==== PCI devices ====\n");
+     pcidevs_lock();
+diff --git a/xen/include/asm-arm/pci.h b/xen/include/asm-arm/pci.h
+index c627f390d6..a665511530 100644
+--- a/xen/include/asm-arm/pci.h
++++ b/xen/include/asm-arm/pci.h
+@@ -22,6 +22,7 @@
+ #define pci_to_dev(pcidev) (&(pcidev)->arch.dev)
+ 
+ extern bool pci_passthrough_enabled;
++extern bool pci_scan_enabled;
+ 
+ /* Arch pci dev struct */
+ struct arch_pci_dev {
+@@ -120,6 +121,11 @@ static always_inline bool is_pci_passthrough_enabled(void)
+     return pci_passthrough_enabled;
+ }
+ 
++static always_inline bool is_pci_scan_enabled(void)
++{
++    return pci_scan_enabled;
++}
++
+ void arch_pci_init_pdev(struct pci_dev *pdev);
+ 
+ int pci_get_new_domain_nr(void);
+@@ -146,6 +152,11 @@ static always_inline bool is_pci_passthrough_enabled(void)
+     return false;
+ }
+ 
++static always_inline bool is_pci_scan_enabled(void)
++{
++    return false;
++}
++
+ struct pci_dev;
+ 
+ static inline void arch_pci_init_pdev(struct pci_dev *pdev) {}
+diff --git a/xen/include/xen/pci.h b/xen/include/xen/pci.h
+index 52d302ac5f..292b68063d 100644
+--- a/xen/include/xen/pci.h
++++ b/xen/include/xen/pci.h
+@@ -161,6 +161,7 @@ bool_t __must_check pcidevs_locked(void);
+ bool_t pci_known_segment(u16 seg);
+ bool_t pci_device_detect(u16 seg, u8 bus, u8 dev, u8 func);
+ int scan_pci_devices(void);
++void dump_pci_devices(unsigned char ch);
+ enum pdev_type pdev_type(u16 seg, u8 bus, u8 devfn);
+ int find_upstream_bridge(u16 seg, u8 *bus, u8 *devfn, u8 *secbus);
+ 
+-- 
+2.25.1
+

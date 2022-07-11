@@ -1,0 +1,264 @@
+From ea045d4818afe38a9f7d973dbaf6b796076bca7e Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?T=C3=A9o=20Couprie=20Diaz?= <teo.coupriediaz@arm.com>
+Date: Tue, 3 May 2022 17:36:45 +0100
+Subject: [PATCH 62/78] xen/arm: Add ACPI to SMMUv3 driver
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Added ACPI device and init function.
+Changed arm_smmu_device_probe to support both device tree and ACPI.
+GSIV are currently handled by a hack, we might need to go back and do it properly.
+Added a function to find an SMMU from its IORT node.
+
+Signed-off-by: Téo Couprie Diaz <teo.coupriediaz@arm.com>
+Change-Id: Idda780a4ba728c9a9b9c5361bbe2b5ecb6718b60
+---
+ xen/drivers/passthrough/arm/smmu-v3.c | 137 ++++++++++++++++++++------
+ xen/include/asm-arm/iommu.h           |   7 ++
+ 2 files changed, 115 insertions(+), 29 deletions(-)
+
+diff --git a/xen/drivers/passthrough/arm/smmu-v3.c b/xen/drivers/passthrough/arm/smmu-v3.c
+index 72e9f1655d..187c89580e 100644
+--- a/xen/drivers/passthrough/arm/smmu-v3.c
++++ b/xen/drivers/passthrough/arm/smmu-v3.c
+@@ -91,7 +91,6 @@
+ #include <asm/platform.h>
+ 
+ /* Temorary fix to build XEN for N1SDP board if SMMUV3 and ACPI in enabled*/
+-#undef CONFIG_ACPI
+ 
+ #define ARM_SMMU_VTCR_SH_IS		3
+ #define ARM_SMMU_VTCR_RGN_WBWA		1
+@@ -850,6 +849,10 @@ struct arm_smmu_device {
+ 	struct tasklet		evtq_irq_tasklet;
+ 	struct tasklet		priq_irq_tasklet;
+ 	struct tasklet		combined_irq_tasklet;
++
++	/* FIXME: #ifdef ACPI ? If yes, would need to duplicate device_probe. */
++	/* Allows finding the device from the ACPI node */
++	struct acpi_iort_node *iort_node;
+ };
+ 
+ /* SMMU private data for each master */
+@@ -3043,18 +3046,16 @@ static void acpi_smmu_get_options(u32 model, struct arm_smmu_device *smmu)
+ static int arm_smmu_device_acpi_probe(struct platform_device *pdev,
+ 				      struct arm_smmu_device *smmu)
+ {
+-	struct acpi_iort_smmu_v3 *iort_smmu;
+-	struct device *dev = smmu->dev;
+-	struct acpi_iort_node *node;
+-
+-	node = *(struct acpi_iort_node **)dev_get_platdata(dev);
+-
+-	/* Retrieve SMMUv3 specific data */
+-	iort_smmu = (struct acpi_iort_smmu_v3 *)node->node_data;
++	struct acpi_iort_smmu_v3 *iort_data;
++	if ( !smmu->iort_node )
++		return -ENODEV;
++	
++	iort_data = (struct acpi_iort_smmu_v3 *)smmu->iort_node->node_data;
+ 
+-	acpi_smmu_get_options(iort_smmu->model, smmu);
++	/* TODO: Put every data retrieval here, remove them from main function ? */
++	acpi_smmu_get_options(iort_data->model, smmu);
+ 
+-	if (iort_smmu->flags & ACPI_IORT_SMMU_V3_COHACC_OVERRIDE)
++	if (iort_data->flags & ACPI_IORT_SMMU_V3_COHACC_OVERRIDE)
+ 		smmu->features |= ARM_SMMU_FEAT_COHERENCY;
+ 
+ 	return 0;
+@@ -3116,11 +3117,13 @@ static void arm_smmu_free_structures(struct arm_smmu_device *smmu)
+ 		xfree(smmu->strtab_cfg.l1_desc);
+ }
+ 
+-static int arm_smmu_device_probe(struct platform_device *pdev)
++static int arm_smmu_device_probe(struct platform_device *pdev,
++								 struct acpi_iort_node *iort_node)
+ {
+ 	int irq, ret;
+ 	paddr_t ioaddr, iosize;
+ 	struct arm_smmu_device *smmu;
++	struct acpi_iort_smmu_v3 *iort_data = NULL;
+ 
+ 	smmu = xzalloc(struct arm_smmu_device);
+ 	if (!smmu) {
+@@ -3134,15 +3137,26 @@ static int arm_smmu_device_probe(struct platform_device *pdev)
+ 		if (ret)
+ 			goto out_free_smmu;
+ 	} else {
++		smmu->iort_node = iort_node;
+ 		ret = arm_smmu_device_acpi_probe(pdev, smmu);
+ 		if (ret)
+ 			goto out_free_smmu;
++		iort_data = (struct acpi_iort_smmu_v3 *)iort_node->node_data;
+ 	}
+ 
+ 	/* Base address */
+-	ret = dt_device_get_address(dev_to_dt(pdev), 0, &ioaddr, &iosize);
+-	if (ret)
+-		goto out_free_smmu;
++	if ( iort_node )
++	{
++		ioaddr = iort_data->base_address;
++		/* Linux does something similar. */
++		iosize = arm_smmu_resource_size(smmu);
++	}
++	else
++	{
++		ret = dt_device_get_address(dev_to_dt(pdev), 0, &ioaddr, &iosize);
++		if (ret)
++			goto out_free_smmu;
++	}
+ 
+ 	if (iosize < arm_smmu_resource_size(smmu)) {
+ 		dev_err(pdev, "MMIO region too small (%lx)\n", iosize);
+@@ -3172,22 +3186,40 @@ static int arm_smmu_device_probe(struct platform_device *pdev)
+ 	}
+ 
+ 	/* Interrupt lines */
++	if ( iort_node )
++	{
++		/* FIXME: Correct GSIV interrupt handling. */
++		/* TODO: Check on AVA/other boards. */
++		if ( iort_data->event_gsiv > 0 )
++			smmu->evtq.q.irq = iort_data->event_gsiv - 32;
++		irq_set_type(smmu->evtq.q.irq, ACPI_EDGE_SENSITIVE);
+ 
+-	irq = platform_get_irq_byname_optional(pdev, "combined");
+-	if (irq > 0)
+-		smmu->combined_irq = irq;
+-	else {
+-		irq = platform_get_irq_byname_optional(pdev, "eventq");
+-		if (irq > 0)
+-			smmu->evtq.q.irq = irq;
+-
+-		irq = platform_get_irq_byname_optional(pdev, "priq");
+-		if (irq > 0)
+-			smmu->priq.q.irq = irq;
++		if ( iort_data->pri_gsiv > 0 )
++			smmu->priq.q.irq = iort_data->pri_gsiv - 32;
++		irq_set_type(smmu->priq.q.irq, ACPI_EDGE_SENSITIVE);
+ 
+-		irq = platform_get_irq_byname_optional(pdev, "gerror");
++		if ( iort_data->gerr_gsiv > 0 )
++			smmu->gerr_irq = iort_data->gerr_gsiv - 32;
++		irq_set_type(smmu->gerr_irq, ACPI_EDGE_SENSITIVE);
++	}
++	else
++	{
++		irq = platform_get_irq_byname_optional(pdev, "combined");
+ 		if (irq > 0)
+-			smmu->gerr_irq = irq;
++			smmu->combined_irq = irq;
++		else {
++			irq = platform_get_irq_byname_optional(pdev, "eventq");
++			if (irq > 0)
++				smmu->evtq.q.irq = irq;
++
++			irq = platform_get_irq_byname_optional(pdev, "priq");
++			if (irq > 0)
++				smmu->priq.q.irq = irq;
++
++			irq = platform_get_irq_byname_optional(pdev, "gerror");
++			if (irq > 0)
++				smmu->gerr_irq = irq;
++		}
+ 	}
+ 	/* Probe the h/w */
+ 	ret = arm_smmu_device_hw_probe(smmu);
+@@ -3286,6 +3318,24 @@ static struct arm_smmu_device *arm_smmu_get_by_dev(struct device *dev)
+ 	return NULL;
+ }
+ 
++struct device *arm_smmu_get_dev_by_iort_node(struct acpi_iort_node *node)
++{
++	struct arm_smmu_device *smmu = NULL;
++
++	spin_lock(&arm_smmu_devices_lock);
++
++	list_for_each_entry(smmu, &arm_smmu_devices, devices) {
++		if (smmu->iort_node  == node) {
++			spin_unlock(&arm_smmu_devices_lock);
++			return smmu->dev;
++		}
++	}
++
++	spin_unlock(&arm_smmu_devices_lock);
++
++	return NULL;
++}
++
+ static struct iommu_domain *arm_smmu_get_domain(struct domain *d,
+ 				struct device *dev)
+ {
+@@ -3520,7 +3570,7 @@ static __init int arm_smmu_dt_init(struct dt_device_node *dev,
+ 	 */
+ 	dt_device_set_used_by(dev, DOMID_XEN);
+ 
+-	rc = arm_smmu_device_probe(dt_to_dev(dev));
++	rc = arm_smmu_device_probe(dt_to_dev(dev), NULL);
+ 	if (rc)
+ 		return rc;
+ 
+@@ -3533,3 +3583,32 @@ DT_DEVICE_START(smmuv3, "ARM SMMU V3", DEVICE_IOMMU)
+ .dt_match = arm_smmu_of_match,
+ .init = arm_smmu_dt_init,
+ DT_DEVICE_END
++
++#ifdef CONFIG_ACPI
++static __init int arm_smmu_acpi_init(const void *data)
++{
++	int rc;
++	/* FIXME: Do some inits ? - Doesn't seem necessary for now. */
++	struct platform_device *pdev = xzalloc(struct platform_device);
++
++	/*
++	 * Even if the device can't be initialized, we don't want to
++	 * give the SMMU device to dom0.
++	 */
++	/* FIXME: How to do in ACPI ? */
++	/* dt_device_set_used_by(dev, DOMID_XEN); */
++
++	rc = arm_smmu_device_probe(pdev, (struct acpi_iort_node *)data);
++	if (rc)
++		return rc;
++
++	iommu_set_ops(&arm_smmu_iommu_ops);
++
++	return 0;
++}
++
++ACPI_DEVICE_START(asmmuv3, "ARM SMMU V3", DEVICE_IOMMU)
++.class_type = 0, /* FIXME: Check if useful ? */
++.init = arm_smmu_acpi_init,
++ACPI_DEVICE_END
++#endif
+diff --git a/xen/include/asm-arm/iommu.h b/xen/include/asm-arm/iommu.h
+index 621947ad13..5843bdaf04 100644
+--- a/xen/include/asm-arm/iommu.h
++++ b/xen/include/asm-arm/iommu.h
+@@ -14,6 +14,9 @@
+ #ifndef __ARCH_ARM_IOMMU_H__
+ #define __ARCH_ARM_IOMMU_H__
+ 
++#define ACPI_IORT_SMMU_V3_HISILICON_HI161X 1
++#define ACPI_IORT_SMMU_V3_CAVIUM_CN99XX 2
++
+ /* IORT external SMMU variables defines. */
+ extern int iort_smmuv3_nodes_num;
+ extern struct acpi_iort_node **iort_smmuv3_nodes;
+@@ -37,6 +40,10 @@ int __must_check arm_iommu_map_page(struct domain *d, dfn_t dfn, mfn_t mfn,
+ int __must_check arm_iommu_unmap_page(struct domain *d, dfn_t dfn,
+                                       unsigned int *flush_flags);
+ 
++#ifdef CONFIG_ACPI
++struct device *arm_smmu_get_dev_by_iort_node(struct acpi_iort_node *node);
++#endif
++
+ #endif /* __ARCH_ARM_IOMMU_H__ */
+ 
+ /*
+-- 
+2.25.1
+

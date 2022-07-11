@@ -1,0 +1,63 @@
+From 0d7d5b46c52f2a315cf4933b3d6e8d08061135df Mon Sep 17 00:00:00 2001
+From: Luca Fancellu <luca.fancellu@arm.com>
+Date: Thu, 16 Dec 2021 11:09:09 +0000
+Subject: [PATCH 47/78] xen/pci: helper function for hwdom using vpci
+
+When pci-scan is enabled and Xen supports vpci for guests, Xen will
+scan the pci bus to find devices and emulate the pci bus, so the hw
+domain must see the emulated bus instead of the real one.
+
+A new helper function, hwdom_uses_vpci, is implemented and returns
+true when pci-scan is enabled and Xen is built with
+CONFIG_HAS_VPCI_GUEST_SUPPORT=y.
+
+Issue-Id: SCM-1012
+Signed-off-by: Luca Fancellu <luca.fancellu@arm.com>
+Change-Id: Ifa6e0f91bde0cf524e91f811c1ac30afa3ed5213
+---
+ xen/include/asm-arm/pci.h | 15 +++++++++++++++
+ xen/include/asm-x86/pci.h |  6 ++++++
+ 2 files changed, 21 insertions(+)
+
+diff --git a/xen/include/asm-arm/pci.h b/xen/include/asm-arm/pci.h
+index a665511530..834dbe1836 100644
+--- a/xen/include/asm-arm/pci.h
++++ b/xen/include/asm-arm/pci.h
+@@ -175,4 +175,19 @@ static inline int pci_get_new_domain_nr(void)
+ }
+ 
+ #endif  /*!CONFIG_HAS_PCI*/
++
++#ifdef CONFIG_HAS_VPCI_GUEST_SUPPORT
++static always_inline bool hwdom_uses_vpci(void)
++{
++    return is_pci_scan_enabled();
++}
++
++#else  /*!CONFIG_HAS_VPCI_GUEST_SUPPORT*/
++
++static always_inline bool hwdom_uses_vpci(void)
++{
++    return false;
++}
++#endif  /*!CONFIG_HAS_VPCI_GUEST_SUPPORT*/
++
+ #endif /* __ARM_PCI_H__ */
+diff --git a/xen/include/asm-x86/pci.h b/xen/include/asm-x86/pci.h
+index c8e1a9ecdb..cc5bb45d86 100644
+--- a/xen/include/asm-x86/pci.h
++++ b/xen/include/asm-x86/pci.h
+@@ -57,4 +57,10 @@ static always_inline bool is_pci_passthrough_enabled(void)
+ 
+ void arch_pci_init_pdev(struct pci_dev *pdev);
+ 
++/* Unlike ARM, HW domain does not ever use vpci for x86 */
++static always_inline bool hwdom_uses_vpci(void)
++{
++    return false;
++}
++
+ #endif /* __X86_PCI_H__ */
+-- 
+2.25.1
+

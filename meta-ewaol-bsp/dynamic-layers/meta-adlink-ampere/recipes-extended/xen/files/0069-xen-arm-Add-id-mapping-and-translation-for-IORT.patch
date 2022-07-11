@@ -1,0 +1,234 @@
+From d7e6787cb1b13c0160e4a557d5b60409dd51ed0d Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?T=C3=A9o=20Couprie=20Diaz?= <teo.coupriediaz@arm.com>
+Date: Wed, 4 May 2022 17:17:32 +0100
+Subject: [PATCH 69/78] xen/arm: Add id mapping and translation for IORT
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+This patch adds the necessary functions to map IDs and making translations
+with data from the ACPI IORT table, currently only for SMMUv3.
+Currently there's a hack regarding type checking for the IORT node
+as we change the SMMUv3 node type to 255.
+
+Signed-off-by: Téo Couprie Diaz <teo.coupriediaz@arm.com>
+Change-Id: I46bac9da7018cd9f508b70ffcee61c63db539e86
+---
+ xen/arch/arm/acpi_iort.c        | 182 ++++++++++++++++++++++++++++++++
+ xen/include/asm-arm/acpi_iort.h |  11 ++
+ 2 files changed, 193 insertions(+)
+
+diff --git a/xen/arch/arm/acpi_iort.c b/xen/arch/arm/acpi_iort.c
+index 6e3b0d3f6b..20b11fc026 100644
+--- a/xen/arch/arm/acpi_iort.c
++++ b/xen/arch/arm/acpi_iort.c
+@@ -117,3 +117,185 @@ int acpi_parse_iort(struct acpi_table_header *header)
+ 
+     return 0;
+ }
++
++static int iort_get_id_mapping_index(struct acpi_iort_node *node)
++{
++    struct acpi_iort_smmu_v3 *smmu;
++
++    if ( node->type != ACPI_IORT_NODE_SMMU_V3)
++        return -EINVAL;
++    /*
++     * SMMUv3 dev ID mapping index was introduced in revision 1
++     * table, not available in revision 0
++     */
++    if ( node->revision < 1 )
++        return -EINVAL;
++
++    smmu = (struct acpi_iort_smmu_v3 *)node->node_data;
++    /*
++     * ID mapping index is only ignored if all interrupts are
++     * GSIV based
++     */
++    if ( smmu->event_gsiv && smmu->pri_gsiv && smmu->gerr_gsiv
++        && smmu->sync_gsiv )
++        return -EINVAL;
++
++    if ( smmu->id_mapping_index >= node->mapping_count ) {
++        printk(XENLOG_ERR "[node %p type %d] ID mapping index overflows valid mappings\n",
++                node, node->type);
++        return -EINVAL;
++    }
++
++    return smmu->id_mapping_index;
++}
++
++static int iort_id_map(struct acpi_iort_id_mapping *map, u8 type, u32 rid_in,
++		       u32 *rid_out, bool check_overlap)
++{
++	/* Single mapping does not care for input id */
++	if ( map->flags & ACPI_IORT_ID_SINGLE_MAPPING ) 
++    {
++		if ( type == ACPI_IORT_NODE_NAMED_COMPONENT ||
++		     type == ACPI_IORT_NODE_PCI_ROOT_COMPLEX) 
++        {
++			*rid_out = map->output_base;
++			return 0;
++		}
++
++		printk(XENLOG_WARNING "[map %p] SINGLE MAPPING flag not allowed for node type %d, skipping ID map\n",
++			map, type);
++		return -ENXIO;
++	}
++
++	if ( rid_in < map->input_base ||
++	    (rid_in > map->input_base + map->id_count) )
++		return -ENXIO;
++
++	if ( check_overlap )
++    {
++		/*
++		 * We already found a mapping for this input ID at the end of
++		 * another region. If it coincides with the start of this
++		 * region, we assume the prior match was due to the off-by-1
++		 * issue mentioned below, and allow it to be superseded.
++		 * Otherwise, things are *really* broken, and we just disregard
++		 * duplicate matches entirely to retain compatibility.
++		 */
++		printk(XENLOG_ERR "[map %p] conflicting mapping for input ID 0x%x\n",
++		       map, rid_in);
++		if (rid_in != map->input_base)
++			return -ENXIO;
++
++		printk(XENLOG_ERR "applying workaround.\n");
++	}
++
++	*rid_out = map->output_base + (rid_in - map->input_base);
++
++	/*
++	 * Due to confusion regarding the meaning of the id_count field (which
++	 * carries the number of IDs *minus 1*), we may have to disregard this
++	 * match if it is at the end of the range, and overlaps with the start
++	 * of another one.
++	 */
++	if ( map->id_count > 0 && rid_in == map->input_base + map->id_count )
++		return -EAGAIN;
++	return 0;
++}
++
++struct acpi_iort_node *iort_node_map_id(struct acpi_iort_node *node,
++                                               u32 id_in, u32 *id_out,
++                                               u8 type_mask)
++{
++    u32 id = id_in;
++
++    /* Parse the ID mapping tree to find specified node type */
++    while ( node )
++    {
++        struct acpi_iort_id_mapping *map;
++        int i, index, rc = 0;
++        u32 out_ref = 0, map_id = id;
++
++        /*
++         * FIXME: This is because we are currently disabling SMMUv3 by changing its type in Xen.
++         *        We should modify the dom0 table instead.
++         */
++        if ( IORT_TYPE_MASK(node->type) & type_mask )
++        {
++            if (id_out)
++                *id_out = id;
++            return node;
++        }
++
++        if ( !node->mapping_offset || !node->mapping_count )
++            goto fail_map;
++
++        map = ACPI_ADD_PTR(struct acpi_iort_id_mapping, node,
++                   node->mapping_offset);
++
++        /* Firmware bug! */
++        if ( !map->output_reference )
++        {
++            printk(XENLOG_ERR "[node %p type %d] ID map has NULL parent reference\n",
++                   node, node->type);
++            goto fail_map;
++        }
++
++        /*
++         * Get the special ID mapping index (if any) and skip its
++         * associated ID map to prevent erroneous multi-stage
++         * IORT ID translations.
++         */
++        index = iort_get_id_mapping_index(node);
++
++        /* Do the ID translation */
++        for ( i = 0; i < node->mapping_count; i++, map++ )
++        {
++            /* if it is special mapping index, skip it */
++            if ( i == index )
++                continue;
++
++            rc = iort_id_map(map, node->type, map_id, &id, out_ref);
++            if ( !rc )
++                break;
++            if ( rc == -EAGAIN )
++                out_ref = map->output_reference;
++        }
++
++        if ( i == node->mapping_count && !out_ref )
++            goto fail_map;
++
++        node = ACPI_ADD_PTR(struct acpi_iort_node, iort_table,
++                    rc ? out_ref : map->output_reference);
++    }
++
++fail_map:
++    /* Map input ID to output ID unchanged on mapping failure */
++    if ( id_out )
++        *id_out = id_in;
++
++    return NULL;
++}
++
++/* FIXME: Change fwnode to iommu, use of ops ? */
++static int arm_smmu_iort_xlate(struct device *dev, u32 streamid,
++                               struct device *smmu_dev)
++{
++    int ret = iommu_fwspec_init(dev, smmu_dev);
++    if ( !ret )
++        ret = iommu_fwspec_add_ids(dev, &streamid, 1);
++    return ret;
++}
++
++int iort_iommu_xlate(struct device *dev, struct acpi_iort_node *node,
++                            u32 streamid)
++{
++    struct device *smmu_dev;
++    if ( !node )
++        return -ENODEV;
++
++    smmu_dev = arm_smmu_get_dev_by_iort_node(node);
++    if ( !smmu_dev )
++        return -ENODEV;
++
++    return arm_smmu_iort_xlate(dev, streamid, smmu_dev);
++}
+diff --git a/xen/include/asm-arm/acpi_iort.h b/xen/include/asm-arm/acpi_iort.h
+index e592df9c42..f831cd4c98 100644
+--- a/xen/include/asm-arm/acpi_iort.h
++++ b/xen/include/asm-arm/acpi_iort.h
+@@ -1,4 +1,15 @@
+ #include <xen/acpi.h>
+ #include <acpi/actbl2.h>
++#include <xen/iommu.h>
++
++/* Taken from Linux, might not be useful. */
++#define IORT_TYPE_MASK(type) (1 << (type))
++#define IORT_IOMMU_TYPE ((1 << ACPI_IORT_NODE_SMMU) | \
++                         (1 << ACPI_IORT_NODE_SMMU_V3))
+ 
+ int acpi_parse_iort(struct acpi_table_header *header);
++
++int iort_iommu_xlate(struct device *dev, struct acpi_iort_node *node,
++                            u32 streamid);
++struct acpi_iort_node *iort_node_map_id(struct acpi_iort_node *node, u32 id_in,
++                                        u32 *id_out, u8 type_mask);
+\ No newline at end of file
+-- 
+2.25.1
+

@@ -1,0 +1,42 @@
+From 5284033450dbe7c01d6127df6360e4211c5f9eb4 Mon Sep 17 00:00:00 2001
+From: Luca Fancellu <luca.fancellu@arm.com>
+Date: Tue, 7 Dec 2021 16:50:09 +0000
+Subject: [PATCH 48/78] xen/pci: disable pci_device_{add,remove} when hwdom
+ uses vpci on arm
+
+On ARM, if the hardware domain is using the emulated bus, it should
+not be allowd to add/remove pci devices, so return EOPNOTSUPP in that
+case.
+
+Issue-Id: SCM-1012
+Signed-off-by: Luca Fancellu <luca.fancellu@arm.com>
+Change-Id: I85a22f1600aead55cfb9c626ceb077c55f5559fc
+---
+ xen/drivers/pci/physdev.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/xen/drivers/pci/physdev.c b/xen/drivers/pci/physdev.c
+index a5bc17ff87..fa5a3ffcb3 100644
+--- a/xen/drivers/pci/physdev.c
++++ b/xen/drivers/pci/physdev.c
+@@ -18,7 +18,7 @@ ret_t pci_physdev_op(int cmd, XEN_GUEST_HANDLE_PARAM(void) arg)
+         struct pci_dev_info pdev_info;
+         nodeid_t node = NUMA_NO_NODE;
+ 
+-        if ( !is_pci_passthrough_enabled() )
++        if ( !is_pci_passthrough_enabled() || hwdom_uses_vpci() )
+             return -EOPNOTSUPP;
+ 
+         ret = -EFAULT;
+@@ -57,7 +57,7 @@ ret_t pci_physdev_op(int cmd, XEN_GUEST_HANDLE_PARAM(void) arg)
+     case PHYSDEVOP_pci_device_remove: {
+         struct physdev_pci_device dev;
+ 
+-        if ( !is_pci_passthrough_enabled() )
++        if ( !is_pci_passthrough_enabled() || hwdom_uses_vpci() )
+             return -EOPNOTSUPP;
+ 
+         ret = -EFAULT;
+-- 
+2.25.1
+

@@ -1,0 +1,206 @@
+From dbe81a61544dbe579073c376b09e2795a29385c2 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?T=C3=A9o=20Couprie=20Diaz?= <teo.coupriediaz@arm.com>
+Date: Tue, 3 May 2022 16:16:50 +0100
+Subject: [PATCH 60/78] xen/arm: Prepare IORT for SMMUv3 ACPI support
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Split the IORT function into node-specific functions and a main one.
+Move header to  for future access.
+Move IORT table context out of the parsing function.
+
+Signed-off-by: Téo Couprie Diaz <teo.coupriediaz@arm.com>
+Change-Id: I758714e0e70e091b3ae62312bcefd50fa8dcdd26
+---
+ xen/arch/arm/acpi_iort.c                      | 87 ++++++++++---------
+ xen/arch/arm/setup.c                          | 27 +++---
+ xen/{arch/arm => include/asm-arm}/acpi_iort.h |  0
+ 3 files changed, 58 insertions(+), 56 deletions(-)
+ rename xen/{arch/arm => include/asm-arm}/acpi_iort.h (100%)
+
+diff --git a/xen/arch/arm/acpi_iort.c b/xen/arch/arm/acpi_iort.c
+index f1da394b5f..916d782919 100644
+--- a/xen/arch/arm/acpi_iort.c
++++ b/xen/arch/arm/acpi_iort.c
+@@ -1,11 +1,9 @@
+-#include "acpi_iort.h"
++#include <asm/acpi_iort.h>
+ 
++struct acpi_table_iort *iort_table;
+ 
+-// TODO: Use ACPI macros (acmacros.h)
+-int acpi_parse_iort(struct acpi_table_header *header)
++void parse_pci_root_node(struct acpi_iort_node *node)
+ {
+-    struct acpi_table_iort *iort;
+-    struct acpi_iort_node *iort_node;
+     struct acpi_iort_node *temp_node;
+     struct acpi_iort_root_complex pci_node;
+     struct acpi_iort_id_mapping mapping;
+@@ -13,57 +11,60 @@ int acpi_parse_iort(struct acpi_table_header *header)
+     void* cursor = NULL;
+     uint32_t ITS;
+ 
++    pci_node = *(struct acpi_iort_root_complex *)node->node_data;
++
++    cursor = node;
++    temp_node = node;
++    /* Try to follow PCI nodes to an ITS */
++    /* TODO: Prevent infinite loops ? Should not happen... */
++    while( temp_node->type != ACPI_IORT_NODE_ITS_GROUP )
++    {
++        cursor = (void *)((vaddr_t)cursor + temp_node->mapping_offset);
++        mapping = *(struct acpi_iort_id_mapping *)cursor;
++        cursor = (void *)((vaddr_t)iort_table + mapping.output_reference);
++        printk(KERN_INFO "\tMapping reference going to : 0x%"PRIXPTR"\n",
++                (vaddr_t)cursor - (vaddr_t)iort_table);
++        temp_node = (struct acpi_iort_node *)cursor;
++    }
++
++    /* TODO: Verify there is only one possible ITS per root complex */
++    ITS = ((struct acpi_iort_its_group *)
++            &temp_node->node_data)->identifiers[0];
++
++    printk(KERN_INFO "\tSegment : 0x%X\n", pci_node.pci_segment_number);
++    printk(KERN_INFO "\tITS number : 0x%X\n", ITS);
++}
++
++// TODO: Use ACPI macros (acmacros.h)
++int acpi_parse_iort(struct acpi_table_header *header)
++{
++    struct acpi_iort_node *iort_node;
++
+     if ( !header )
+     {
+         printk(KERN_ERR "IORT table not found, aborting.\n");
+         return -EINVAL;
+     }
+ 
+-    iort = (struct acpi_table_iort *)header;
++    iort_table = (struct acpi_table_iort *)header;
++    iort_node = (struct acpi_iort_node *)((vaddr_t)iort_table +
++                                          iort_table->node_offset);
+ 
+-    iort_node = (struct acpi_iort_node *)((vaddr_t)iort + iort->node_offset);
+-    /* Go through every node and try to follow PCI nodes to an ITS */
++    /* Go through every node. */
+     /* TODO: Add checks to see if it mapped anything ? */
+     while ( iort_node &&
+-            (vaddr_t)iort_node < (vaddr_t)iort + iort->header.length )
++            (vaddr_t)iort_node < (vaddr_t)iort_table +
++            iort_table->header.length )
+     {
+-        if ( iort_node->type != ACPI_IORT_NODE_PCI_ROOT_COMPLEX )
+-        {
+-            iort_node = (struct acpi_iort_node *)((vaddr_t)iort_node
+-                                                  + iort_node->length);
+-            continue;
+-        }
+-
+-        pci_node = *(struct acpi_iort_root_complex *)iort_node->node_data;
+-
+-        cursor = iort_node;
+-        temp_node = iort_node;
+-        /* TODO: Prevent infinite loops ? Should not happen... */
+-        while( temp_node->type != ACPI_IORT_NODE_ITS_GROUP )
++        switch ( iort_node->type )
+         {
+-            cursor = (void *)((vaddr_t)cursor + temp_node->mapping_offset);
+-            mapping = *(struct acpi_iort_id_mapping *)cursor;
+-            cursor = (void *)((vaddr_t)iort + mapping.output_reference);
+-            printk(KERN_INFO "\tMapping reference going to : 0x%"PRIXPTR"\n",
+-                   (vaddr_t)cursor - (vaddr_t)iort);
+-            temp_node = (struct acpi_iort_node *)cursor;
++            case ACPI_IORT_NODE_PCI_ROOT_COMPLEX:
++                parse_pci_root_node(iort_node);
++                break;
+         }
+-
+-        /* TODO: Verify there is only one possible ITS per root complex */
+-        ITS = ((struct acpi_iort_its_group *)
+-               &temp_node->node_data)->identifiers[0];
+-
+-        printk(KERN_INFO "\tSegment : 0x%X\n", pci_node.pci_segment_number);
+-        printk(KERN_INFO "\tITS number : 0x%X\n", ITS);
+-
+         iort_node = (struct acpi_iort_node *)((vaddr_t)iort_node
+-                                               + iort_node->length);
++                                              + iort_node->length);
+     }
+ 
+-    if ( !cursor )
+-    {
+-        printk(KERN_ERR "No PCI host bridge node found.\n");
+-        return -ENODEV;
+-    }
+     return 0;
+-}
+\ No newline at end of file
++}
+diff --git a/xen/arch/arm/setup.c b/xen/arch/arm/setup.c
+index f8ccb55598..0f5e1101b7 100644
+--- a/xen/arch/arm/setup.c
++++ b/xen/arch/arm/setup.c
+@@ -41,6 +41,7 @@
+ #include <xen/libfdt/libfdt.h>
+ #include <xen/acpi.h>
+ #include <xen/warning.h>
++#include <asm/acpi_iort.h>
+ #include <asm/alternative.h>
+ #include <asm/page.h>
+ #include <asm/current.h>
+@@ -54,7 +55,6 @@
+ #include <xsm/xsm.h>
+ #include <asm/acpi.h>
+ 
+-#include "acpi_iort.h"
+ #include "acpi_mmcfg.h"
+ #include "acpi_sdt.h"
+ 
+@@ -1006,6 +1006,19 @@ void __init start_xen(unsigned long boot_phys_offset,
+     /* This should be done in a vpmu driver but we do not have one yet. */
+     vpmu_is_available = cpu_has_pmu;
+ 
++#ifdef CONFIG_ACPI
++    /* TODO: Configuration option to deactivate even if ACPI */
++    /* TODO: Fill PCI configuration */
++    printk("======= ACPI PCI parsing =======\n");
++    acpi_table_parse(ACPI_SIG_MCFG, acpi_parse_mcfg);
++    acpi_table_parse(ACPI_SIG_IORT, acpi_parse_iort);
++    if ( acpi_table_parse(ACPI_SIG_SSDT, acpi_parse_sdt) == -ENODEV )
++    {
++        printk(KERN_WARNING "No device found in SSDT, trying DSDT.\n");
++        acpi_table_parse(ACPI_SIG_DSDT, acpi_parse_sdt);
++    }
++#endif
++
+     /*
+      * The IOMMU subsystem must be initialized before P2M as we need
+      * to gather requirements regarding the maximum IPA bits supported by
+@@ -1026,18 +1039,6 @@ void __init start_xen(unsigned long boot_phys_offset,
+     apply_alternatives_all();
+     enable_errata_workarounds();
+ 
+-#ifdef CONFIG_ACPI
+-    /* TODO: Configuration option to deactivate even if ACPI */
+-    /* TODO: Fill PCI configuration */
+-    printk("======= ACPI PCI parsing =======\n");
+-    acpi_table_parse(ACPI_SIG_MCFG, acpi_parse_mcfg);
+-    acpi_table_parse(ACPI_SIG_IORT, acpi_parse_iort);
+-    if ( acpi_table_parse(ACPI_SIG_SSDT, acpi_parse_sdt) == -ENODEV )
+-    {
+-        printk(KERN_WARNING "No device found in SSDT, trying DSDT.\n");
+-        acpi_table_parse(ACPI_SIG_DSDT, acpi_parse_sdt);
+-    }
+-#endif
+     /* Create initial domain 0. */
+     if ( !is_dom0less_mode() )
+         create_dom0();
+diff --git a/xen/arch/arm/acpi_iort.h b/xen/include/asm-arm/acpi_iort.h
+similarity index 100%
+rename from xen/arch/arm/acpi_iort.h
+rename to xen/include/asm-arm/acpi_iort.h
+-- 
+2.25.1
+

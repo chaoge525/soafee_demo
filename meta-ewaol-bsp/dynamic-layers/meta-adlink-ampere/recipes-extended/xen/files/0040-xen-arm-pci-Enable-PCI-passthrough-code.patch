@@ -1,0 +1,41 @@
+From 4b923ab11cdc979568b3555b217dfe377278e000 Mon Sep 17 00:00:00 2001
+From: Rahul Singh <rahul.singh@arm.com>
+Date: Fri, 13 Aug 2021 13:55:29 +0100
+Subject: [PATCH 40/78] xen/arm: pci : Enable PCI passthrough code
+
+Enable the necessary configs to test the PCI passthrough code on ARM.
+HAS_PCI, HAS_VPCI, LATE_HWDOM, HAS_ITS, ARM_SMMU_V3.
+
+Signed-off-by: Rahul Singh <rahul.singh@arm.com>
+Change-Id: If675e175722c5cf0da461aca7494bdb9aa84dec4
+---
+ xen/arch/arm/Kconfig | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/xen/arch/arm/Kconfig b/xen/arch/arm/Kconfig
+index ecfa6822e4..7dc9e61a7c 100644
+--- a/xen/arch/arm/Kconfig
++++ b/xen/arch/arm/Kconfig
+@@ -7,6 +7,11 @@ config ARM_64
+ 	depends on !ARM_32
+ 	select 64BIT
+ 	select HAS_FAST_MULTIPLY
++	select HAS_PCI
++	select HAS_VPCI
++	select LATE_HWDOM
++	select ARM_SMMU_V3
++	select HAS_VPCI_GUEST_SUPPORT
+ 
+ config ARM
+ 	def_bool y
+@@ -45,6 +50,7 @@ config GICV3
+ config HAS_ITS
+         bool "GICv3 ITS MSI controller support (UNSUPPORTED)" if UNSUPPORTED
+         depends on GICV3 && !NEW_VGIC
++        default y
+ 
+ config HVM
+         def_bool y
+-- 
+2.25.1
+

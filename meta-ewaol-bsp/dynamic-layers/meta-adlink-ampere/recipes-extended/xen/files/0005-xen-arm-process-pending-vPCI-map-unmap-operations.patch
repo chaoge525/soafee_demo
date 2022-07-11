@@ -1,0 +1,118 @@
+From e0fe9d53c3c346e117da18fab4f0cb982955484d Mon Sep 17 00:00:00 2001
+From: Oleksandr Andrushchenko <oleksandr_andrushchenko@epam.com>
+Date: Wed, 24 Nov 2021 09:59:41 +0200
+Subject: [PATCH 05/78] xen/arm: process pending vPCI map/unmap operations
+
+vPCI may map and unmap PCI device memory (BARs) being passed through which
+may take a lot of time. For this those operations may be deferred to be
+performed later, so that they can be safely preempted.
+
+Currently this deferred processing is happening in common IOREQ code
+which doesn't seem to be the right place for x86 and is even more
+doubtful because IOREQ may not be enabled for Arm at all.
+So, for Arm the pending vPCI work may have no chance to be executed
+if the processing is left as is in the common IOREQ code only.
+For that reason make vPCI processing happen in arch specific code.
+
+Please be aware that there are a few outstanding TODOs affecting this
+code path, see xen/drivers/vpci/header.c:map_range and
+xen/drivers/vpci/header.c:vpci_process_pending.
+
+Signed-off-by: Oleksandr Andrushchenko <oleksandr_andrushchenko@epam.com>
+[x86 part]
+Acked-by: Jan Beulich <jbeulich@suse.com>
+Reviewed-by: Julien Grall <jgrall@amazon.com>
+Reviewed-by: Paul Durrant <paul@xen.org>
+Reviewed-by: Rahul Singh <rahul.singh@arm.com>
+Tested-by: Rahul Singh <rahul.singh@arm.com>
+---
+ xen/arch/arm/traps.c   | 13 +++++++++++++
+ xen/arch/x86/hvm/hvm.c |  6 ++++++
+ xen/common/ioreq.c     |  9 ---------
+ 3 files changed, 19 insertions(+), 9 deletions(-)
+
+diff --git a/xen/arch/arm/traps.c b/xen/arch/arm/traps.c
+index 219ab3c3fb..8757210a79 100644
+--- a/xen/arch/arm/traps.c
++++ b/xen/arch/arm/traps.c
+@@ -34,6 +34,7 @@
+ #include <xen/symbols.h>
+ #include <xen/version.h>
+ #include <xen/virtual_region.h>
++#include <xen/vpci.h>
+ 
+ #include <public/sched.h>
+ #include <public/xen.h>
+@@ -2290,6 +2291,18 @@ static bool check_for_vcpu_work(void)
+ {
+     struct vcpu *v = current;
+ 
++    if ( has_vpci(v->domain) )
++    {
++        bool pending;
++
++        local_irq_enable();
++        pending = vpci_process_pending(v);
++        local_irq_disable();
++
++        if ( pending )
++            return true;
++    }
++
+ #ifdef CONFIG_IOREQ_SERVER
+     if ( domain_has_ioreq_server(v->domain) )
+     {
+diff --git a/xen/arch/x86/hvm/hvm.c b/xen/arch/x86/hvm/hvm.c
+index 1fe658d902..d00722f8fc 100644
+--- a/xen/arch/x86/hvm/hvm.c
++++ b/xen/arch/x86/hvm/hvm.c
+@@ -546,6 +546,12 @@ void hvm_do_resume(struct vcpu *v)
+ 
+     pt_restore_timer(v);
+ 
++    if ( has_vpci(v->domain) && vpci_process_pending(v) )
++    {
++        raise_softirq(SCHEDULE_SOFTIRQ);
++        return;
++    }
++
+     if ( !vcpu_ioreq_handle_completion(v) )
+         return;
+ 
+diff --git a/xen/common/ioreq.c b/xen/common/ioreq.c
+index d732dc045d..689d256544 100644
+--- a/xen/common/ioreq.c
++++ b/xen/common/ioreq.c
+@@ -25,9 +25,7 @@
+ #include <xen/lib.h>
+ #include <xen/paging.h>
+ #include <xen/sched.h>
+-#include <xen/softirq.h>
+ #include <xen/trace.h>
+-#include <xen/vpci.h>
+ 
+ #include <asm/guest_atomics.h>
+ #include <asm/ioreq.h>
+@@ -212,19 +210,12 @@ static bool wait_for_io(struct ioreq_vcpu *sv, ioreq_t *p)
+ 
+ bool vcpu_ioreq_handle_completion(struct vcpu *v)
+ {
+-    struct domain *d = v->domain;
+     struct vcpu_io *vio = &v->io;
+     struct ioreq_server *s;
+     struct ioreq_vcpu *sv;
+     enum vio_completion completion;
+     bool res = true;
+ 
+-    if ( has_vpci(d) && vpci_process_pending(v) )
+-    {
+-        raise_softirq(SCHEDULE_SOFTIRQ);
+-        return false;
+-    }
+-
+     while ( (sv = get_pending_vcpu(v, &s)) != NULL )
+         if ( !wait_for_io(sv, get_ioreq(s, v)) )
+             return false;
+-- 
+2.25.1
+

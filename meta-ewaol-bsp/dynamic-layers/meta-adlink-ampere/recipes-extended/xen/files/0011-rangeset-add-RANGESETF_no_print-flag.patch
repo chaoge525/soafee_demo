@@ -1,0 +1,64 @@
+From 3b56f775d0bc2d2825e1fff19554cc4068d8339b Mon Sep 17 00:00:00 2001
+From: Oleksandr Andrushchenko <oleksandr_andrushchenko@epam.com>
+Date: Thu, 25 Nov 2021 13:02:38 +0200
+Subject: [PATCH 11/78] rangeset: add RANGESETF_no_print flag
+
+There are range sets which should not be printed, so introduce a flag
+which allows marking those as such. Implement relevant logic to skip
+such entries while printing.
+
+While at it also simplify the definition of the flags by directly
+defining those without helpers.
+
+Suggested-by: Jan Beulich <jbeulich@suse.com>
+Signed-off-by: Oleksandr Andrushchenko <oleksandr_andrushchenko@epam.com>
+Reviewed-by: Jan Beulich <jbeulich@suse.com>
+---
+ xen/common/rangeset.c      | 5 ++++-
+ xen/include/xen/rangeset.h | 7 ++++---
+ 2 files changed, 8 insertions(+), 4 deletions(-)
+
+diff --git a/xen/common/rangeset.c b/xen/common/rangeset.c
+index 885b6b15c2..ea27d65172 100644
+--- a/xen/common/rangeset.c
++++ b/xen/common/rangeset.c
+@@ -433,7 +433,7 @@ struct rangeset *rangeset_new(
+     INIT_LIST_HEAD(&r->range_list);
+     r->nr_ranges = -1;
+ 
+-    BUG_ON(flags & ~RANGESETF_prettyprint_hex);
++    BUG_ON(flags & ~(RANGESETF_prettyprint_hex | RANGESETF_no_print));
+     r->flags = flags;
+ 
+     safe_strcpy(r->name, name ?: "(no name)");
+@@ -575,6 +575,9 @@ void rangeset_domain_printk(
+ 
+     list_for_each_entry ( r, &d->rangesets, rangeset_list )
+     {
++        if ( r->flags & RANGESETF_no_print )
++            continue;
++
+         printk("    ");
+         rangeset_printk(r);
+         printk("\n");
+diff --git a/xen/include/xen/rangeset.h b/xen/include/xen/rangeset.h
+index 135f33f606..045fcafa83 100644
+--- a/xen/include/xen/rangeset.h
++++ b/xen/include/xen/rangeset.h
+@@ -48,9 +48,10 @@ void rangeset_limit(
+     struct rangeset *r, unsigned int limit);
+ 
+ /* Flags for passing to rangeset_new(). */
+- /* Pretty-print range limits in hexadecimal. */
+-#define _RANGESETF_prettyprint_hex 0
+-#define RANGESETF_prettyprint_hex  (1U << _RANGESETF_prettyprint_hex)
++/* Pretty-print range limits in hexadecimal. */
++#define RANGESETF_prettyprint_hex   (1U << 0)
++/* Do not print entries marked with this flag. */
++#define RANGESETF_no_print          (1U << 1)
+ 
+ bool_t __must_check rangeset_is_empty(
+     const struct rangeset *r);
+-- 
+2.25.1
+

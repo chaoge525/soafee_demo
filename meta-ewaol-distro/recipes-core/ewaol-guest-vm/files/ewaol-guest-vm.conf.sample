@@ -10,3 +10,4 @@ root = "/dev/xvda1"
 kernel = "${EWAOL_GUEST_VM_KERNEL_DST}"
 disk = ['format=qcow2, vdev=xvda, access=rw, backendtype=qdisk, target=${EWAOL_GUEST_VM_DISK_DST}']
 vif = ['script=vif-bridge,bridge=xenbr0']
+pci = [${EWAOL_GUEST_VM_PCI_PASSTHROUGH_DEVICE}]

@@ -15,6 +15,8 @@ New Features
 ============
 
 * Added support for building and running EWAOL on the AVA Developer Platform
+* Added capability for Xen PCI device passthrough, currently supported for Guest
+  VMs running on the AVA Developer Platform
 
 Changed
 =======

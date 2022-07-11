@@ -1,0 +1,177 @@
+From 5d72ea18de186b95028792e745feeceab86e5d96 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?T=C3=A9o=20Couprie=20Diaz?= <teo.coupriediaz@arm.com>
+Date: Tue, 12 Apr 2022 11:54:25 +0100
+Subject: [PATCH 65/78] xen/arm: Add ACPI PCI host bridge detection
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+This patch adapts the device tree PCI host bridge detection for
+ACPI and uses the information parsed from MCFG.
+Some elements are still undefined and might need parsing of other tables.
+
+Signed-off-by: Téo Couprie Diaz <teo.coupriediaz@arm.com>
+Change-Id: I69aaf3e9aa874f3191b38e46d209336b8a8c3247
+---
+ xen/arch/arm/pci/pci-host-common.c | 122 +++++++++++++++++++++++++++++
+ xen/include/asm-arm/pci.h          |   4 +
+ 2 files changed, 126 insertions(+)
+
+diff --git a/xen/arch/arm/pci/pci-host-common.c b/xen/arch/arm/pci/pci-host-common.c
+index dbded1d1db..5ae596bee6 100644
+--- a/xen/arch/arm/pci/pci-host-common.c
++++ b/xen/arch/arm/pci/pci-host-common.c
+@@ -16,6 +16,7 @@
+  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+  */
+ 
++#include <xen/acpi.h>
+ #include <xen/init.h>
+ #include <xen/pci.h>
+ #include <xen/rwlock.h>
+@@ -265,6 +266,127 @@ err_exit:
+     return err;
+ }
+ 
++#ifdef CONFIG_ACPI
++
++static struct pci_config_window * __init
++acpi_gen_pci_init(struct acpi_mcfg_allocation *dev, const struct pci_ecam_ops *ops)
++{
++    int err, cfg_reg_idx;
++    struct pci_config_window *cfg;
++
++    cfg = xzalloc(struct pci_config_window);
++    if ( !cfg )
++        return NULL;
++
++    err = 0;
++
++    /* FIXME: Error should have appeared earlier, during parsing ? */
++    if ( err ) {
++        cfg->busn_start = 0;
++        cfg->busn_end = 0xff;
++        printk(XENLOG_INFO "No bus range found for pci controller\n");
++    } else {
++        cfg->busn_start = dev->start_bus_number;
++        cfg->busn_end = dev->end_bus_number;
++        if ( cfg->busn_end > cfg->busn_start + 0xff )
++            cfg->busn_end = cfg->busn_start + 0xff;
++    }
++
++    if ( ops->cfg_reg_index )
++    {
++        printk(XENLOG_ERR "CFG reg index not supported with ACPI\n");
++        goto err_exit;
++    }
++    else
++        cfg_reg_idx = 0;
++
++    cfg->phys_addr = dev->address;
++    // TODO: Could busn_start != 0 ?
++    cfg->size = (cfg->busn_end + 1) << 20;
++
++    /*
++     * On 64-bit systems, we do a single ioremap for the whole config space
++     * since we have enough virtual address range available.  On 32-bit, we
++     * ioremap the config space for each bus individually.
++     * As of now only 64-bit is supported 32-bit is not supported.
++     *
++     * TODO: For 32-bit implement the ioremap/iounmap of config space
++     * dynamically for each read/write call.
++     */
++    cfg->win = pci_remap_cfgspace(cfg->phys_addr, cfg->size);
++    if ( !cfg->win )
++    {
++        printk(XENLOG_ERR "ECAM ioremap failed\n");
++        goto err_exit;
++    }
++    printk("ECAM at [mem 0x%"PRIpaddr"-0x%"PRIpaddr"] for [bus %x-%x] \n",
++            cfg->phys_addr, cfg->phys_addr + cfg->size - 1,
++            cfg->busn_start, cfg->busn_end);
++
++    if ( ops->init )
++    {
++        err = ops->init(cfg);
++        if ( err )
++            goto err_exit;
++    }
++
++    return cfg;
++
++err_exit:
++    pci_ecam_free(cfg);
++
++    return NULL;
++}
++
++int acpi_pci_host_common_probe(struct acpi_mcfg_allocation *dev,
++                          const struct pci_ecam_ops *ops)
++{
++    struct pci_host_bridge *bridge;
++    struct pci_config_window *cfg;
++    int err;
++    /*
++     * if ( dt_device_for_passthrough(dev) )
++     *     return 0;
++     */
++
++    bridge = pci_alloc_host_bridge();
++    if ( !bridge )
++        return -ENOMEM;
++
++    /* Parse and map our Configuration Space windows */
++    cfg = acpi_gen_pci_init(dev, ops);
++    if ( !cfg )
++    {
++        err = -ENOMEM;
++        goto err_exit;
++    }
++
++    /* FIXME: Quite a bit depends on that */
++    /* bridge->dt_node = dev; */
++    bridge->cfg = cfg;
++    bridge->ops = &ops->pci_ops;
++
++    /* FIXME: Check if relevant */
++    /* bridge->segment = pci_bus_find_domain_nr(dev); */
++    bridge->segment = dev->pci_segment;
++    if ( bridge->segment < 0 )
++    {
++        printk(XENLOG_ERR "Inconsistent \"linux,pci-domain\" property in DT\n");
++        BUG();
++    }
++    pci_add_host_bridge(bridge);
++    pci_add_segment(bridge->segment);
++    /* FIXME: pci_set_msi_base(bridge); */
++
++    return 0;
++
++err_exit:
++    xfree(bridge);
++
++    return err;
++}
++#endif
++
+ /*
+  * Get host bridge node given a device attached to it.
+  */
+diff --git a/xen/include/asm-arm/pci.h b/xen/include/asm-arm/pci.h
+index aa3688dd55..9545a64503 100644
+--- a/xen/include/asm-arm/pci.h
++++ b/xen/include/asm-arm/pci.h
+@@ -102,6 +102,10 @@ extern const struct pci_ecam_ops pci_generic_ecam_ops;
+ 
+ int pci_host_common_probe(struct dt_device_node *dev,
+                           const struct pci_ecam_ops *ops);
++#ifdef CONFIG_ACPI
++int acpi_pci_host_common_probe(struct acpi_mcfg_allocation *dev,
++                          const struct pci_ecam_ops *ops);
++#endif
+ int pci_generic_config_read(struct pci_host_bridge *bridge, pci_sbdf_t sbdf,
+                             uint32_t reg, uint32_t len, uint32_t *value);
+ int pci_generic_config_write(struct pci_host_bridge *bridge, pci_sbdf_t sbdf,
+-- 
+2.25.1
+

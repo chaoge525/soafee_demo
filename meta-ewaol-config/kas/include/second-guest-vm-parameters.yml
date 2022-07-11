@@ -3,8 +3,8 @@
 # SPDX-License-Identifier: MIT
 
 # Because kas does not allow to leak environment variables with a wildcard,
-# we need to explicitly list three customizable variables per each additional
-# Guest VM.
+# explicitly list the second Guest VM's environment variables here, so that they
+# will then be customizable in the user environment by default
 
 ---
 header:
@@ -14,3 +14,4 @@ env:
   EWAOL_GUEST_VM2_MEMORY_SIZE: "6144"
   EWAOL_GUEST_VM2_NUMBER_OF_CPUS: "4"
   EWAOL_GUEST_VM2_ROOTFS_EXTRA_SPACE: ""
+  EWAOL_GUEST_VM2_PCI_PASSTHROUGH_DEVICE: ""

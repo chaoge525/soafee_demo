@@ -1,0 +1,43 @@
+From ce69d3d71f8e6ee24508a0cc9eb3bd046d84d828 Mon Sep 17 00:00:00 2001
+From: Oleksandr Andrushchenko <oleksandr_andrushchenko@epam.com>
+Date: Thu, 9 Dec 2021 09:29:17 +0200
+Subject: [PATCH 09/78] xen/arm: account IO handler for emulated PCI host
+ bridge
+
+At the moment, we always allocate an extra 16 slots for IO handlers
+(see MAX_IO_HANDLER). So while adding an IO trap handler for the emulated
+PCI host bridge we are not breaking anything, but we have a latent bug
+as the maximum number of IOs may be exceeded.
+Fix this by explicitly telling that we have an additional IO handler, so it is
+accounted.
+
+Fixes: d59168dc05a5 ("xen/arm: Enable the existing x86 virtual PCI support for ARM")
+
+Signed-off-by: Oleksandr Andrushchenko <oleksandr_andrushchenko@epam.com>
+Acked-by: Julien Grall <jgrall@amazon.com>
+Reviewed-by: Rahul Singh <rahul.singh@arm.com>
+Tested-by: Rahul Singh <rahul.singh@arm.com>
+---
+ xen/arch/arm/vpci.c | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
+
+diff --git a/xen/arch/arm/vpci.c b/xen/arch/arm/vpci.c
+index ebc4c8398b..a9fc5817f9 100644
+--- a/xen/arch/arm/vpci.c
++++ b/xen/arch/arm/vpci.c
+@@ -130,7 +130,11 @@ unsigned int domain_vpci_get_num_mmio_handlers(struct domain *d)
+         return ret;
+     }
+ 
+-    return 0;
++    /*
++     * For guests each host bridge requires one region to cover the
++     * configuration space. At the moment, we only expose a single host bridge.
++     */
++    return 1;
+ }
+ 
+ /*
+-- 
+2.25.1
+

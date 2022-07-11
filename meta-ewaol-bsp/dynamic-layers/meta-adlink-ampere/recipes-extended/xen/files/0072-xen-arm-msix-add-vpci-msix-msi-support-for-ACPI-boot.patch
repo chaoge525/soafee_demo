@@ -1,0 +1,186 @@
+From a1f4e5be6907b1d483c268d1fcdf6cc723d7a4b6 Mon Sep 17 00:00:00 2001
+From: Rahul Singh <rahul.singh@arm.com>
+Date: Tue, 10 May 2022 10:20:35 +0100
+Subject: [PATCH 72/78] xen/arm: msix: add vpci msix-msi support for ACPI boot
+
+Scan the PCI host bridge in IORT table and find the ITS mapping to
+set the MSI base.
+
+Signed-off-by: Rahul Singh <rahul.singh@arm.com>
+Change-Id: I159056e6519aa969a604e593032000bb98f897ba
+---
+ xen/arch/arm/gic-v3-its.c          | 19 ++++++++++++
+ xen/arch/arm/pci/pci-host-common.c | 48 +++++++++++++++++++++++++++++-
+ xen/arch/arm/vpci.c                |  2 +-
+ xen/include/asm-arm/acpi_iort.h    | 12 +++++++-
+ 4 files changed, 78 insertions(+), 3 deletions(-)
+
+diff --git a/xen/arch/arm/gic-v3-its.c b/xen/arch/arm/gic-v3-its.c
+index ce257168d2..ae7d1b710c 100644
+--- a/xen/arch/arm/gic-v3-its.c
++++ b/xen/arch/arm/gic-v3-its.c
+@@ -27,6 +27,7 @@
+ #include <xen/rbtree.h>
+ #include <xen/sched.h>
+ #include <xen/sizes.h>
++#include <asm/acpi_iort.h>
+ #include <asm/gic.h>
+ #include <asm/gic_v3_defs.h>
+ #include <asm/gic_v3_its.h>
+@@ -40,6 +41,7 @@
+  * firmware tables for all host ITSes, and only gets iterated afterwards.
+  */
+ LIST_HEAD(host_its_list);
++LIST_HEAD(iort_msi_chip_list);
+ 
+ /*
+  * Describes a device which is using the ITS and is used by a guest.
+@@ -1137,6 +1139,22 @@ static void gicv3_its_dt_init(const struct dt_device_node *node)
+ }
+ 
+ #ifdef CONFIG_ACPI
++int add_to_iort_msi_list(int trans_id, paddr_t base)
++{
++    struct iort_its_msi_chip *its_msi_chip;
++
++    its_msi_chip = xzalloc(struct iort_its_msi_chip);
++    if (!its_msi_chip)
++        return -ENOMEM;
++
++    its_msi_chip->translation_id = trans_id;
++    its_msi_chip->base_addr = base;
++
++    list_add(&its_msi_chip->list, &iort_msi_chip_list);
++
++    return 0;
++}
++
+ static int gicv3_its_acpi_probe(struct acpi_subtable_header *header,
+                                 const unsigned long end)
+ {
+@@ -1146,6 +1164,7 @@ static int gicv3_its_acpi_probe(struct acpi_subtable_header *header,
+     if ( BAD_MADT_ENTRY(its, end) )
+         return -EINVAL;
+ 
++    add_to_iort_msi_list(its->translation_id, its->base_address);
+     add_to_host_its_list(its->base_address, GICV3_ITS_SIZE, NULL);
+ 
+     return 0;
+diff --git a/xen/arch/arm/pci/pci-host-common.c b/xen/arch/arm/pci/pci-host-common.c
+index 81dc136c81..f942f1e860 100644
+--- a/xen/arch/arm/pci/pci-host-common.c
++++ b/xen/arch/arm/pci/pci-host-common.c
+@@ -23,6 +23,7 @@
+ #include <xen/sched.h>
+ #include <xen/vmap.h>
+ 
++#include <asm/acpi_iort.h>
+ #include <asm/setup.h>
+ 
+ /*
+@@ -338,6 +339,51 @@ err_exit:
+     return NULL;
+ }
+ 
++paddr_t iort_find_msi_chip(int trans_id)
++{
++    struct iort_its_msi_chip *its_msi_chip;
++    paddr_t base_addr = 0;
++
++    list_for_each_entry(its_msi_chip, &iort_msi_chip_list, list)
++    {
++        if (its_msi_chip->translation_id == trans_id) {
++            base_addr = its_msi_chip->base_addr;
++            break;
++        }
++    }
++
++    return base_addr;
++}
++
++static int acpi_pci_set_msi_base(struct pci_host_bridge *bridge)
++{
++    struct acpi_iort_node *node = NULL;
++    struct acpi_iort_root_complex *root_complex;
++    struct acpi_iort_its_group *its;
++    int i, its_id;
++
++    for ( i = 0 ; i < iort_pci_root_nodes_num ; i += 1 )
++    {
++        node = iort_pci_root_nodes[i];
++        root_complex = (struct acpi_iort_root_complex *)node->node_data;
++        /* IORT nodes only carry segment information, not bus. */
++        if ( root_complex->pci_segment_number == bridge->segment )
++            break;
++    }
++
++    node = iort_node_map_id(node, 0, NULL, IORT_MSI_TYPE);
++    if (!node)
++        return -ENXIO;
++
++    /* Move to ITS specific data */
++    its = (struct acpi_iort_its_group *)node->node_data;
++    its_id = its->identifiers[0];
++
++    bridge->its_msi_base = iort_find_msi_chip(its_id);
++
++    return 0;
++}
++
+ int acpi_pci_host_common_probe(struct acpi_mcfg_allocation *dev,
+                           const struct pci_ecam_ops *ops)
+ {
+@@ -376,7 +422,7 @@ int acpi_pci_host_common_probe(struct acpi_mcfg_allocation *dev,
+     }
+     pci_add_host_bridge(bridge);
+     pci_add_segment(bridge->segment);
+-    /* FIXME: pci_set_msi_base(bridge); */
++    acpi_pci_set_msi_base(bridge);
+ 
+     return 0;
+ 
+diff --git a/xen/arch/arm/vpci.c b/xen/arch/arm/vpci.c
+index 4f713c89c5..d59cfe668f 100644
+--- a/xen/arch/arm/vpci.c
++++ b/xen/arch/arm/vpci.c
+@@ -127,7 +127,7 @@ static int vpci_get_num_handlers_cb(struct domain *d,
+                                     struct pci_host_bridge *bridge)
+ {
+     /* Each bridge has a single MMIO handler for the configuration space. */
+-    return 1;
++    return 1 + VPCI_MAX_VIRT_DEV;
+ }
+ 
+ unsigned int domain_vpci_get_num_mmio_handlers(struct domain *d)
+diff --git a/xen/include/asm-arm/acpi_iort.h b/xen/include/asm-arm/acpi_iort.h
+index f831cd4c98..ce71fd9f7a 100644
+--- a/xen/include/asm-arm/acpi_iort.h
++++ b/xen/include/asm-arm/acpi_iort.h
+@@ -4,12 +4,22 @@
+ 
+ /* Taken from Linux, might not be useful. */
+ #define IORT_TYPE_MASK(type) (1 << (type))
++#define IORT_MSI_TYPE (1 << ACPI_IORT_NODE_ITS_GROUP)
+ #define IORT_IOMMU_TYPE ((1 << ACPI_IORT_NODE_SMMU) | \
+                          (1 << ACPI_IORT_NODE_SMMU_V3))
+ 
++extern struct list_head iort_msi_chip_list;
++
++struct iort_its_msi_chip
++{
++    struct list_head list;
++    paddr_t base_addr;
++    u32 translation_id;
++};
++
+ int acpi_parse_iort(struct acpi_table_header *header);
+ 
+ int iort_iommu_xlate(struct device *dev, struct acpi_iort_node *node,
+                             u32 streamid);
+ struct acpi_iort_node *iort_node_map_id(struct acpi_iort_node *node, u32 id_in,
+-                                        u32 *id_out, u8 type_mask);
+\ No newline at end of file
++                                        u32 *id_out, u8 type_mask);
+-- 
+2.25.1
+

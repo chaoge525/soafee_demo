@@ -1,0 +1,246 @@
+From 1ae1722ed464499841c5bfbdc3447ab5bc08d7fb Mon Sep 17 00:00:00 2001
+From: Oleksandr Tyshchenko <oleksandr_tyshchenko@epam.com>
+Date: Fri, 18 Dec 2020 15:43:20 +0200
+Subject: [PATCH 25/78] iommu/arm: Introduce iommu_add_pci_device API
+
+The main puprose of this patch is to add a way to register PCI device
+(which is behind the IOMMU) using the generic PCI-IOMMU DT bindings [1]
+before assigning that device to a domain.
+
+This behaves in almost the same way as existing iommu_add_dt_device API,
+the difference is in devices to handle and DT bindings to use.
+
+The function of_map_id to translate an ID through a downstream mapping
+(which is also suitable for mapping Requester ID) was borrowed from Linux
+(v5.10-rc6) and updated according to the Xen code base.
+
+XXX: I don't port pci_for_each_dma_alias from Linux which is a part
+of PCI-IOMMU bindings infrastucture as I don't have a good understanding
+for how it is expected to work in Xen environment.
+Also it is not completely clear whether we need to distinguish between
+different PCI types here (DEV_TYPE_PCI, DEV_TYPE_PCI_HOST_BRIDGE, etc).
+For example, how we should behave here if the host bridge doesn't have
+a stream ID (so not described in iommu-map property) just simple
+fail or bypasses translation?
+
+[1] https://www.kernel.org/doc/Documentation/devicetree/bindings/pci/pci-iommu.txt
+
+Signed-off-by: Oleksandr Tyshchenko <oleksandr_tyshchenko@epam.com>
+---
+ xen/drivers/passthrough/device_tree.c | 142 ++++++++++++++++++++++++++
+ xen/include/xen/device_tree.h         |  23 +++++
+ xen/include/xen/iommu.h               |   4 +-
+ 3 files changed, 168 insertions(+), 1 deletion(-)
+
+diff --git a/xen/drivers/passthrough/device_tree.c b/xen/drivers/passthrough/device_tree.c
+index 9bda1716a7..a5621d5d9b 100644
+--- a/xen/drivers/passthrough/device_tree.c
++++ b/xen/drivers/passthrough/device_tree.c
+@@ -151,6 +151,148 @@ static int dt_iommu_xlate(struct device *dev,
+     return ops->dt_xlate(dev, iommu_spec);
+ }
+ 
++#ifdef CONFIG_HAS_PCI
++int dt_map_id(struct dt_device_node *np, u32 id, const char *map_name,
++              const char *map_mask_name, struct dt_device_node **target,
++              u32 *id_out)
++{
++    u32 map_mask, masked_id, map_len;
++    const __be32 *map = NULL;
++
++    if ( !np || !map_name || (!target && !id_out) )
++        return -EINVAL;
++
++    map = dt_get_property(np, map_name, &map_len);
++    if ( !map )
++    {
++        if ( target )
++            return -ENODEV;
++        /* Otherwise, no map implies no translation */
++        *id_out = id;
++        return 0;
++    }
++
++    if ( !map_len || map_len % (4 * sizeof(*map)) )
++    {
++        printk(XENLOG_ERR "%pOF: Error: Bad %s length: %d\n", np,
++            map_name, map_len);
++        return -EINVAL;
++    }
++
++    /* The default is to select all bits. */
++    map_mask = 0xffffffff;
++
++    /*
++     * Can be overridden by "{iommu,msi}-map-mask" property.
++     * If of_property_read_u32() fails, the default is used.
++     */
++    if ( map_mask_name )
++        dt_property_read_u32(np, map_mask_name, &map_mask);
++
++    masked_id = map_mask & id;
++    for ( ; (int)map_len > 0; map_len -= 4 * sizeof(*map), map += 4 )
++    {
++        struct dt_device_node *phandle_node;
++        u32 id_base = be32_to_cpup(map + 0);
++        u32 phandle = be32_to_cpup(map + 1);
++        u32 out_base = be32_to_cpup(map + 2);
++        u32 id_len = be32_to_cpup(map + 3);
++
++        if ( id_base & ~map_mask )
++        {
++            printk(XENLOG_ERR "%pOF: Invalid %s translation - %s-mask (0x%x) ignores id-base (0x%x)\n",
++                   np, map_name, map_name, map_mask, id_base);
++            return -EFAULT;
++        }
++
++        if ( masked_id < id_base || masked_id >= id_base + id_len )
++            continue;
++
++        phandle_node = dt_find_node_by_phandle(phandle);
++        if ( !phandle_node )
++            return -ENODEV;
++
++        if ( target )
++        {
++            if ( !*target )
++                *target = phandle_node;
++
++            if ( *target != phandle_node )
++                continue;
++        }
++
++        if ( id_out )
++            *id_out = masked_id - id_base + out_base;
++
++        printk(XENLOG_DEBUG "%pOF: %s, using mask %08x, id-base: %08x, out-base: %08x, length: %08x, id: %08x -> %08x\n",
++               np, map_name, map_mask, id_base, out_base, id_len, id,
++               masked_id - id_base + out_base);
++        return 0;
++    }
++
++    printk(XENLOG_ERR "%pOF: no %s translation for id 0x%x on %pOF\n",
++           np, map_name, id, target && *target ? *target : NULL);
++
++    /*
++     * NOTE: Linux bypasses translation without returning an error here,
++     * but should we behave in the same way on Xen? Restrict for now.
++     */
++    return -EFAULT;
++}
++
++int iommu_add_pci_device(uint8_t devfn, struct pci_dev *pdev)
++{
++    const struct iommu_ops *ops = iommu_get_ops();
++    struct dt_phandle_args iommu_spec = { .args_count = 1 };
++    struct device *dev = pci_to_dev(pdev);
++    struct dt_device_node *np;
++    int rc = NO_IOMMU;
++
++    if ( !iommu_enabled )
++        return NO_IOMMU;
++
++    if ( !ops )
++        return -EINVAL;
++
++    if ( dev_iommu_fwspec_get(dev) )
++        return -EEXIST;
++
++    np = pci_find_host_bridge_node(dev);
++    if ( !np )
++        return -ENODEV;
++
++    /*
++     * According to the Documentation/devicetree/bindings/pci/pci-iommu.txt
++     * from Linux.
++     */
++    rc = dt_map_id(np, PCI_BDF2(pdev->bus, devfn), "iommu-map",
++                   "iommu-map-mask", &iommu_spec.np, iommu_spec.args);
++    if ( rc )
++        return rc == -ENODEV ? NO_IOMMU : rc;
++
++    /*
++     * The driver which supports generic PCI-IOMMU DT bindings must have
++     * these callback implemented.
++     */
++    if ( !ops->add_device || !ops->dt_xlate )
++        return -EINVAL;
++
++    rc = dt_iommu_xlate(dev, &iommu_spec);
++
++    /*
++     * Add master device to the IOMMU if latter is present and available.
++     * The driver is responsible to mark that device as protected.
++     */
++    if ( !rc )
++        rc = ops->add_device(devfn, dev);
++
++    if ( rc < 0 )
++        iommu_fwspec_free(dev);
++
++    return rc;
++}
++#endif
++
+ int iommu_add_dt_device(struct dt_device_node *np)
+ {
+     const struct iommu_ops *ops = iommu_get_ops();
+diff --git a/xen/include/xen/device_tree.h b/xen/include/xen/device_tree.h
+index de11f995fc..2599b08128 100644
+--- a/xen/include/xen/device_tree.h
++++ b/xen/include/xen/device_tree.h
+@@ -837,6 +837,29 @@ int dt_count_phandle_with_args(const struct dt_device_node *np,
+  */
+ int dt_get_pci_domain_nr(struct dt_device_node *node);
+ 
++/**
++ * dt_map_id - Translate an ID through a downstream mapping.
++ * @np: root complex device node.
++ * @id: device ID to map.
++ * @map_name: property name of the map to use.
++ * @map_mask_name: optional property name of the mask to use.
++ * @target: optional pointer to a target device node.
++ * @id_out: optional pointer to receive the translated ID.
++ *
++ * Given a device ID, look up the appropriate implementation-defined
++ * platform ID and/or the target device which receives transactions on that
++ * ID, as per the "iommu-map" and "msi-map" bindings. Either of @target or
++ * @id_out may be NULL if only the other is required. If @target points to
++ * a non-NULL device node pointer, only entries targeting that node will be
++ * matched; if it points to a NULL value, it will receive the device node of
++ * the first matching target phandle, with a reference held.
++ *
++ * Return: 0 on success or a standard error code on failure.
++ */
++int dt_map_id(struct dt_device_node *np, u32 id, const char *map_name,
++              const char *map_mask_name, struct dt_device_node **target,
++              u32 *id_out);
++
+ struct dt_device_node *dt_find_node_by_phandle(dt_phandle handle);
+ 
+ #ifdef CONFIG_DEVICE_TREE_DEBUG
+diff --git a/xen/include/xen/iommu.h b/xen/include/xen/iommu.h
+index 92b2d23f0b..8fa819329d 100644
+--- a/xen/include/xen/iommu.h
++++ b/xen/include/xen/iommu.h
+@@ -205,7 +205,8 @@ int iommu_dt_domain_init(struct domain *d);
+ int iommu_release_dt_devices(struct domain *d);
+ 
+ /*
+- * Helper to add master device to the IOMMU using generic IOMMU DT bindings.
++ * Helpers to add master device to the IOMMU using generic (PCI-)IOMMU
++ * DT bindings.
+  *
+  * Return values:
+  *  0 : device is protected by an IOMMU
+@@ -214,6 +215,7 @@ int iommu_release_dt_devices(struct domain *d);
+  *      (IOMMU is not enabled/present or device is not connected to it).
+  */
+ int iommu_add_dt_device(struct dt_device_node *np);
++int iommu_add_pci_device(u8 devfn, struct pci_dev *pdev);
+ 
+ int iommu_do_dt_domctl(struct xen_domctl *, struct domain *,
+                        XEN_GUEST_HANDLE_PARAM(xen_domctl_t));
+-- 
+2.25.1
+

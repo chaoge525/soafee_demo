@@ -1,0 +1,83 @@
+From a81d839726a12b5e9d5311fb13ab05fa81405b77 Mon Sep 17 00:00:00 2001
+From: Rahul Singh <rahul.singh@arm.com>
+Date: Fri, 6 May 2022 10:16:38 +0100
+Subject: [PATCH 73/78] xen/pci: acpi: add acpi support for pci host generic
+ host bridges
+
+Add init call for PCI host generic bridge for ACPI boot. Also move
+pci_generic_config_read32() function fron n1sdp.c file to common file to
+be used by generic function.
+
+Signed-off-by: Rahul Singh <rahul.singh@arm.com>
+Change-Id: I9f0b1443ffd66c549219949ebf2b08444c254369
+---
+ xen/arch/arm/pci/ecam.c             | 11 +++++++++++
+ xen/arch/arm/pci/pci-host-generic.c | 15 +++++++++++++++
+ xen/include/asm-arm/pci.h           |  3 +++
+ 3 files changed, 29 insertions(+)
+
+diff --git a/xen/arch/arm/pci/ecam.c b/xen/arch/arm/pci/ecam.c
+index 6aeea12a68..202ad2ef34 100644
+--- a/xen/arch/arm/pci/ecam.c
++++ b/xen/arch/arm/pci/ecam.c
+@@ -64,6 +64,17 @@ const struct pci_ecam_ops pci_generic_ecam_ops = {
+     }
+ };
+ 
++/* ECAM ops for 32-bit read only (non-compliant) */
++const struct pci_ecam_ops pci_32b_read_ops = {
++    .bus_shift  = 20,
++    .pci_ops    = {
++        .map_bus    = pci_ecam_map_bus,
++        .read       = pci_generic_config_read32,
++        .write      = pci_generic_config_write,
++        .need_p2m_hwdom_mapping = pci_ecam_need_p2m_hwdom_mapping,
++    }
++};
++
+ /*
+  * Local variables:
+  * mode: C
+diff --git a/xen/arch/arm/pci/pci-host-generic.c b/xen/arch/arm/pci/pci-host-generic.c
+index 46de6e43cc..3ae6d8d700 100644
+--- a/xen/arch/arm/pci/pci-host-generic.c
++++ b/xen/arch/arm/pci/pci-host-generic.c
+@@ -37,6 +37,21 @@ DT_DEVICE_START(pci_gen, "PCI HOST GENERIC", DEVICE_PCI_HOSTBRIDGE)
+ .init = pci_host_generic_probe,
+ DT_DEVICE_END
+ 
++#ifdef CONFIG_ACPI
++static int pcie_host_generic_acpi_init(const void *data)
++{
++    struct acpi_mcfg_allocation *mcfg_config;
++
++    mcfg_config = (struct acpi_mcfg_allocation *)data;
++
++    return acpi_pci_host_common_probe(mcfg_config, &pci_32b_read_ops);
++}
++ACPI_DEVICE_START(apci_pci_gen, "PCIE HOST GENERIC", DEVICE_PCI_HOSTBRIDGE)
++.class_type = ACPI_GENERIC_HOST_BRIDGE,
++.init = pcie_host_generic_acpi_init,
++ACPI_DEVICE_END
++#endif
++
+ /*
+  * Local variables:
+  * mode: C
+diff --git a/xen/include/asm-arm/pci.h b/xen/include/asm-arm/pci.h
+index ea48a6cfcb..e1bec5326f 100644
+--- a/xen/include/asm-arm/pci.h
++++ b/xen/include/asm-arm/pci.h
+@@ -109,6 +109,9 @@ struct pci_ecam_ops {
+ /* Default ECAM ops */
+ extern const struct pci_ecam_ops pci_generic_ecam_ops;
+ 
++/* ECAM ops for 32-bit read only (non-compliant) */
++extern const struct pci_ecam_ops pci_32b_read_ops;
++
+ int pci_host_common_probe(struct dt_device_node *dev,
+                           const struct pci_ecam_ops *ops);
+ #ifdef CONFIG_ACPI
+-- 
+2.25.1
+

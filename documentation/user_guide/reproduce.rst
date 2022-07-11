@@ -53,6 +53,11 @@ briefly introduced, classified into three ordered categories:
     * ``virtualization-sdk.yml`` to build an SDK image for the virtualization
       architecture.
     * ``security.yml`` to build a security-hardened EWAOL distribution image.
+    * ``xen_pci_passthrough.yml`` to include the necessary configuration to
+      enable support for Xen Guest VM PCI passthrough. The
+      configuration provided in this Build Modifier Config will only take effect
+      when building an EWAOL virtualization distribution image, and is currently
+      only supported on the AVA Developer Platform.
 
   * **Target Platform Configs**: Set the target platform
 
@@ -257,33 +262,51 @@ To build a virtualization distribution image with the EWAOL SDK:
 As with the EWAOL baremetal guidance above, EWAOL virtualization distribution
 images can also be modified to include run-time validation tests and security
 hardening by adding ``meta-ewaol-config/kas/tests.yml`` and
-``meta-ewaol-config/kas/security.yml`` kas configuration files respectively.
+``meta-ewaol-config/kas/security.yml`` kas configuration files respectively. In
+addition, an EWAOL virtualization distribution image built for the AVA Developer
+Platform can be customized so that Guest VMs may be assigned an exclusive PCI
+device via Xen PCI passthrough capability, added via the
+``meta-ewaol-config/kas/xen_pci_passthrough.yml`` kas configuration file.
 See :ref:`manual_build_system_run_time_integration_tests` for more details on
-including run-time validation tests and
+including run-time validation tests,
 :ref:`manual_build_system_security_hardening` for more details on security
-hardening.
+hardening, and :ref:`manual_build_system_pci_passthrough` for more details on
+PCI passthrough configuration.
 
 Customization
 -------------
 
-EWAOL defines a set of customizable environment variables for configuring the
-VMs included on a virtualization distribution image. The following list shows
-the variables and their default values (where ``MB`` and ``KB`` refer to
-Megabytes and Kilobytes, respectively), when including one Guest VM instance:
+EWAOL defines a set of standard customizable environment variables for
+configuring the VMs included on a virtualization distribution image. The
+following list shows the variables and their default values (where ``MB`` and
+``KB`` refer to Megabytes and Kilobytes, respectively), when including one Guest
+VM instance:
 
   .. code-block:: yaml
     :substitutions:
 
     |virtualization customization yaml|
 
-To customize these variables, set their value in the environment for the kas
-build. For example, to build a virtualization distribution image for the N1SDP
-using the above default values, but allocating a non-default value of eight CPUs
-for its Guest VM, run:
+To customize these standard variables, set their value in the environment for
+the kas build. For example, to build a virtualization distribution image for the
+N1SDP using the above default values, but allocating a non-default value of
+eight CPUs for its Guest VM, run:
 
   .. code-block:: console
 
     EWAOL_GUEST_VM1_NUMBER_OF_CPUS=8 kas build --update meta-ewaol-config/kas/virtualization.yml:meta-ewaol-config/kas/n1sdp.yml
+
+An additional non-default environment variable is available for each Guest VM,
+which can be used to assign the Guest VM exclusive use of a PCI device. Using
+this environment variable requires that the Xen PCI passthrough capability is
+enabled. Details for enabling this capability is provided at
+:ref:`manual_build_system_pci_passthrough`. This will provide a corresponding
+environment variable for each Guest VM, such as the following variable and its
+default value for the first Guest VM:
+
+  .. code-block:: yaml
+
+    EWAOL_GUEST_VM1_PCI_PASSTHROUGH_DEVICE: "0000:01:00.0"         # PCI device ID to be assigned
 
 EWAOL supports adding multiple independently-configurable Guest VMs to a
 virtualization distribution image. Additional details for this are provided at

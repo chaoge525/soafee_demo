@@ -1,0 +1,76 @@
+From 27f15322266ed370ce1ba79d52ad0d3ac9e92f19 Mon Sep 17 00:00:00 2001
+From: Rahul Singh <rahul.singh@arm.com>
+Date: Mon, 23 May 2022 10:38:46 +0100
+Subject: [PATCH 54/78] xen/vpci: modify pci_get_pdev_by_domain() &
+ pci_get_pdev()
+
+pci_get_pdev_by_domain() and pci_get_pdev() function find the pdev in
+the pseg list. If pdev is not in the pseg list, function will try to
+find the pdev in next segment. It is not right to find the pdev in next
+segment as this will result in corruption of other device in different
+segment with same BDF.
+
+Issue that is observed when implementing the PCI passthrough on ARM.
+When we deassigned the device from domU guest, device is assigned to
+dom_io not to dom0, but tool stack that runs in dom0 will try to
+configure the device from dom0. vpci will find the device based on
+conversion of GPA to SBDF and try to find the device in dom0. As device
+is assigned to dom_io, pci_get_pdev_by_domain() will return pdev with
+same BDF from next segment because of that another device is configured
+wrongly.
+
+Signed-off-by: Rahul Singh <rahul.singh@arm.com>
+Change-Id: I031f831f9b4ba798767d0ad1e1314fa6bb094bd3
+---
+ xen/drivers/passthrough/pci.c | 28 +++++++++++++---------------
+ 1 file changed, 13 insertions(+), 15 deletions(-)
+
+diff --git a/xen/drivers/passthrough/pci.c b/xen/drivers/passthrough/pci.c
+index 8d71b1365b..72a8e1a308 100644
+--- a/xen/drivers/passthrough/pci.c
++++ b/xen/drivers/passthrough/pci.c
+@@ -508,13 +508,12 @@ struct pci_dev *pci_get_pdev(int seg, int bus, int devfn)
+             return NULL;
+     }
+ 
+-    do {
+-        list_for_each_entry ( pdev, &pseg->alldevs_list, alldevs_list )
+-            if ( (pdev->bus == bus || bus == -1) &&
+-                 (pdev->devfn == devfn || devfn == -1) )
+-                return pdev;
+-    } while ( radix_tree_gang_lookup(&pci_segments, (void **)&pseg,
+-                                     pseg->nr + 1, 1) );
++    list_for_each_entry ( pdev, &pseg->alldevs_list, alldevs_list )
++        if ( (pdev->bus == bus || bus == -1) &&
++             (pdev->devfn == devfn || devfn == -1) )
++        {
++            return pdev;
++        }
+ 
+     return NULL;
+ }
+@@ -557,14 +556,13 @@ struct pci_dev *pci_get_pdev_by_domain(const struct domain *d, int seg,
+             return NULL;
+     }
+ 
+-    do {
+-        list_for_each_entry ( pdev, &pseg->alldevs_list, alldevs_list )
+-            if ( (pdev->bus == bus || bus == -1) &&
+-                 (pdev->devfn == devfn || devfn == -1) &&
+-                 (pdev->domain == d) )
+-                return pdev;
+-    } while ( radix_tree_gang_lookup(&pci_segments, (void **)&pseg,
+-                                     pseg->nr + 1, 1) );
++    list_for_each_entry ( pdev, &pseg->alldevs_list, alldevs_list )
++        if ( (pdev->bus == bus || bus == -1) &&
++             (pdev->devfn == devfn || devfn == -1) &&
++             (pdev->domain == d) )
++        {
++            return pdev;
++        }
+ 
+     return NULL;
+ }
+-- 
+2.25.1
+

@@ -1,0 +1,178 @@
+From 1c40262991cf64f5e84faa9ee7521bbeb13147d5 Mon Sep 17 00:00:00 2001
+From: Oleksandr Andrushchenko <oleksandr_andrushchenko@epam.com>
+Date: Thu, 9 Dec 2021 09:29:15 +0200
+Subject: [PATCH 07/78] xen/arm: add pci-domain for disabled devices
+
+If a PCI host bridge device is present in the device tree, but is
+disabled, then its PCI host bridge driver was not instantiated.
+This results in the failure of the pci_get_host_bridge_segment()
+and the following panic during Xen start:
+
+(XEN) Device tree generation failed (-22).
+(XEN)
+(XEN) ****************************************
+(XEN) Panic on CPU 0:
+(XEN) Could not set up DOM0 guest OS
+(XEN) ****************************************
+
+Fix this by adding "linux,pci-domain" property for all device tree nodes
+which have "pci" device type, so we know which segments will be used by
+the guest for which bridges.
+
+Fixes: 4cfab4425d39 ("xen/arm: Add linux,pci-domain property for hwdom if not available.")
+
+Signed-off-by: Oleksandr Andrushchenko <oleksandr_andrushchenko@epam.com>
+Reviewed-by: Rahul Singh <rahul.singh@arm.com>
+Tested-by: Rahul Singh <rahul.singh@arm.com>
+Acked-by: Julien Grall <jgrall@amazon.com>
+---
+ xen/arch/arm/domain_build.c        | 66 +++++++++++++++++++++++-------
+ xen/arch/arm/pci/pci-host-common.c |  8 +++-
+ xen/include/asm-arm/pci.h          |  8 ++++
+ 3 files changed, 66 insertions(+), 16 deletions(-)
+
+diff --git a/xen/arch/arm/domain_build.c b/xen/arch/arm/domain_build.c
+index d02bacbcd1..6c5d22d9be 100644
+--- a/xen/arch/arm/domain_build.c
++++ b/xen/arch/arm/domain_build.c
+@@ -654,6 +654,55 @@ static void __init allocate_static_memory(struct domain *d,
+ }
+ #endif
+ 
++/*
++ * When PCI passthrough is available we want to keep the
++ * "linux,pci-domain" in sync for every host bridge.
++ *
++ * Xen may not have a driver for all the host bridges. So we have
++ * to write an heuristic to detect whether a device node describes
++ * a host bridge.
++ *
++ * The current heuristic assumes that a device is a host bridge
++ * if the type is "pci" and then parent type is not "pci".
++ */
++static int handle_linux_pci_domain(struct kernel_info *kinfo,
++                                   const struct dt_device_node *node)
++{
++    uint16_t segment;
++    int res;
++
++    if ( !is_pci_passthrough_enabled() )
++        return 0;
++
++    if ( !dt_device_type_is_equal(node, "pci") )
++        return 0;
++
++    if ( node->parent && dt_device_type_is_equal(node->parent, "pci") )
++        return 0;
++
++    if ( dt_find_property(node, "linux,pci-domain", NULL) )
++        return 0;
++
++    /* Allocate and create the linux,pci-domain */
++    res = pci_get_host_bridge_segment(node, &segment);
++    if ( res < 0 )
++    {
++        res = pci_get_new_domain_nr();
++        if ( res < 0 )
++        {
++            printk(XENLOG_DEBUG "Can't assign PCI segment to %s\n",
++                   node->full_name);
++            return -FDT_ERR_NOTFOUND;
++        }
++
++        segment = res;
++        printk(XENLOG_DEBUG "Assigned segment %d to %s\n",
++               segment, node->full_name);
++    }
++
++    return fdt_property_cell(kinfo->fdt, "linux,pci-domain", segment);
++}
++
+ static int __init write_properties(struct domain *d, struct kernel_info *kinfo,
+                                    const struct dt_device_node *node)
+ {
+@@ -755,21 +804,10 @@ static int __init write_properties(struct domain *d, struct kernel_info *kinfo,
+             return res;
+     }
+ 
+-    if ( is_pci_passthrough_enabled() && dt_device_type_is_equal(node, "pci") )
+-    {
+-        if ( !dt_find_property(node, "linux,pci-domain", NULL) )
+-        {
+-            uint16_t segment;
+-
+-            res = pci_get_host_bridge_segment(node, &segment);
+-            if ( res < 0 )
+-                return res;
++    res = handle_linux_pci_domain(kinfo, node);
+ 
+-            res = fdt_property_cell(kinfo->fdt, "linux,pci-domain", segment);
+-            if ( res )
+-                return res;
+-        }
+-    }
++    if ( res )
++        return res;
+ 
+     /*
+      * Override the property "status" to disable the device when it's
+diff --git a/xen/arch/arm/pci/pci-host-common.c b/xen/arch/arm/pci/pci-host-common.c
+index ae79a0c19b..40e779b5d8 100644
+--- a/xen/arch/arm/pci/pci-host-common.c
++++ b/xen/arch/arm/pci/pci-host-common.c
+@@ -30,6 +30,8 @@ static LIST_HEAD(pci_host_bridges);
+ 
+ static atomic_t domain_nr = ATOMIC_INIT(-1);
+ 
++static int use_dt_domains = -1;
++
+ static inline void __iomem *pci_remap_cfgspace(paddr_t start, size_t len)
+ {
+     return ioremap_nocache(start, len);
+@@ -137,14 +139,16 @@ void pci_add_host_bridge(struct pci_host_bridge *bridge)
+     list_add_tail(&bridge->node, &pci_host_bridges);
+ }
+ 
+-static int pci_get_new_domain_nr(void)
++int pci_get_new_domain_nr(void)
+ {
++    if ( use_dt_domains )
++        return -1;
++
+     return atomic_inc_return(&domain_nr);
+ }
+ 
+ static int pci_bus_find_domain_nr(struct dt_device_node *dev)
+ {
+-    static int use_dt_domains = -1;
+     int domain;
+ 
+     domain = dt_get_pci_domain_nr(dev);
+diff --git a/xen/include/asm-arm/pci.h b/xen/include/asm-arm/pci.h
+index 9736d6816d..c313423cdc 100644
+--- a/xen/include/asm-arm/pci.h
++++ b/xen/include/asm-arm/pci.h
+@@ -109,6 +109,8 @@ static always_inline bool is_pci_passthrough_enabled(void)
+ 
+ void arch_pci_init_pdev(struct pci_dev *pdev);
+ 
++int pci_get_new_domain_nr(void);
++
+ #else   /*!CONFIG_HAS_PCI*/
+ 
+ struct arch_pci_dev { };
+@@ -129,5 +131,11 @@ static inline int pci_get_host_bridge_segment(const struct dt_device_node *node,
+     return -EINVAL;
+ }
+ 
++static inline int pci_get_new_domain_nr(void)
++{
++    ASSERT_UNREACHABLE();
++    return -1;
++}
++
+ #endif  /*!CONFIG_HAS_PCI*/
+ #endif /* __ARM_PCI_H__ */
+-- 
+2.25.1
+

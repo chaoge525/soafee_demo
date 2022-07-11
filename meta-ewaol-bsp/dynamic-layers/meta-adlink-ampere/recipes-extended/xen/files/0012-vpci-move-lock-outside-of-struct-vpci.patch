@@ -1,0 +1,513 @@
+From ef49bdeccb56d893b148408359aa25a6b7211a05 Mon Sep 17 00:00:00 2001
+From: Roger Pau Monne <roger.pau@citrix.com>
+Date: Thu, 25 Nov 2021 13:02:40 +0200
+Subject: [PATCH 12/78] vpci: move lock outside of struct vpci
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+This way the lock can be used to check whether vpci is present, and
+removal can be performed while holding the lock, in order to make
+sure there are no accesses to the contents of the vpci struct.
+Previously removal could race with vpci_read for example, since the
+lock was dropped prior to freeing pdev->vpci.
+
+Signed-off-by: Roger Pau Monné <roger.pau@citrix.com>
+Signed-off-by: Oleksandr Andrushchenko <oleksandr_andrushchenko@epam.com>
+---
+ tools/tests/vpci/emul.h       |  5 +--
+ tools/tests/vpci/main.c       |  4 +-
+ xen/arch/x86/hvm/vmsi.c       |  8 ++--
+ xen/drivers/passthrough/pci.c |  1 +
+ xen/drivers/vpci/header.c     | 21 ++++++++---
+ xen/drivers/vpci/msi.c        | 11 ++++--
+ xen/drivers/vpci/msix.c       | 14 +++----
+ xen/drivers/vpci/vpci.c       | 70 ++++++++++++++++++++++-------------
+ xen/include/xen/pci.h         |  1 +
+ xen/include/xen/vpci.h        |  5 ++-
+ 10 files changed, 88 insertions(+), 52 deletions(-)
+
+diff --git a/tools/tests/vpci/emul.h b/tools/tests/vpci/emul.h
+index 2e1d3057c9..d018fb5eef 100644
+--- a/tools/tests/vpci/emul.h
++++ b/tools/tests/vpci/emul.h
+@@ -44,6 +44,7 @@ struct domain {
+ };
+ 
+ struct pci_dev {
++    bool vpci_lock;
+     struct vpci *vpci;
+ };
+ 
+@@ -53,10 +54,8 @@ struct vcpu
+ };
+ 
+ extern const struct vcpu *current;
+-extern const struct pci_dev test_pdev;
++extern struct pci_dev test_pdev;
+ 
+-typedef bool spinlock_t;
+-#define spin_lock_init(l) (*(l) = false)
+ #define spin_lock(l) (*(l) = true)
+ #define spin_unlock(l) (*(l) = false)
+ 
+diff --git a/tools/tests/vpci/main.c b/tools/tests/vpci/main.c
+index b9a0a6006b..26c95b08b6 100644
+--- a/tools/tests/vpci/main.c
++++ b/tools/tests/vpci/main.c
+@@ -23,7 +23,8 @@ static struct vpci vpci;
+ 
+ const static struct domain d;
+ 
+-const struct pci_dev test_pdev = {
++struct pci_dev test_pdev = {
++    .vpci_lock = false,
+     .vpci = &vpci,
+ };
+ 
+@@ -158,7 +159,6 @@ main(int argc, char **argv)
+     int rc;
+ 
+     INIT_LIST_HEAD(&vpci.handlers);
+-    spin_lock_init(&vpci.lock);
+ 
+     VPCI_ADD_REG(vpci_read32, vpci_write32, 0, 4, r0);
+     VPCI_READ_CHECK(0, 4, r0);
+diff --git a/xen/arch/x86/hvm/vmsi.c b/xen/arch/x86/hvm/vmsi.c
+index 13e2a190b4..1f7a37f782 100644
+--- a/xen/arch/x86/hvm/vmsi.c
++++ b/xen/arch/x86/hvm/vmsi.c
+@@ -910,14 +910,14 @@ int vpci_msix_arch_print(const struct vpci_msix *msix)
+         {
+             struct pci_dev *pdev = msix->pdev;
+ 
+-            spin_unlock(&msix->pdev->vpci->lock);
++            spin_unlock(&msix->pdev->vpci_lock);
+             process_pending_softirqs();
+             /* NB: we assume that pdev cannot go away for an alive domain. */
+-            if ( !pdev->vpci || !spin_trylock(&pdev->vpci->lock) )
++            if ( !spin_trylock(&pdev->vpci_lock) )
+                 return -EBUSY;
+-            if ( pdev->vpci->msix != msix )
++            if ( !pdev->vpci || pdev->vpci->msix != msix )
+             {
+-                spin_unlock(&pdev->vpci->lock);
++                spin_unlock(&pdev->vpci_lock);
+                 return -EAGAIN;
+             }
+         }
+diff --git a/xen/drivers/passthrough/pci.c b/xen/drivers/passthrough/pci.c
+index 395958698e..20f02c488d 100644
+--- a/xen/drivers/passthrough/pci.c
++++ b/xen/drivers/passthrough/pci.c
+@@ -328,6 +328,7 @@ static struct pci_dev *alloc_pdev(struct pci_seg *pseg, u8 bus, u8 devfn)
+     *((u8*) &pdev->bus) = bus;
+     *((u8*) &pdev->devfn) = devfn;
+     pdev->domain = NULL;
++    spin_lock_init(&pdev->vpci_lock);
+ 
+     arch_pci_init_pdev(pdev);
+ 
+diff --git a/xen/drivers/vpci/header.c b/xen/drivers/vpci/header.c
+index 40ff79c33f..bd23c0274d 100644
+--- a/xen/drivers/vpci/header.c
++++ b/xen/drivers/vpci/header.c
+@@ -142,12 +142,13 @@ bool vpci_process_pending(struct vcpu *v)
+         if ( rc == -ERESTART )
+             return true;
+ 
+-        spin_lock(&v->vpci.pdev->vpci->lock);
+-        /* Disable memory decoding unconditionally on failure. */
+-        modify_decoding(v->vpci.pdev,
+-                        rc ? v->vpci.cmd & ~PCI_COMMAND_MEMORY : v->vpci.cmd,
+-                        !rc && v->vpci.rom_only);
+-        spin_unlock(&v->vpci.pdev->vpci->lock);
++        spin_lock(&v->vpci.pdev->vpci_lock);
++        if ( v->vpci.pdev->vpci )
++            /* Disable memory decoding unconditionally on failure. */
++            modify_decoding(v->vpci.pdev,
++                            rc ? v->vpci.cmd & ~PCI_COMMAND_MEMORY : v->vpci.cmd,
++                            !rc && v->vpci.rom_only);
++        spin_unlock(&v->vpci.pdev->vpci_lock);
+ 
+         rangeset_destroy(v->vpci.mem);
+         v->vpci.mem = NULL;
+@@ -285,6 +286,12 @@ static int modify_bars(const struct pci_dev *pdev, uint16_t cmd, bool rom_only)
+                 continue;
+         }
+ 
++        spin_lock(&tmp->vpci_lock);
++        if ( !tmp->vpci )
++        {
++            spin_unlock(&tmp->vpci_lock);
++            continue;
++        }
+         for ( i = 0; i < ARRAY_SIZE(tmp->vpci->header.bars); i++ )
+         {
+             const struct vpci_bar *bar = &tmp->vpci->header.bars[i];
+@@ -303,12 +310,14 @@ static int modify_bars(const struct pci_dev *pdev, uint16_t cmd, bool rom_only)
+             rc = rangeset_remove_range(mem, start, end);
+             if ( rc )
+             {
++                spin_unlock(&tmp->vpci_lock);
+                 printk(XENLOG_G_WARNING "Failed to remove [%lx, %lx]: %d\n",
+                        start, end, rc);
+                 rangeset_destroy(mem);
+                 return rc;
+             }
+         }
++        spin_unlock(&tmp->vpci_lock);
+     }
+ 
+     ASSERT(dev);
+diff --git a/xen/drivers/vpci/msi.c b/xen/drivers/vpci/msi.c
+index 5757a7aed2..e3ce46869d 100644
+--- a/xen/drivers/vpci/msi.c
++++ b/xen/drivers/vpci/msi.c
+@@ -270,7 +270,7 @@ void vpci_dump_msi(void)
+     rcu_read_lock(&domlist_read_lock);
+     for_each_domain ( d )
+     {
+-        const struct pci_dev *pdev;
++        struct pci_dev *pdev;
+ 
+         if ( !has_vpci(d) )
+             continue;
+@@ -282,8 +282,13 @@ void vpci_dump_msi(void)
+             const struct vpci_msi *msi;
+             const struct vpci_msix *msix;
+ 
+-            if ( !pdev->vpci || !spin_trylock(&pdev->vpci->lock) )
++            if ( !spin_trylock(&pdev->vpci_lock) )
+                 continue;
++            if ( !pdev->vpci )
++            {
++                spin_unlock(&pdev->vpci_lock);
++                continue;
++            }
+ 
+             msi = pdev->vpci->msi;
+             if ( msi && msi->enabled )
+@@ -323,7 +328,7 @@ void vpci_dump_msi(void)
+                 }
+             }
+ 
+-            spin_unlock(&pdev->vpci->lock);
++            spin_unlock(&pdev->vpci_lock);
+             process_pending_softirqs();
+         }
+     }
+diff --git a/xen/drivers/vpci/msix.c b/xen/drivers/vpci/msix.c
+index ea5d73a02a..cda5a2257c 100644
+--- a/xen/drivers/vpci/msix.c
++++ b/xen/drivers/vpci/msix.c
+@@ -199,15 +199,15 @@ static void __iomem *get_pba(struct vpci *vpci)
+     if ( !pba )
+         return read_atomic(&msix->pba);
+ 
+-    spin_lock(&vpci->lock);
++    spin_lock(&msix->pdev->vpci_lock);
+     if ( !msix->pba )
+     {
+         write_atomic(&msix->pba, pba);
+-        spin_unlock(&vpci->lock);
++        spin_unlock(&msix->pdev->vpci_lock);
+     }
+     else
+     {
+-        spin_unlock(&vpci->lock);
++        spin_unlock(&msix->pdev->vpci_lock);
+         iounmap(pba);
+     }
+ 
+@@ -269,7 +269,7 @@ static int msix_read(struct vcpu *v, unsigned long addr, unsigned int len,
+         return X86EMUL_OKAY;
+     }
+ 
+-    spin_lock(&msix->pdev->vpci->lock);
++    spin_lock(&msix->pdev->vpci_lock);
+     entry = get_entry(msix, addr);
+     offset = addr & (PCI_MSIX_ENTRY_SIZE - 1);
+ 
+@@ -298,7 +298,7 @@ static int msix_read(struct vcpu *v, unsigned long addr, unsigned int len,
+         ASSERT_UNREACHABLE();
+         break;
+     }
+-    spin_unlock(&msix->pdev->vpci->lock);
++    spin_unlock(&msix->pdev->vpci_lock);
+ 
+     return X86EMUL_OKAY;
+ }
+@@ -354,7 +354,7 @@ static int msix_write(struct vcpu *v, unsigned long addr, unsigned int len,
+         return X86EMUL_OKAY;
+     }
+ 
+-    spin_lock(&msix->pdev->vpci->lock);
++    spin_lock(&msix->pdev->vpci_lock);
+     entry = get_entry(msix, addr);
+     offset = addr & (PCI_MSIX_ENTRY_SIZE - 1);
+ 
+@@ -427,7 +427,7 @@ static int msix_write(struct vcpu *v, unsigned long addr, unsigned int len,
+         ASSERT_UNREACHABLE();
+         break;
+     }
+-    spin_unlock(&msix->pdev->vpci->lock);
++    spin_unlock(&msix->pdev->vpci_lock);
+ 
+     return X86EMUL_OKAY;
+ }
+diff --git a/xen/drivers/vpci/vpci.c b/xen/drivers/vpci/vpci.c
+index dfc8136ffb..ceaac4516f 100644
+--- a/xen/drivers/vpci/vpci.c
++++ b/xen/drivers/vpci/vpci.c
+@@ -35,12 +35,10 @@ extern vpci_register_init_t *const __start_vpci_array[];
+ extern vpci_register_init_t *const __end_vpci_array[];
+ #define NUM_VPCI_INIT (__end_vpci_array - __start_vpci_array)
+ 
+-void vpci_remove_device(struct pci_dev *pdev)
++static void vpci_remove_device_handlers_locked(struct pci_dev *pdev)
+ {
+-    if ( !has_vpci(pdev->domain) )
+-        return;
++    ASSERT(spin_is_locked(&pdev->vpci_lock));
+ 
+-    spin_lock(&pdev->vpci->lock);
+     while ( !list_empty(&pdev->vpci->handlers) )
+     {
+         struct vpci_register *r = list_first_entry(&pdev->vpci->handlers,
+@@ -50,17 +48,33 @@ void vpci_remove_device(struct pci_dev *pdev)
+         list_del(&r->node);
+         xfree(r);
+     }
+-    spin_unlock(&pdev->vpci->lock);
+-    if ( pdev->vpci->msix && pdev->vpci->msix->pba )
+-        iounmap(pdev->vpci->msix->pba);
++}
++
++void vpci_remove_device_locked(struct pci_dev *pdev)
++{
++    ASSERT(spin_is_locked(&pdev->vpci_lock));
++
++    vpci_remove_device_handlers_locked(pdev);
+     xfree(pdev->vpci->msix);
+     xfree(pdev->vpci->msi);
+     xfree(pdev->vpci);
+     pdev->vpci = NULL;
+ }
+ 
++void vpci_remove_device(struct pci_dev *pdev)
++{
++    if ( !has_vpci(pdev->domain) )
++        return;
++
++    spin_lock(&pdev->vpci_lock);
++    if ( pdev->vpci )
++        vpci_remove_device_locked(pdev);
++    spin_unlock(&pdev->vpci_lock);
++}
++
+ int vpci_add_handlers(struct pci_dev *pdev)
+ {
++    struct vpci *vpci;
+     unsigned int i;
+     int rc = 0;
+ 
+@@ -70,12 +84,13 @@ int vpci_add_handlers(struct pci_dev *pdev)
+     /* We should not get here twice for the same device. */
+     ASSERT(!pdev->vpci);
+ 
+-    pdev->vpci = xzalloc(struct vpci);
+-    if ( !pdev->vpci )
++    vpci = xzalloc(struct vpci);
++    if ( !vpci )
+         return -ENOMEM;
+ 
++    spin_lock(&pdev->vpci_lock);
++    pdev->vpci = vpci;
+     INIT_LIST_HEAD(&pdev->vpci->handlers);
+-    spin_lock_init(&pdev->vpci->lock);
+ 
+     for ( i = 0; i < NUM_VPCI_INIT; i++ )
+     {
+@@ -85,7 +100,8 @@ int vpci_add_handlers(struct pci_dev *pdev)
+     }
+ 
+     if ( rc )
+-        vpci_remove_device(pdev);
++        vpci_remove_device_locked(pdev);
++    spin_unlock(&pdev->vpci_lock);
+ 
+     return rc;
+ }
+@@ -154,8 +170,6 @@ int vpci_add_register(struct vpci *vpci, vpci_read_t *read_handler,
+     r->offset = offset;
+     r->private = data;
+ 
+-    spin_lock(&vpci->lock);
+-
+     /* The list of handlers must be kept sorted at all times. */
+     list_for_each ( prev, &vpci->handlers )
+     {
+@@ -167,14 +181,12 @@ int vpci_add_register(struct vpci *vpci, vpci_read_t *read_handler,
+             break;
+         if ( cmp == 0 )
+         {
+-            spin_unlock(&vpci->lock);
+             xfree(r);
+             return -EEXIST;
+         }
+     }
+ 
+     list_add_tail(&r->node, prev);
+-    spin_unlock(&vpci->lock);
+ 
+     return 0;
+ }
+@@ -185,7 +197,6 @@ int vpci_remove_register(struct vpci *vpci, unsigned int offset,
+     const struct vpci_register r = { .offset = offset, .size = size };
+     struct vpci_register *rm;
+ 
+-    spin_lock(&vpci->lock);
+     list_for_each_entry ( rm, &vpci->handlers, node )
+     {
+         int cmp = vpci_register_cmp(&r, rm);
+@@ -197,14 +208,12 @@ int vpci_remove_register(struct vpci *vpci, unsigned int offset,
+         if ( !cmp && rm->offset == offset && rm->size == size )
+         {
+             list_del(&rm->node);
+-            spin_unlock(&vpci->lock);
+             xfree(rm);
+             return 0;
+         }
+         if ( cmp <= 0 )
+             break;
+     }
+-    spin_unlock(&vpci->lock);
+ 
+     return -ENOENT;
+ }
+@@ -313,7 +322,7 @@ static uint32_t merge_result(uint32_t data, uint32_t new, unsigned int size,
+ uint32_t vpci_read(pci_sbdf_t sbdf, unsigned int reg, unsigned int size)
+ {
+     const struct domain *d = current->domain;
+-    const struct pci_dev *pdev;
++    struct pci_dev *pdev;
+     const struct vpci_register *r;
+     unsigned int data_offset = 0;
+     uint32_t data = ~(uint32_t)0;
+@@ -329,7 +338,12 @@ uint32_t vpci_read(pci_sbdf_t sbdf, unsigned int reg, unsigned int size)
+     if ( !pdev )
+         return vpci_read_hw(sbdf, reg, size);
+ 
+-    spin_lock(&pdev->vpci->lock);
++    spin_lock(&pdev->vpci_lock);
++    if ( !pdev->vpci )
++    {
++        spin_unlock(&pdev->vpci_lock);
++        return vpci_read_hw(sbdf, reg, size);
++    }
+ 
+     /* Read from the hardware or the emulated register handlers. */
+     list_for_each_entry ( r, &pdev->vpci->handlers, node )
+@@ -372,6 +386,7 @@ uint32_t vpci_read(pci_sbdf_t sbdf, unsigned int reg, unsigned int size)
+             break;
+         ASSERT(data_offset < size);
+     }
++    spin_unlock(&pdev->vpci_lock);
+ 
+     if ( data_offset < size )
+     {
+@@ -381,7 +396,6 @@ uint32_t vpci_read(pci_sbdf_t sbdf, unsigned int reg, unsigned int size)
+ 
+         data = merge_result(data, tmp_data, size - data_offset, data_offset);
+     }
+-    spin_unlock(&pdev->vpci->lock);
+ 
+     return data & (0xffffffff >> (32 - 8 * size));
+ }
+@@ -416,7 +430,7 @@ void vpci_write(pci_sbdf_t sbdf, unsigned int reg, unsigned int size,
+                 uint32_t data)
+ {
+     const struct domain *d = current->domain;
+-    const struct pci_dev *pdev;
++    struct pci_dev *pdev;
+     const struct vpci_register *r;
+     unsigned int data_offset = 0;
+     const unsigned long *ro_map = pci_get_ro_map(sbdf.seg);
+@@ -442,7 +456,14 @@ void vpci_write(pci_sbdf_t sbdf, unsigned int reg, unsigned int size,
+         return;
+     }
+ 
+-    spin_lock(&pdev->vpci->lock);
++    spin_lock(&pdev->vpci_lock);
++    if ( !pdev->vpci )
++    {
++        spin_unlock(&pdev->vpci_lock);
++        vpci_write_hw(sbdf, reg, size, data);
++        return;
++    }
++
+ 
+     /* Write the value to the hardware or emulated registers. */
+     list_for_each_entry ( r, &pdev->vpci->handlers, node )
+@@ -477,13 +498,12 @@ void vpci_write(pci_sbdf_t sbdf, unsigned int reg, unsigned int size,
+             break;
+         ASSERT(data_offset < size);
+     }
++    spin_unlock(&pdev->vpci_lock);
+ 
+     if ( data_offset < size )
+         /* Tailing gap, write the remaining. */
+         vpci_write_hw(sbdf, reg + data_offset, size - data_offset,
+                       data >> (data_offset * 8));
+-
+-    spin_unlock(&pdev->vpci->lock);
+ }
+ 
+ /* Helper function to check an access size and alignment on vpci space. */
+diff --git a/xen/include/xen/pci.h b/xen/include/xen/pci.h
+index b6d7e454f8..3f60d6c6c6 100644
+--- a/xen/include/xen/pci.h
++++ b/xen/include/xen/pci.h
+@@ -134,6 +134,7 @@ struct pci_dev {
+     u64 vf_rlen[6];
+ 
+     /* Data for vPCI. */
++    spinlock_t vpci_lock;
+     struct vpci *vpci;
+ };
+ 
+diff --git a/xen/include/xen/vpci.h b/xen/include/xen/vpci.h
+index b877db3c58..07aae66b23 100644
+--- a/xen/include/xen/vpci.h
++++ b/xen/include/xen/vpci.h
+@@ -30,8 +30,9 @@ int __must_check vpci_add_handlers(struct pci_dev *dev);
+ 
+ /* Remove all handlers and free vpci related structures. */
+ void vpci_remove_device(struct pci_dev *pdev);
++void vpci_remove_device_locked(struct pci_dev *pdev);
+ 
+-/* Add/remove a register handler. */
++/* Add/remove a register handler. Must be called holding the vpci_lock. */
+ int __must_check vpci_add_register(struct vpci *vpci,
+                                    vpci_read_t *read_handler,
+                                    vpci_write_t *write_handler,
+@@ -60,7 +61,6 @@ bool __must_check vpci_process_pending(struct vcpu *v);
+ struct vpci {
+     /* List of vPCI handlers for a device. */
+     struct list_head handlers;
+-    spinlock_t lock;
+ 
+ #ifdef __XEN__
+     /* Hide the rest of the vpci struct from the user-space test harness. */
+@@ -233,6 +233,7 @@ static inline int vpci_add_handlers(struct pci_dev *pdev)
+ }
+ 
+ static inline void vpci_remove_device(struct pci_dev *pdev) { }
++static inline void vpci_remove_device_locked(struct pci_dev *pdev) { }
+ 
+ static inline void vpci_dump_msi(void) { }
+ 
+-- 
+2.25.1
+

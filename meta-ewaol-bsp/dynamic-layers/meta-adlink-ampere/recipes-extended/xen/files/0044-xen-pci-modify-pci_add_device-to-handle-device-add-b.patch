@@ -1,0 +1,154 @@
+From d739c6af38b2cb6616111a15f6de91dd2af54e11 Mon Sep 17 00:00:00 2001
+From: Luca Fancellu <luca.fancellu@arm.com>
+Date: Thu, 25 Nov 2021 14:39:37 +0000
+Subject: [PATCH 44/78] xen/pci: modify pci_add_device to handle device add by
+ Xen
+
+Currently pci_add_device is called from hypercalls requested by Dom0
+to add pci devices and when the device has no domain associated with
+it, it is assumed that hardware_domain is the owner.
+
+On the dom0less scenario, the enumeration is performed by the
+firmware and Xen at boot time might want to assign some pci devices
+to guests, so it has to firstly add the device and then assign it to
+the final guest.
+
+Modify pci_add_device to have the owner domain passed as a parameter
+to the function, so that when it is called from the hypercall the
+owner would be the hardware domain, otherwise when Xen is calling it,
+it would be another domain since hw domain could not be there
+(dom0less guests without Dom0 use case).
+
+In pci_add_device there is a call to xsm that doesn't consider the
+requester of the function to be Xen itself, so add a check to skip
+the call if the owner domain is dom_io, since it means the call is
+coming directly from Xen.
+
+Issue-Id: SCM-1012
+Signed-off-by: Luca Fancellu <luca.fancellu@arm.com>
+Change-Id: Iaf89306702cc616a7328da2ac541a3a7a6b63975
+---
+ xen/arch/x86/physdev.c        |  6 +++---
+ xen/drivers/passthrough/pci.c | 24 ++++++++++++++++--------
+ xen/drivers/pci/physdev.c     |  3 ++-
+ xen/include/xen/pci.h         |  2 +-
+ 4 files changed, 22 insertions(+), 13 deletions(-)
+
+diff --git a/xen/arch/x86/physdev.c b/xen/arch/x86/physdev.c
+index ea38be8b79..86a06a20bc 100644
+--- a/xen/arch/x86/physdev.c
++++ b/xen/arch/x86/physdev.c
+@@ -443,8 +443,8 @@ ret_t do_physdev_op(int cmd, XEN_GUEST_HANDLE_PARAM(void) arg)
+         if ( copy_from_guest(&manage_pci, arg, 1) != 0 )
+             break;
+ 
+-        ret = pci_add_device(0, manage_pci.bus, manage_pci.devfn,
+-                             NULL, NUMA_NO_NODE);
++        ret = pci_add_device(hardware_domain, 0, manage_pci.bus,
++                             manage_pci.devfn, NULL, NUMA_NO_NODE);
+         break;
+     }
+ 
+@@ -474,7 +474,7 @@ ret_t do_physdev_op(int cmd, XEN_GUEST_HANDLE_PARAM(void) arg)
+         pdev_info.is_virtfn = manage_pci_ext.is_virtfn;
+         pdev_info.physfn.bus = manage_pci_ext.physfn.bus;
+         pdev_info.physfn.devfn = manage_pci_ext.physfn.devfn;
+-        ret = pci_add_device(0, manage_pci_ext.bus,
++        ret = pci_add_device(hardware_domain, 0, manage_pci_ext.bus,
+                              manage_pci_ext.devfn,
+                              &pdev_info, NUMA_NO_NODE);
+         break;
+diff --git a/xen/drivers/passthrough/pci.c b/xen/drivers/passthrough/pci.c
+index 6cb37e81df..72108ca87a 100644
+--- a/xen/drivers/passthrough/pci.c
++++ b/xen/drivers/passthrough/pci.c
+@@ -655,7 +655,7 @@ unsigned int pci_size_mem_bar(pci_sbdf_t sbdf, unsigned int pos,
+     return is64bits ? 2 : 1;
+ }
+ 
+-int pci_add_device(u16 seg, u8 bus, u8 devfn,
++int pci_add_device(struct domain *d, u16 seg, u8 bus, u8 devfn,
+                    const struct pci_dev_info *info, nodeid_t node)
+ {
+     struct pci_seg *pseg;
+@@ -675,7 +675,7 @@ int pci_add_device(u16 seg, u8 bus, u8 devfn,
+             pf_is_extfn = pdev->info.is_extfn;
+         pcidevs_unlock();
+         if ( !pdev )
+-            pci_add_device(seg, info->physfn.bus, info->physfn.devfn,
++            pci_add_device(d, seg, info->physfn.bus, info->physfn.devfn,
+                            NULL, node);
+         pdev_type = "virtual function";
+     }
+@@ -684,9 +684,12 @@ int pci_add_device(u16 seg, u8 bus, u8 devfn,
+     else
+         pdev_type = "device";
+ 
+-    ret = xsm_resource_plug_pci(XSM_PRIV, (seg << 16) | (bus << 8) | devfn);
+-    if ( ret )
+-        return ret;
++    if ( d != dom_io )
++    {
++        ret = xsm_resource_plug_pci(XSM_PRIV, (seg << 16) | (bus << 8) | devfn);
++        if ( ret )
++            return ret;
++    }
+ 
+     ret = -ENOMEM;
+ 
+@@ -756,8 +759,8 @@ int pci_add_device(u16 seg, u8 bus, u8 devfn,
+     ret = 0;
+     if ( !pdev->domain )
+     {
+-        pdev->domain = hardware_domain;
+-        list_add(&pdev->domain_list, &hardware_domain->pdev_list);
++        pdev->domain = d;
++        list_add(&pdev->domain_list, &pdev->domain->pdev_list);
+ 
+         /*
+          * For devices not discovered by Xen during boot, add vPCI handlers
+@@ -780,8 +783,13 @@ int pci_add_device(u16 seg, u8 bus, u8 devfn,
+             goto out;
+         }
+     }
+-    else
++    else if ( pdev->domain == d )
+         iommu_enable_device(pdev);
++    else
++    {
++        ret = -EINVAL;
++        goto out;
++    }
+ 
+     pci_enable_acs(pdev);
+ 
+diff --git a/xen/drivers/pci/physdev.c b/xen/drivers/pci/physdev.c
+index 42db3e6d13..a5bc17ff87 100644
+--- a/xen/drivers/pci/physdev.c
++++ b/xen/drivers/pci/physdev.c
+@@ -49,7 +49,8 @@ ret_t pci_physdev_op(int cmd, XEN_GUEST_HANDLE_PARAM(void) arg)
+         }
+ #endif
+ 
+-        ret = pci_add_device(add.seg, add.bus, add.devfn, &pdev_info, node);
++        ret = pci_add_device(hardware_domain, add.seg, add.bus, add.devfn,
++                             &pdev_info, node);
+         break;
+     }
+ 
+diff --git a/xen/include/xen/pci.h b/xen/include/xen/pci.h
+index 292b68063d..a1cec78c3b 100644
+--- a/xen/include/xen/pci.h
++++ b/xen/include/xen/pci.h
+@@ -171,7 +171,7 @@ int pci_release_devices(struct domain *d);
+ void pci_segments_init(void);
+ int pci_add_segment(u16 seg);
+ const unsigned long *pci_get_ro_map(u16 seg);
+-int pci_add_device(u16 seg, u8 bus, u8 devfn,
++int pci_add_device(struct domain *d, u16 seg, u8 bus, u8 devfn,
+                    const struct pci_dev_info *, nodeid_t node);
+ int pci_remove_device(u16 seg, u8 bus, u8 devfn);
+ int pci_ro_device(int seg, int bus, int devfn);
+-- 
+2.25.1
+

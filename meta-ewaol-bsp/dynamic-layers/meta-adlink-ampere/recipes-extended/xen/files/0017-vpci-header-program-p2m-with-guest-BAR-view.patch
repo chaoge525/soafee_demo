@@ -1,0 +1,97 @@
+From a02a6beb8ba02cc5b15e6eb78b5af6fd172f0af2 Mon Sep 17 00:00:00 2001
+From: Oleksandr Andrushchenko <oleksandr_andrushchenko@epam.com>
+Date: Thu, 25 Nov 2021 13:02:45 +0200
+Subject: [PATCH 17/78] vpci/header: program p2m with guest BAR view
+
+Take into account guest's BAR view and program its p2m accordingly:
+gfn is guest's view of the BAR and mfn is the physical BAR value as set
+up by the PCI bus driver in the hardware domain.
+This way hardware domain sees physical BAR values and guest sees
+emulated ones.
+
+Signed-off-by: Oleksandr Andrushchenko <oleksandr_andrushchenko@epam.com>
+---
+ xen/drivers/vpci/header.c | 30 ++++++++++++++++++++++++++----
+ 1 file changed, 26 insertions(+), 4 deletions(-)
+
+diff --git a/xen/drivers/vpci/header.c b/xen/drivers/vpci/header.c
+index cc49aa6888..b0499d32c5 100644
+--- a/xen/drivers/vpci/header.c
++++ b/xen/drivers/vpci/header.c
+@@ -30,6 +30,7 @@
+ 
+ struct map_data {
+     struct domain *d;
++    const struct vpci_bar *bar;
+     bool map;
+ };
+ 
+@@ -41,8 +42,25 @@ static int map_range(unsigned long s, unsigned long e, void *data,
+ 
+     for ( ; ; )
+     {
++        /* Start address of the BAR as seen by the guest. */
++        gfn_t start_gfn = _gfn(PFN_DOWN(is_hardware_domain(map->d)
++                                        ? map->bar->addr
++                                        : map->bar->guest_reg));
++        /* Physical start address of the BAR. */
++        mfn_t start_mfn = _mfn(PFN_DOWN(map->bar->addr));
+         unsigned long size = e - s + 1;
+ 
++        /*
++         * Ranges to be mapped don't always start at the BAR start address, as
++         * there can be holes or partially consumed ranges. Account for the
++         * offset of the current address from the BAR start.
++         */
++        start_gfn = gfn_add(start_gfn, s - mfn_x(start_mfn));
++
++        gdprintk(XENLOG_G_DEBUG,
++                 "%smap [%lx, %lx] -> %#"PRI_gfn" for %pd\n",
++                 map->map ? "" : "un", s, e, gfn_x(start_gfn),
++                 map->d);
+         /*
+          * ARM TODOs:
+          * - On ARM whether the memory is prefetchable or not should be passed
+@@ -52,8 +70,10 @@ static int map_range(unsigned long s, unsigned long e, void *data,
+          * - {un}map_mmio_regions doesn't support preemption.
+          */
+ 
+-        rc = map->map ? map_mmio_regions(map->d, _gfn(s), size, _mfn(s))
+-                      : unmap_mmio_regions(map->d, _gfn(s), size, _mfn(s));
++        rc = map->map ? map_mmio_regions(map->d, start_gfn,
++                                         size, _mfn(s))
++                      : unmap_mmio_regions(map->d, start_gfn,
++                                           size, _mfn(s));
+         if ( rc == 0 )
+         {
+             *c += size;
+@@ -62,8 +82,8 @@ static int map_range(unsigned long s, unsigned long e, void *data,
+         if ( rc < 0 )
+         {
+             printk(XENLOG_G_WARNING
+-                   "Failed to identity %smap [%lx, %lx] for d%d: %d\n",
+-                   map->map ? "" : "un", s, e, map->d->domain_id, rc);
++                   "Failed to identity %smap [%lx, %lx] for %pd: %d\n",
++                   map->map ? "" : "un", s, e, map->d, rc);
+             break;
+         }
+         ASSERT(rc < size);
+@@ -160,6 +180,7 @@ bool vpci_process_pending(struct vcpu *v)
+             if ( rangeset_is_empty(bar->mem) )
+                 continue;
+ 
++            data.bar = bar;
+             rc = rangeset_consume_ranges(bar->mem, map_range, &data);
+ 
+             if ( rc == -ERESTART )
+@@ -249,6 +270,7 @@ static int __init apply_map(struct domain *d, const struct pci_dev *pdev,
+         if ( rangeset_is_empty(bar->mem) )
+             continue;
+ 
++        data.bar = bar;
+         while ( (rc = rangeset_consume_ranges(bar->mem, map_range,
+                                               &data)) == -ERESTART )
+             process_pending_softirqs();
+-- 
+2.25.1
+

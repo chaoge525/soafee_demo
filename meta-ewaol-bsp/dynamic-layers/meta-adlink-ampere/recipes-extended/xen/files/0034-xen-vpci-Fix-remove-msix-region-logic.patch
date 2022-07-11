@@ -1,0 +1,37 @@
+From bd894b16383919958ad7ef23161c11a118f3029e Mon Sep 17 00:00:00 2001
+From: Rahul Singh <rahul.singh@arm.com>
+Date: Mon, 28 Jun 2021 14:24:51 +0100
+Subject: [PATCH 34/78] xen/vpci: Fix remove msix region logic
+
+rangeset_remove_range(..) function needs start and end of the range
+to remove any range from rangeset.
+
+End range is calculated wrong for MSIX region as PFN_DOWN will always
+discard last 12 bits but size of the of MSIX table is less than 12 bit.
+
+Remove PFN_DOWN from computation of the end size of MSIX region.
+
+Signed-off-by: Rahul Singh <rahul.singh@arm.com>
+Change-Id: I78a08a5ce3ca1fb808760c8b78fdcd53ec610ed8
+---
+ xen/drivers/vpci/header.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/xen/drivers/vpci/header.c b/xen/drivers/vpci/header.c
+index 8614e29a2e..6b065799c7 100644
+--- a/xen/drivers/vpci/header.c
++++ b/xen/drivers/vpci/header.c
+@@ -346,8 +346,8 @@ static int modify_bars(const struct pci_dev *pdev, uint16_t cmd, bool rom_only)
+     for ( i = 0; msix && i < ARRAY_SIZE(msix->tables); i++ )
+     {
+         unsigned long start = PFN_DOWN(vmsix_table_addr(pdev->vpci, i));
+-        unsigned long end = PFN_DOWN(vmsix_table_addr(pdev->vpci, i) +
+-                                     vmsix_table_size(pdev->vpci, i) - 1);
++        unsigned long end = vmsix_table_addr(pdev->vpci, i) +
++                            vmsix_table_size(pdev->vpci, i) - 1;
+ 
+         for ( j = 0; j < ARRAY_SIZE(header->bars); j++ )
+         {
+-- 
+2.25.1
+

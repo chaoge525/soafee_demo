@@ -1,0 +1,879 @@
+From 2a4113a8de414637e72c781910617175126325c5 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?T=C3=A9o=20Couprie=20Diaz?= <teo.coupriediaz@arm.com>
+Date: Fri, 25 Feb 2022 13:01:16 +0000
+Subject: [PATCH 59/78] xen/arm: Parse and print SSDT/DSDT for PCI
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Parse the SSDT/DSDT tables in order to find PCI host-bridges and their
+configuration. They are found by their ID 'PNP0A08' which is known and used by
+Linux as well. Disabled configurations are ignored, multiple checks are in
+place to make sure the configuration is valid and we know how to handle it.
+
+Currently unsported :
+ - Different interrupt number for different configurations on the same pin
+ - Multiple configurations with the same segment number
+
+Signed-off-by: Téo Couprie Diaz <teo.coupriediaz@arm.com>
+Change-Id: I129dfd2b24c6c93500f6f8a2f2dcefe73490dcac
+---
+ xen/arch/arm/Makefile   |   1 +
+ xen/arch/arm/acpi_sdt.c | 675 ++++++++++++++++++++++++++++++++++++++++
+ xen/arch/arm/acpi_sdt.h | 124 ++++++++
+ xen/arch/arm/setup.c    |   6 +
+ 4 files changed, 806 insertions(+)
+ create mode 100644 xen/arch/arm/acpi_sdt.c
+ create mode 100644 xen/arch/arm/acpi_sdt.h
+
+diff --git a/xen/arch/arm/Makefile b/xen/arch/arm/Makefile
+index 34138ecde8..6389825dd9 100644
+--- a/xen/arch/arm/Makefile
++++ b/xen/arch/arm/Makefile
+@@ -69,6 +69,7 @@ obj-y += vuart.o
+ 
+ obj-$(CONFIG_ACPI) += acpi_iort.o
+ obj-$(CONFIG_ACPI) += acpi_mmcfg.o
++obj-$(CONFIG_ACPI) += acpi_sdt.o
+ 
+ extra-y += xen.lds
+ 
+diff --git a/xen/arch/arm/acpi_sdt.c b/xen/arch/arm/acpi_sdt.c
+new file mode 100644
+index 0000000000..312070e4f0
+--- /dev/null
++++ b/xen/arch/arm/acpi_sdt.c
+@@ -0,0 +1,675 @@
++#include "acpi_sdt.h"
++
++int acpi_parse_sdt(struct acpi_table_header *sdt)
++{
++    const void *sdt_end;
++    void *device;
++    void *device_end;
++    uint32_t device_length;
++    void *device_HID;
++    bool found_device = false;
++
++    /* FIXME: Constants to move elsewhere ? */
++    const char device_header[2] = {0x5B, 0x82};
++    const uint32_t PCIe_eisa_id = eisa_id_encode("PNP0A08");
++
++    if ( !sdt )
++        return -EINVAL;
++
++    sdt_end = (void *)sdt + sdt->length;
++
++    /*
++     * TODO: Maybe move device find to a function,
++     * as it's re-used to find interrupt link.
++     */
++    device = sdt;
++    while ( device )
++    {
++        /* Search for a device in the stream. */
++        device = find_substr(device, sdt_end, device_header, 2);
++        if ( !device )
++        {
++            printk(KERN_INFO "No more devices found.\n");
++            break;
++        }
++        device = device + 2;
++        device_length = package_length(device, NULL);
++        /* If the package length is invalid, it is probably not a device. */
++        if ( device_length == (uint32_t)-1 )
++            continue;
++        device_end = device + device_length;
++
++        /* Search for the ID header. */
++        device_HID = find_substr(device, device_end, "_HID", 4);
++        if ( !device_HID )
++            continue;
++
++        /* Go over the header and ignore the data header byte. */
++        device_HID = device_HID + 4 + 1;
++
++        /* The ID can be encoded or plain ASCII, check both. */
++        if ( memcmp(device_HID, &PCIe_eisa_id, 4) &&
++             memcmp(device_HID, "PNP0A08", 7) )
++            continue;
++
++        if( parse_pci_device(device, device_end, (void *)sdt, sdt_end) != 0 )
++        {
++            printk(KERN_ERR "Invalid device found, aborting.\n");
++            return -EINVAL;
++        }
++        found_device = true;
++    }
++
++    if ( !found_device )
++    {
++        printk(KERN_ERR "No PCI host bridge found.\n");
++        return -ENODEV;
++    }
++    return 0;
++}
++
++int parse_pci_device(void *device, void *device_end, void *sdt_start,
++                     const void *sdt_end)
++{
++    PCI_resource resource;
++    /* FIXME: Just use one pointer ? Name ? */
++    uint8_t *STA;
++    void *CID;
++    void *SEG;
++    void *RBUF;
++    void* PRT;
++
++    uint8_t status;
++
++    /* FIXME: Constants to move somehwere else ? */
++    const int status_mask = 0b1111;
++    const int status_functioning_bit = 0b1000;
++    const uint32_t eisa_id = eisa_id_encode("PNP0A03");
++
++    STA = find_substr(device, device_end, "_STA", 4);
++    if ( STA )
++    {
++        STA = STA + 4 + 1;
++        if ( *STA != RETURN_OP )
++        {
++            printk(KERN_ERR "\tCannot parse _STA, cannot use this device\n");
++            return -1;
++        }
++        STA = STA + 1;
++
++        status = *STA;
++        if ( status == BYTE_PREFIX )
++        {
++            STA = STA + 1;
++            status = *STA;
++        }
++
++        /*
++         * Assume that this is the most important bit to check if the device
++         * should be used.
++         */
++        if ( ( status & status_mask ) < status_functioning_bit )
++        {
++            printk(KERN_INFO "\tDevice is not enabled, do not report.\n");
++            return 0;
++        }
++    }
++    /* If not present the standard assume it is enabled and functionnal. */
++
++    CID = find_substr(device, device_end, "_CID", 4);
++    if ( CID )
++    {
++        CID = CID + 4 + 1;
++
++        /* The ID can be encoded or plain ASCII, check both. */
++        if (memcmp(CID, &eisa_id, 4) && memcmp(CID, "PNP0A03", 7))
++            printk(KERN_WARNING "\tDid not find matching CID\n");
++        else
++            printk(KERN_INFO "\tFound matching CID\n");
++        /* TODO: Do we want to bail if we don't find a PCI CID ? */
++    }
++
++    /* TODO: Very common pattern here, should it be moved to a function ? */
++    SEG = find_substr(device, device_end, "_SEG", 4);
++    if ( !SEG )
++    {
++        printk(KERN_ERR "\tPCI segment not found, cannot use this device.\n");
++        return -1;
++    }
++    resource.segment = *(uint8_t*)(SEG + 4);
++    /* The byte prefix isn't used sometimes... */
++    if (resource.segment == BYTE_PREFIX)
++        resource.segment = *(uint8_t*)(SEG + 5);
++    printk(KERN_INFO "\tFound PCI segment : %d\n", resource.segment);
++
++    RBUF = find_substr(device, device_end, "RBUF", 4);
++    if ( !RBUF )
++    {
++        printk(KERN_ERR
++               "\tPCI RBUF resource not found, cannot use this device.\n");
++        return -1;
++    }
++    if ( parse_rbuf(RBUF, &resource) != 0 )
++    {
++        printk(KERN_ERR "Failed to parse RBUF, cannot use this device.\n");
++        return -1;
++    }
++
++    PRT = find_substr(device, device_end, "_PRT", 4);
++    if ( !PRT )
++    {
++        printk(KERN_ERR
++               "\tPCI routing table not found, cannot use this device.\n");
++        return -1;
++    }
++    if ( parse_prt(PRT, &resource, sdt_start, sdt_end) != 0 )
++    {
++        printk(KERN_ERR "Failed to parse _PRT, cannot use thise device.\n");
++        return -1;
++    }
++
++    printk(KERN_INFO "\n====================\n\n");
++    print_pci_resource(&resource);
++    printk(KERN_INFO "\n====================\n\n");
++
++    xfree(resource.prt_mappings);
++
++    return 0;
++}
++
++int parse_rbuf(void* rbuf_start, PCI_resource* resource)
++{
++    const void *rbuf_end;
++    PCI_window *current_window;
++
++    /* Go over the name and other header (TODO: find if relevant...). */
++    void *cursor = rbuf_start + 4 + 4;
++    uint8_t length = *(uint8_t*)cursor;
++    cursor = cursor + 1;
++    rbuf_end = rbuf_start + length;
++
++    resource->window_count = 0;
++
++    while ( *(uint8_t *)cursor != END_RESOURCE && cursor <= rbuf_end
++           && resource->window_count < MAX_PCI_RESOURCES )
++    {
++        /* Check if this is a known resource formats or the end. */
++        switch ( *(uint8_t *)cursor )
++        {
++        case WORD_RESOURCE:
++        case QWORD_RESOURCE:
++        case DWORD_RESOURCE:
++            resource->window_count += 1;
++            break;
++        default:
++            printk(KERN_ERR
++                   "Unexpected resource header in RBUF : 0x%X, aborting.\n",
++                   *(uint8_t *)cursor);
++            return -1;
++        }
++
++        current_window = &resource->windows[resource->window_count - 1];
++        current_window->resource_type = *(uint8_t *)cursor;
++        /* Move to the beginning of the data. */
++        cursor = cursor + 3;
++        current_window->range_type = *(uint8_t *)cursor;
++        /* Go over range as well as two flag bytes. */
++        cursor = cursor + 3;
++
++        switch ( current_window->resource_type )
++        {
++        case WORD_RESOURCE:
++            memcpy(&current_window->w, cursor, sizeof(word_resource));
++            cursor += sizeof(word_resource);
++            break;
++        case DWORD_RESOURCE:
++            memcpy(&current_window->d, cursor, sizeof(dword_resource));
++            cursor += sizeof(dword_resource);
++            break;
++        case QWORD_RESOURCE:
++            memcpy(&current_window->q, cursor, sizeof(qword_resource));
++            cursor += sizeof(qword_resource);
++            break;
++        default:
++            break;
++        }
++    }
++    return 0;
++}
++
++/*
++ * TODO: Need to pass sdt through everything to be able to access it here.
++ * Find a better way ?
++ */
++uint32_t get_interrupt_from_device(char* device_name, void* sdt_start,
++                                   const void* sdt_end)
++{
++    void *device = sdt_start;
++    void *device_end = NULL;
++    const char device_header[2] = {0x5B, 0x82};
++
++    int length_bytes = 0;
++    uint32_t device_length = 0;
++
++    void* PRS = NULL;
++
++    while ( device )
++    {
++        /* Search for a device in the stream. */
++        device = find_substr(device, sdt_end, device_header, 2);
++        if ( !device )
++            break;
++
++        device = device + 2;
++        device_length = package_length(device, &length_bytes);
++        /* If the package length is invalid, it is probably not a device. */
++        if ( device_length == (uint32_t)-1 )
++            continue;
++        device_end = device + device_length;
++        device = device + length_bytes;
++        if ( !memcmp(device_name, device, 4) )
++            break;
++    }
++    if ( !device )
++    {
++        printk(KERN_ERR "Did not find the interrupt device.\n");
++        /* TODO: Should not conflict with interrupt numbers, to confirm. */
++        return -1;
++    }
++
++    /*
++     * Assume the resource will be found in _PRS directly and
++     * that _CRS will only use _PRS.
++     * That seems to be the case on all Arm platforms analyzed.
++     */
++    PRS = find_substr(device, device_end, "_PRS", 4);
++    if ( !PRS )
++    {
++        printk(KERN_ERR "Could not find _PRS, aborting.\n");
++        return -1;
++    }
++
++    /* Go over name and header, same as RBUF. */
++    PRS = PRS + 4 + 4;
++    if ( *(uint8_t *)PRS != EXT_INTERRUPT_RESOURCE )
++    {
++        printk(KERN_ERR
++               "Extended Interrupt Descriptor Resource not present where expected, aborting.\n");
++        return -1;
++    }
++    /* TODO: More checks ?  */
++    /*
++     * We don't really need the other data,
++     * just go to the interrupt number directly.
++     */
++    PRS = PRS + 5;
++    return *(uint8_t *)PRS;
++}
++
++int parse_prt(void *prt_start, PCI_resource *resource, void *sdt_start,
++              const void *sdt_end)
++{
++    /* Go over the name */
++    /* TODO: Would this be better if handled by find_substr ? */
++    uint8_t *cursor = (uint8_t *)prt_start + 4;
++    uint8_t *prt_end = NULL;
++
++    /* Keep a pin to interrupt mapping to check consistency between slots. */
++    uint32_t pin_to_interrupt_map[4] = {0, 0, 0, 0};
++
++    /* Variables related to each mapping */
++    PRT_mapping *mapping;
++    int package_elements;
++    uint8_t *package_end;
++    int data_size;
++    uint32_t previous_interrupt;
++
++    int i;
++
++    cursor = parse_package_header(cursor, &prt_end,
++                                  &resource->prt_mapping_count);
++    if ( !cursor )
++    {
++        printk(KERN_ERR "Invalid package for _PRT, aborting.\n");
++        return -1;
++    }
++
++    resource->prt_mappings = xmalloc_array(PRT_mapping,
++                                           resource->prt_mapping_count);
++    if ( !resource->prt_mappings )
++    {
++        printk(KERN_ERR
++               "Memory allocation for the interrupt mappings failed, aborting.\n");
++        return -1;
++    }
++    memset(resource->prt_mappings, 0,
++           resource->prt_mapping_count * sizeof(PRT_mapping));
++
++    for ( i = 0 ; i < resource->prt_mapping_count ; i += 1 )
++    {
++        mapping = &resource->prt_mappings[i];
++        package_elements = 0;
++        package_end = NULL;
++        cursor = parse_package_header(cursor, &package_end, &package_elements);
++        if ( !cursor || package_elements != 4 )
++        {
++            printk(KERN_ERR "Invalid package interrupt mapping, aborting.\n");
++            xfree(resource->prt_mappings);
++            return -1;
++        }
++
++        switch ( *cursor )
++        {
++        case WORD_PREFIX:
++            data_size = 2;
++            break;
++        case DWORD_PREFIX:
++            data_size = 4;
++            break;
++        default:
++            printk(KERN_ERR "Unexpected prefix for address : 0x%X aborting\n",
++                   *cursor);
++            xfree(resource->prt_mappings);
++            return -1;
++        }
++        cursor = cursor + 1;
++        memcpy(&mapping->address, cursor, data_size);
++        cursor = cursor + data_size;
++
++        if ( *cursor == BYTE_PREFIX )
++            cursor = cursor + 1;
++        mapping->pin = *cursor;
++        cursor = cursor + 1;
++
++        /*
++         * Not sure if this is possible but I don't really understand when
++         * the prefix can be omitted.
++         */
++        if ( *cursor == BYTE_PREFIX )
++            cursor = cursor + 1;
++
++        if ( *cursor == 0 )
++        {
++            mapping->is_global = 1;
++            cursor = cursor + 1;
++        }
++        else
++        {
++            mapping->is_global = 0;
++            /* PathNames are always 4 characters and not null-terminated. */
++            memcpy(&mapping->source, cursor, 4);
++            mapping->source[4] = '\0';
++            cursor = cursor + 4;
++        }
++
++        /* If there's more than one byte left there might be a prefix. */
++        if ( package_end - cursor == 1 )
++        {
++            mapping->source_index = * cursor;
++            cursor = cursor + 1;
++        }
++        else
++        {
++            switch ( *cursor )
++            {
++            case BYTE_PREFIX:
++                data_size = 1;
++                break;
++            case WORD_PREFIX:
++                data_size = 2;
++                break;
++            case DWORD_PREFIX:
++                data_size = 4;
++                break;
++            default:
++                printk(KERN_ERR
++                       "Unexpected prefix for source index : 0x%X aborting\n",
++                       *cursor);
++                xfree(resource->prt_mappings);
++                return -1;
++            }
++            cursor = cursor + 1;
++            memcpy(&mapping->source_index, cursor, data_size);
++            cursor = cursor + data_size;
++        }
++
++        if (mapping->is_global)
++        {
++            mapping->interrupt = mapping->source_index;
++        }
++        else
++        {
++            mapping->interrupt = get_interrupt_from_device(mapping->source,
++                                                           sdt_start,
++                                                           sdt_end);
++        }
++
++        previous_interrupt = pin_to_interrupt_map[mapping->pin];
++        if ( previous_interrupt == 0 )
++        {
++            pin_to_interrupt_map[mapping->pin] = mapping->interrupt;
++        }
++        else if ( previous_interrupt != mapping->interrupt )
++        {
++            printk(KERN_ERR
++                   "Pin %d changes interrupt from slot to slot : previously 0x%X, now 0x%X\n",
++                   mapping->pin, previous_interrupt,
++                   mapping->interrupt);
++            printk(KERN_ERR "This configuration is not supported, abort.\n");
++            xfree(resource->prt_mappings);
++            return -1;
++        }
++    }
++    return 0;
++}
++
++/* UTILITY FUNCTIONS */
++
++void* find_substr(void* src, const void* end, const char* substr,
++                  size_t substr_length)
++{
++    size_t length_left = end - src;
++    int first_char = substr[0];
++    void* found_pos = src;
++
++    while ( length_left > substr_length )
++    {
++        /* TODO: Move by substr_length rather than Xen byte-by-byte memchr. */
++        found_pos = memchr(found_pos, first_char, length_left);
++        length_left = end - found_pos;
++
++        if ( !found_pos || length_left < substr_length )
++            return NULL;
++        if ( !memcmp(found_pos, substr, substr_length) )
++            return found_pos;
++
++        /*
++         * If not found, advance by one to go over the already found character.
++         */
++        found_pos = found_pos + 1;
++        length_left = length_left - 1;
++    }
++
++    /*
++     * Should only be reached if the input string is shorter than the substring
++     */
++    return NULL;
++}
++
++uint32_t package_length(uint8_t* pkg_lead_byte, int* length_bytes_count)
++{
++    const uint8_t length_mask = 0b111111;
++    uint32_t length = 0;
++    uint8_t additional_length_bytes = *pkg_lead_byte >> 6;
++
++    int i;
++
++    if ( length_bytes_count )
++        *length_bytes_count = 1 + additional_length_bytes;
++
++    length = *pkg_lead_byte & length_mask;
++
++    if ( additional_length_bytes == 0 )
++        return length;
++
++    /* Check if the lead byte is valid */
++    if ( length >= 0x10 )
++        return -1; /* Max length is 28 bits, so -1 works for an error. */
++
++    for ( i = 0 ; i < additional_length_bytes ; i += 1 )
++    {
++        pkg_lead_byte += 1;
++        if ( i == 0 )
++            length = length | *pkg_lead_byte << 4;
++        else
++            length = length | *pkg_lead_byte << 8;
++    }
++
++    return length;
++}
++
++void* parse_package_header(uint8_t *pkg_header, uint8_t **pkg_end,
++                           int *element_count)
++{
++    int package_length_bytes = 0;
++    uint32_t length = 0;
++
++    if ( *pkg_header != PACKAGE_PREFIX )
++        return NULL;
++    pkg_header = pkg_header + 1;
++
++    length = package_length(pkg_header, &package_length_bytes);
++    if ( length == (uint32_t)-1 )
++        return NULL;
++    /* The length takes itself and the package argument into account. */
++    if ( pkg_end )
++        *pkg_end = pkg_header + length;
++    pkg_header = pkg_header + package_length_bytes;
++
++    if ( element_count )
++        *element_count = *pkg_header;
++
++    return pkg_header + 1;
++}
++
++uint32_t eisa_id_encode(char *id_to_encode)
++{
++    const uint32_t eisa_id_char_mask = 0b11111;
++    const uint32_t eisa_id_digit_mask = 0b1111;
++    uint32_t encoded = 0;
++    char hex_digit;
++    int i = 0;
++
++    /*
++     * The encoding basically just takes the ASCII values and shifts them down.
++     * First shift the three letters.
++     */
++    for ( ; i < 3 ; i++ )
++    {
++        encoded = encoded << 5;
++        encoded = encoded | ((id_to_encode[i] - 0x40) & eisa_id_char_mask);
++    }
++    /* Then the remaining characters should be interepreted as hex digits. */
++    for ( ; i < 7 ; i++ )
++    {
++        encoded = encoded << 4;
++        hex_digit = id_to_encode[i];
++        /* Move the letters right after the numbers in ASCII. */
++        if (hex_digit >= 'a')
++            hex_digit = hex_digit - 0x27;
++        else if(hex_digit >= 'A')
++            hex_digit = hex_digit - 0x07;
++        encoded = encoded | ((hex_digit - 0x30) & eisa_id_digit_mask);
++    }
++
++    /* Needed as the IDs are stored in big-endian in AML. */
++    return cpu_to_be32(encoded);
++}
++
++void print_pci_resource(PCI_resource *resource)
++{
++    int i;
++
++    printk(KERN_INFO "PCI Segment : %d\n", resource->segment);
++    printk(KERN_INFO "Number of windows : %d\n", resource->window_count);
++    for ( i = 0 ; i < resource->window_count ; i += 1 )
++    {
++        PCI_window* window = &resource->windows[i];
++        printk(KERN_INFO "Type of window : ");
++
++        switch ( window->range_type )
++        {
++        case MEMORY:
++            printk("Memory\n");
++            break;
++        case IO:
++            printk("I/O\n");
++            break;
++        case BUS:
++            printk("Bus\n");
++            break;
++        }
++
++        switch ( window->resource_type )
++        {
++        case WORD_RESOURCE:
++            printk(KERN_INFO "Granularity        : 0x%04X\n",
++                   window->w.granularity);
++            printk(KERN_INFO "Minimum            : 0x%04X\n",
++                   window->w.minimum);
++            printk(KERN_INFO "Maximum            : 0x%04X\n",
++                   window->w.maximum);
++            printk(KERN_INFO "Translation offset : 0x%04X\n",
++                   window->w.translation_offset);
++            printk(KERN_INFO "Length             : 0x%04X\n",
++                   window->w.length);
++            break;
++        case DWORD_RESOURCE:
++            printk(KERN_INFO "Granularity        : 0x%08X\n",
++                   window->d.granularity);
++            printk(KERN_INFO "Minimum            : 0x%08X\n",
++                   window->d.minimum);
++            printk(KERN_INFO "Maximum            : 0x%08X\n",
++                   window->d.maximum);
++            printk(KERN_INFO "Translation offset : 0x%08X\n",
++                   window->d.translation_offset);
++            printk(KERN_INFO "Length             : 0x%08X\n",
++                   window->d.length);
++            break;
++        case QWORD_RESOURCE:
++            printk(KERN_INFO "Granularity        : 0x%016"PRIX64"\n",
++                   window->q.granularity);
++            printk(KERN_INFO "Minimum            : 0x%016"PRIX64"\n",
++                   window->q.minimum);
++            printk(KERN_INFO "Maximum            : 0x%016"PRIX64"\n",
++                   window->q.maximum);
++            printk(KERN_INFO "Translation offset : 0x%016"PRIX64"\n",
++                   window->q.translation_offset);
++            printk(KERN_INFO "Length             : 0x%016"PRIX64"\n",
++                   window->q.length);
++            break;
++        default:
++            break;
++        }
++    }
++
++    printk(KERN_INFO "\nNumber of interrupt mappings : %d\n",
++           resource->prt_mapping_count);
++    for ( i = 0 ; i < resource->prt_mapping_count ; i += 1 )
++    {
++        PRT_mapping* mapping = &resource->prt_mappings[i];
++        printk(KERN_INFO "Mapping #%d\n", i);
++        printk(KERN_INFO "Address          : 0x%08X\n", mapping->address);
++        printk(KERN_INFO "Pin              : %d\n", mapping->pin);
++        if ( mapping->is_global )
++            printk(KERN_INFO "Global interrupt : 0x%X\n",
++                   mapping->source_index);
++        else
++        {
++            printk(KERN_INFO "Interrupt source : %s\n", mapping->source);
++            printk(KERN_INFO "Source index     : 0x%X\n",
++                   mapping->source_index);
++        }
++        printk(KERN_INFO "Interrupt Number : 0x%X\n", mapping->interrupt);
++    }
++}
+\ No newline at end of file
+diff --git a/xen/arch/arm/acpi_sdt.h b/xen/arch/arm/acpi_sdt.h
+new file mode 100644
+index 0000000000..e16444e324
+--- /dev/null
++++ b/xen/arch/arm/acpi_sdt.h
+@@ -0,0 +1,124 @@
++#include <xen/acpi.h>
++#include <acpi/actbl2.h>
++#include <xen/string.h>
++#include <xen/xmalloc.h>
++
++/* TODO: Defines ? */
++#define RETURN_OP 0xA4
++/* Assume the max number of ressources is 4, Linux does the same. */
++#define MAX_PCI_RESOURCES 4
++
++/* Prefixes that specify the type of the following data. */
++enum data_prefix
++{
++    BYTE_PREFIX = 0x0A,
++    WORD_PREFIX = 0x0B,
++    DWORD_PREFIX = 0x0C,
++    STRING_PREFIX = 0x0D,
++    QWORD_PREFIX = 0x0E,
++    PACKAGE_PREFIX = 0x12,
++};
++
++/* Headers for different data types inside a Resource. */
++enum resource_header
++{
++    END_RESOURCE = 0x79,
++    DWORD_RESOURCE = 0x87,
++    WORD_RESOURCE = 0x88,
++    EXT_INTERRUPT_RESOURCE = 0x89,
++    QWORD_RESOURCE = 0x8A,
++};
++
++enum range_type
++{
++    MEMORY,
++    IO,
++    BUS,
++};
++
++/* TODO: Maybe do something with macros to prevent duplication ? */
++typedef struct __attribute__((packed))
++{
++    uint16_t granularity;
++    uint16_t minimum;
++    uint16_t maximum;
++    uint16_t translation_offset;
++    uint16_t length;
++} word_resource;
++
++typedef struct  __attribute__((packed))
++{
++    uint32_t granularity;
++    uint32_t minimum;
++    uint32_t maximum;
++    uint32_t translation_offset;
++    uint32_t length;
++} dword_resource;
++
++typedef struct  __attribute__((packed))
++{
++    uint64_t granularity;
++    uint64_t minimum;
++    uint64_t maximum;
++    uint64_t translation_offset;
++    uint64_t length;
++} qword_resource;
++
++typedef struct
++{
++    enum resource_header resource_type;
++    enum range_type range_type;
++    union {
++        word_resource w;
++        dword_resource d;
++        qword_resource q;
++    };
++} PCI_window;
++
++typedef struct
++{
++    uint32_t address;
++    uint8_t pin;
++    uint8_t is_global;
++    /* Unused if is_global is true. */
++    char source[5];
++    /* Global interrupt number if is_global is true. */
++    uint32_t source_index;
++    uint32_t interrupt;
++} PRT_mapping;
++
++typedef struct
++{
++    uint8_t segment;
++    uint8_t window_count;
++    int prt_mapping_count;
++    PCI_window windows[MAX_PCI_RESOURCES];
++    PRT_mapping *prt_mappings;
++} PCI_resource;
++
++int acpi_parse_sdt(struct acpi_table_header *sdt);
++int parse_rbuf(void *rbuf_start, PCI_resource *resource);
++uint32_t get_interrupt_from_device(char *device_name, void *ssdt_start,
++                                   const void *ssdt_end);
++int parse_prt(void *prt_start, PCI_resource *resource, void *ssdt_start,
++              const void *ssdt_end);
++int parse_pci_device(void *PCI_device, void *PCI_device_end, void *ssdt_start,
++                     const void *ssdt_end);
++
++/* Find a substring in a fixed part of a byte array. */
++void* find_substr(void* src, const void* end, const char* substr,
++                  size_t substr_length);
++/*
++ * Determine the length of a package/termlist/device.
++ * Can return the number of length bytes.
++ */
++uint32_t package_length(uint8_t* pkg_lead_byte, int* length_bytes_count);
++/*
++ * Parse the package header, returning a pointer to the start of the data.
++ * pkg_end will be set to the end of the package.
++ * element_count will be set to the number of elements expected.
++ */
++void* parse_package_header(uint8_t* pkg_lead_byte, uint8_t** pkg_end,
++                           int* element_count);
++uint32_t eisa_id_encode(char* id_to_encode);
++void print_pci_resource(PCI_resource* resource);
+diff --git a/xen/arch/arm/setup.c b/xen/arch/arm/setup.c
+index 886c80c2db..f8ccb55598 100644
+--- a/xen/arch/arm/setup.c
++++ b/xen/arch/arm/setup.c
+@@ -56,6 +56,7 @@
+ 
+ #include "acpi_iort.h"
+ #include "acpi_mmcfg.h"
++#include "acpi_sdt.h"
+ 
+ struct bootinfo __initdata bootinfo;
+ 
+@@ -1031,6 +1032,11 @@ void __init start_xen(unsigned long boot_phys_offset,
+     printk("======= ACPI PCI parsing =======\n");
+     acpi_table_parse(ACPI_SIG_MCFG, acpi_parse_mcfg);
+     acpi_table_parse(ACPI_SIG_IORT, acpi_parse_iort);
++    if ( acpi_table_parse(ACPI_SIG_SSDT, acpi_parse_sdt) == -ENODEV )
++    {
++        printk(KERN_WARNING "No device found in SSDT, trying DSDT.\n");
++        acpi_table_parse(ACPI_SIG_DSDT, acpi_parse_sdt);
++    }
+ #endif
+     /* Create initial domain 0. */
+     if ( !is_dom0less_mode() )
+-- 
+2.25.1
+

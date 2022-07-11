@@ -1,0 +1,137 @@
+From e354602bb4c23efd485971f26d10302545e35ba7 Mon Sep 17 00:00:00 2001
+From: Rahul Singh <rahul.singh@arm.com>
+Date: Thu, 22 Oct 2020 11:54:32 +0100
+Subject: [PATCH 28/78] xen/arm: Add mapping for ITS translation register when
+ IOMMU is enabled
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+If ITS is enabled for hardware domain and devices that are behind an
+SMMU generate an MSI interrupt, SMMU fault will be observed as there
+will be no mapping in p2m table for the ITS translation register.
+
+MMIO mapping is required in the p2m table so that the device can
+generate the MSI interrupt writing to the GITS_TRASLATOR register.
+
+Mapping the ITS translation register to the hardware domain.
+
+Change-Id: I2cb8b7b8173573d847f433fae5fc133844fa1aee
+Signed-off-by: Rahul Singh <rahul.singh@arm.com>
+---
+ xen/arch/arm/gic-v3-its.c        | 29 +++++++++++++++++++++++++++++
+ xen/arch/arm/gic-v3.c            | 15 +++++++++++++++
+ xen/include/asm-arm/gic_v3_its.h | 10 ++++++++++
+ 3 files changed, 54 insertions(+)
+
+diff --git a/xen/arch/arm/gic-v3-its.c b/xen/arch/arm/gic-v3-its.c
+index 9558bad96a..1848063c0c 100644
+--- a/xen/arch/arm/gic-v3-its.c
++++ b/xen/arch/arm/gic-v3-its.c
+@@ -271,6 +271,35 @@ int gicv3_its_setup_collection(unsigned int cpu)
+     return 0;
+ }
+ 
++int gicv3_its_map_translation_register(struct domain *d)
++{
++    struct host_its *its;
++    paddr_t its_translation_addr;
++    paddr_t its_translation_size = ITS_TRANSLATION_OFFSET;
++    int ret;
++
++    list_for_each_entry(its, &host_its_list, entry)
++    {
++        its_translation_addr = its->addr + ITS_TRANSLATION_OFFSET;
++
++        printk(XENLOG_INFO "GICv3: Mapping ITS translation register to d%d:"
++                "addr=0x%"PRIpaddr" size=0x%"PRIpaddr" \n",
++                d->domain_id, its_translation_addr, its_translation_size);
++
++        ret = map_mmio_regions(d, gaddr_to_gfn(its_translation_addr),
++                PFN_UP(its_translation_size),
++                maddr_to_mfn(its_translation_addr));
++        if ( ret )
++        {
++            printk(XENLOG_ERR "GICv3: Map ITS translation register d%d failed.\n",
++                    d->domain_id);
++            return ret;
++        }
++    }
++
++    return 0;
++}
++
+ #define BASER_ATTR_MASK                                           \
+         ((0x3UL << GITS_BASER_SHAREABILITY_SHIFT)               | \
+          (0x7UL << GITS_BASER_OUTER_CACHEABILITY_SHIFT)         | \
+diff --git a/xen/arch/arm/gic-v3.c b/xen/arch/arm/gic-v3.c
+index 3c7e108924..dd5cb6facd 100644
+--- a/xen/arch/arm/gic-v3.c
++++ b/xen/arch/arm/gic-v3.c
+@@ -1269,6 +1269,20 @@ static void gicv3_irq_set_affinity(struct irq_desc *desc, const cpumask_t *mask)
+     spin_unlock(&gicv3.lock);
+ }
+ 
++static int gicv3_map_hwdown_extra_mappings(struct domain *d)
++{
++    int ret;
++
++    if ( gicv3_its_host_has_its() && is_iommu_enabled(d) )
++    {
++        ret = gicv3_its_map_translation_register(d);
++        if ( ret )
++            return ret;
++    }
++
++    return 0;
++}
++
+ static int gicv3_make_hwdom_dt_node(const struct domain *d,
+                                     const struct dt_device_node *gic,
+                                     void *fdt)
+@@ -1865,6 +1879,7 @@ static const struct gic_hw_operations gicv3_ops = {
+ #endif
+     .iomem_deny_access   = gicv3_iomem_deny_access,
+     .do_LPI              = gicv3_do_LPI,
++    .map_hwdom_extra_mappings = gicv3_map_hwdown_extra_mappings,
+ };
+ 
+ static int __init gicv3_dt_preinit(struct dt_device_node *node, const void *data)
+diff --git a/xen/include/asm-arm/gic_v3_its.h b/xen/include/asm-arm/gic_v3_its.h
+index 94e5cb99c5..b8bd910020 100644
+--- a/xen/include/asm-arm/gic_v3_its.h
++++ b/xen/include/asm-arm/gic_v3_its.h
+@@ -104,6 +104,8 @@
+ #define ITS_DOORBELL_OFFSET             0x10040
+ #define GICV3_ITS_SIZE                  SZ_128K
+ 
++#define ITS_TRANSLATION_OFFSET          0x10000
++
+ #include <xen/device_tree.h>
+ #include <xen/rbtree.h>
+ 
+@@ -196,6 +198,9 @@ struct pending_irq *gicv3_assign_guest_event(struct domain *d, paddr_t doorbell,
+ void gicv3_lpi_update_host_entry(uint32_t host_lpi, int domain_id,
+                                  uint32_t virt_lpi);
+ 
++/* Map a ITS translation register to hwdom when IOMMU is enabled. */
++int gicv3_its_map_translation_register(struct domain *d);
++
+ #else
+ 
+ #ifdef CONFIG_ACPI
+@@ -269,6 +274,11 @@ static inline int gicv3_its_make_hwdom_dt_nodes(const struct domain *d,
+     return 0;
+ }
+ 
++static inline int gicv3_its_map_translation_register(struct domain *d)
++{
++    /* We should never get here without an ITS. */
++    BUG();
++}
+ #endif /* CONFIG_HAS_ITS */
+ 
+ #endif
+-- 
+2.25.1
+

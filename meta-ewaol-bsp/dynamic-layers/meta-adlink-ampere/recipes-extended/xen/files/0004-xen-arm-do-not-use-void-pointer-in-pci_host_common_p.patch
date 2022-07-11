@@ -1,0 +1,87 @@
+From 52fd9c8eb376cff0da322f8df8e7150527de1629 Mon Sep 17 00:00:00 2001
+From: Oleksandr Andrushchenko <oleksandr_andrushchenko@epam.com>
+Date: Wed, 24 Nov 2021 09:59:42 +0200
+Subject: [PATCH 04/78] xen/arm: do not use void pointer in
+ pci_host_common_probe
+
+There is no reason to use void pointer while passing ECAM ops to the
+pci_host_common_probe function as it is anyway casted to struct pci_ecam_ops
+inside. For that reason remove the void pointer and pass struct pci_ecam_ops
+pointer as is.
+
+Signed-off-by: Oleksandr Andrushchenko <oleksandr_andrushchenko@epam.com>
+Acked-by: Julien Grall <jgrall@amazon.com>
+Reviewed-by: Rahul Singh <rahul.singh@arm.com>
+Tested-by: Rahul Singh <rahul.singh@arm.com>
+---
+ xen/arch/arm/pci/ecam.c            | 4 ++--
+ xen/arch/arm/pci/pci-host-common.c | 6 ++----
+ xen/include/asm-arm/pci.h          | 5 +++--
+ 3 files changed, 7 insertions(+), 8 deletions(-)
+
+diff --git a/xen/arch/arm/pci/ecam.c b/xen/arch/arm/pci/ecam.c
+index 602d00799c..2855dea213 100644
+--- a/xen/arch/arm/pci/ecam.c
++++ b/xen/arch/arm/pci/ecam.c
+@@ -24,8 +24,8 @@ void __iomem *pci_ecam_map_bus(struct pci_host_bridge *bridge,
+                                pci_sbdf_t sbdf, uint32_t where)
+ {
+     const struct pci_config_window *cfg = bridge->cfg;
+-    struct pci_ecam_ops *ops =
+-        container_of(bridge->ops, struct pci_ecam_ops, pci_ops);
++    const struct pci_ecam_ops *ops =
++        container_of(bridge->ops, const struct pci_ecam_ops, pci_ops);
+     unsigned int devfn_shift = ops->bus_shift - 8;
+     void __iomem *base;
+ 
+diff --git a/xen/arch/arm/pci/pci-host-common.c b/xen/arch/arm/pci/pci-host-common.c
+index cdeb3a283a..ae79a0c19b 100644
+--- a/xen/arch/arm/pci/pci-host-common.c
++++ b/xen/arch/arm/pci/pci-host-common.c
+@@ -192,18 +192,16 @@ static int pci_bus_find_domain_nr(struct dt_device_node *dev)
+     return domain;
+ }
+ 
+-int pci_host_common_probe(struct dt_device_node *dev, const void *data)
++int pci_host_common_probe(struct dt_device_node *dev,
++                          const struct pci_ecam_ops *ops)
+ {
+     struct pci_host_bridge *bridge;
+     struct pci_config_window *cfg;
+-    struct pci_ecam_ops *ops;
+     int err;
+ 
+     if ( dt_device_for_passthrough(dev) )
+         return 0;
+ 
+-    ops = (struct pci_ecam_ops *) data;
+-
+     bridge = pci_alloc_host_bridge();
+     if ( !bridge )
+         return -ENOMEM;
+diff --git a/xen/include/asm-arm/pci.h b/xen/include/asm-arm/pci.h
+index 81273e0d87..9736d6816d 100644
+--- a/xen/include/asm-arm/pci.h
++++ b/xen/include/asm-arm/pci.h
+@@ -63,7 +63,7 @@ struct pci_host_bridge {
+     struct list_head node;           /* Node in list of host bridges */
+     uint16_t segment;                /* Segment number */
+     struct pci_config_window* cfg;   /* Pointer to the bridge config window */
+-    struct pci_ops *ops;
++    const struct pci_ops *ops;
+ };
+ 
+ struct pci_ops {
+@@ -89,7 +89,8 @@ struct pci_ecam_ops {
+ /* Default ECAM ops */
+ extern const struct pci_ecam_ops pci_generic_ecam_ops;
+ 
+-int pci_host_common_probe(struct dt_device_node *dev, const void *data);
++int pci_host_common_probe(struct dt_device_node *dev,
++                          const struct pci_ecam_ops *ops);
+ int pci_generic_config_read(struct pci_host_bridge *bridge, pci_sbdf_t sbdf,
+                             uint32_t reg, uint32_t len, uint32_t *value);
+ int pci_generic_config_write(struct pci_host_bridge *bridge, pci_sbdf_t sbdf,
+-- 
+2.25.1
+

@@ -1,0 +1,27 @@
+From 6ace235593102efa9f1311b835de6573d2eed12c Mon Sep 17 00:00:00 2001
+From: Rahul Singh <rahul.singh@arm.com>
+Date: Fri, 6 May 2022 10:14:56 +0100
+Subject: [PATCH 75/78] xen/arm: increase vmalloc size for IO virtual address
+
+Signed-off-by: Rahul Singh <rahul.singh@arm.com>
+Change-Id: I5bc64fd5085260bde2246c2f24d5bcc3605702fc
+---
+ xen/include/asm-arm/config.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/xen/include/asm-arm/config.h b/xen/include/asm-arm/config.h
+index c7b7791201..d683048ca1 100644
+--- a/xen/include/asm-arm/config.h
++++ b/xen/include/asm-arm/config.h
+@@ -154,7 +154,7 @@
+ #define SLOT0_ENTRY_SIZE  SLOT0(1)
+ 
+ #define VMAP_VIRT_START  GB(1)
+-#define VMAP_VIRT_END    (VMAP_VIRT_START + GB(1))
++#define VMAP_VIRT_END    (VMAP_VIRT_START + GB(2))
+ 
+ #define FRAMETABLE_VIRT_START  GB(32)
+ #define FRAMETABLE_SIZE        GB(32)
+-- 
+2.25.1
+

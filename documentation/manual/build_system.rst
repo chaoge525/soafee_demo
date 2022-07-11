@@ -192,9 +192,9 @@ within the ``meta-ewaol-distro/conf/multiconfig/ewaol-guest-vm.conf`` file and
 the ``meta-ewaol-distro/conf/distro/include/ewaol-guest-vm.inc`` which it
 includes.
 
-The following list shows the available variables for the Control VM and the
-single default Guest VM, together with the default values (where ``MB`` and
-``KB`` refer to Megabytes and Kilobytes, respectively):
+The following list shows the standard set of available variables for the Control
+VM and the single default Guest VM, together with the default values (where
+``MB`` and ``KB`` refer to Megabytes and Kilobytes, respectively):
 
   .. code-block:: yaml
     :substitutions:
@@ -229,6 +229,44 @@ instance using the kas tool is given in
 ``meta-ewaol-config/kas/include/second-guest-vm-parameters.yml``, although
 these variables will only be used if ``EWAOL_GUEST_VM_INSTANCES`` is set to
 build two or more Guest VMs.
+
+.. _manual_build_system_pci_passthrough:
+
+Configuring Guest VM PCI Device Passthrough
+"""""""""""""""""""""""""""""""""""""""""""
+
+An EWAOL virtualization distribution image running on the AVA Developer Platform
+is capable of supporting Xen PCI passthrough, allowing Guest VMs to be assigned
+exclusive use of a PCI device. This capability is not enabled by default, and
+requires the following Build Modifier Config:
+
+  * **Build Modifier Config**:
+    ``meta-ewaol-config/kas/xen_pci_passthrough.yml``.
+
+    This Build Modifier Config appends ``xen-pci-passthrough`` to
+    ``MACHINE_FEATURES``.
+
+.. note::
+  Xen PCI device passthrough is currently only supported on the AVA Developer
+  Platform.
+
+With the capability enabled, it is then possible to assign a PCI device to a
+Guest VM by configuring an additional environment variable, provided for the
+corresponding Guest VM. This environment variable and its default value when the
+Build Modifier Config is provided to enable Xen PCI passthrough support is as
+follows:
+
+  .. code-block:: yaml
+
+    EWAOL_GUEST_VM1_PCI_PASSTHROUGH_DEVICE: "0000:01:00.0"         # PCI device ID to be assigned
+
+As described in the previous section, this example environment variable
+customizes the first Guest VM only, but other Guest VMs may be configured
+similarly (if they have been defined).
+
+By default, the Build Modifier Config assigns the first PCI ethernet network
+device (which has device ID ``0000:01:00.0``) for exclusive use by the first
+Guest VM.
 
 Other EWAOL Features
 ====================

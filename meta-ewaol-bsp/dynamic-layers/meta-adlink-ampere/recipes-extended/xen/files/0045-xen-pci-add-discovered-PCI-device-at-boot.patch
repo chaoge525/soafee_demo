@@ -1,0 +1,86 @@
+From 248f3085699ce774250281082021eae43887518b Mon Sep 17 00:00:00 2001
+From: Luca Fancellu <luca.fancellu@arm.com>
+Date: Mon, 6 Dec 2021 13:12:01 +0000
+Subject: [PATCH 45/78] xen/pci: add discovered PCI device at boot
+
+Create add_discovered_pci_devices function that calls pci_device_add
+on every PCI device discovered.
+The devices will be added to dom_io so that they can be assigned
+later to other domains.
+
+Issue-Id: SCM-1012
+Signed-off-by: Luca Fancellu <luca.fancellu@arm.com>
+Change-Id: Ia398a331840ce7299ada266214c1052f94082e54
+---
+ xen/arch/arm/pci/pci.c        |  2 ++
+ xen/drivers/passthrough/pci.c | 28 ++++++++++++++++++++++++++++
+ xen/include/xen/pci.h         |  1 +
+ 3 files changed, 31 insertions(+)
+
+diff --git a/xen/arch/arm/pci/pci.c b/xen/arch/arm/pci/pci.c
+index caf2816888..ddb2ca79b6 100644
+--- a/xen/arch/arm/pci/pci.c
++++ b/xen/arch/arm/pci/pci.c
+@@ -110,6 +110,8 @@ static int __init pci_init(void)
+         if ( ret < 0 )
+             return ret;
+ 
++        add_discovered_pci_devices();
++
+ #ifdef CONFIG_PCI_DEVICE_DEBUG
+         dump_pci_devices('c');
+ #endif
+diff --git a/xen/drivers/passthrough/pci.c b/xen/drivers/passthrough/pci.c
+index 72108ca87a..18704334a6 100644
+--- a/xen/drivers/passthrough/pci.c
++++ b/xen/drivers/passthrough/pci.c
+@@ -1097,6 +1097,34 @@ int __init scan_pci_devices(void)
+     return ret;
+ }
+ 
++static int __init _add_discovered_pci_devices(struct pci_seg *pseg, void *arg)
++{
++    struct pci_dev *pdev;
++    int ret = 0;
++
++    list_for_each_entry ( pdev, &pseg->alldevs_list, alldevs_list )
++    {
++        ret = pci_add_device(dom_io, pdev->seg, pdev->bus, pdev->devfn, NULL,
++                             NUMA_NO_NODE);
++        if ( ret < 0 )
++        {
++            printk(XENLOG_ERR
++                   "%pp: Failure adding the discovered pci device (Error %d)\n",
++                   &pdev->sbdf, ret);
++            break;
++        }
++    }
++
++    return ret;
++}
++
++void __init add_discovered_pci_devices(void)
++{
++    pcidevs_lock();
++    pci_segments_iterate(_add_discovered_pci_devices, NULL);
++    pcidevs_unlock();
++}
++
+ struct setup_hwdom {
+     struct domain *d;
+     int (*handler)(u8 devfn, struct pci_dev *);
+diff --git a/xen/include/xen/pci.h b/xen/include/xen/pci.h
+index a1cec78c3b..27ace69043 100644
+--- a/xen/include/xen/pci.h
++++ b/xen/include/xen/pci.h
+@@ -161,6 +161,7 @@ bool_t __must_check pcidevs_locked(void);
+ bool_t pci_known_segment(u16 seg);
+ bool_t pci_device_detect(u16 seg, u8 bus, u8 dev, u8 func);
+ int scan_pci_devices(void);
++void add_discovered_pci_devices(void);
+ void dump_pci_devices(unsigned char ch);
+ enum pdev_type pdev_type(u16 seg, u8 bus, u8 devfn);
+ int find_upstream_bridge(u16 seg, u8 *bus, u8 *devfn, u8 *secbus);
+-- 
+2.25.1
+

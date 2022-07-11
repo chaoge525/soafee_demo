@@ -52,10 +52,17 @@ do_install() {
                          ${EWAOL_GUEST_VM_DEPLOY_DIR}/${EWAOL_GUEST_VM_IMAGE_BASENAME}.env)
         GUEST_VM_NUMBER_OF_CPUS=$(grep -oP "(?<=EWAOL_GUEST_VM${ewaol_guest_vm_instance}_NUMBER_OF_CPUS=\")[^\"]*" \
                            ${EWAOL_GUEST_VM_DEPLOY_DIR}/${EWAOL_GUEST_VM_IMAGE_BASENAME}.env)
+        GUEST_VM_PCI_PASSTHROUGH_DEVICE=$(grep -oP "(?<=EWAOL_GUEST_VM${ewaol_guest_vm_instance}_PCI_PASSTHROUGH_DEVICE=\")[^\"]*" \
+                           ${EWAOL_GUEST_VM_DEPLOY_DIR}/${EWAOL_GUEST_VM_IMAGE_BASENAME}.env || echo "" )
 
-        export EWAOL_GUEST_VM_NUMBER_OF_CPUS="${GUEST_VM_NUMBER_OF_CPUS}"
+        if [ -n "${GUEST_VM_PCI_PASSTHROUGH_DEVICE}" ]; then
+            GUEST_VM_PCI_PASSTHROUGH_DEVICE="'${GUEST_VM_PCI_PASSTHROUGH_DEVICE}'"
+        fi
+
+        export EWAOL_GUEST_VM_HOSTNAME="${GUEST_VM_HOSTNAME}"
         export EWAOL_GUEST_VM_MEMORY_SIZE="${GUEST_VM_MEMORY_SIZE}"
-        export EWAOL_GUEST_VM_HOSTNAME=${GUEST_VM_HOSTNAME}
+        export EWAOL_GUEST_VM_NUMBER_OF_CPUS="${GUEST_VM_NUMBER_OF_CPUS}"
+        export EWAOL_GUEST_VM_PCI_PASSTHROUGH_DEVICE="${GUEST_VM_PCI_PASSTHROUGH_DEVICE}"
 
         # EWAOL_GUEST_VM_*_DST variables defines file destination paths on the host rootfs.
         export EWAOL_GUEST_VM_KERNEL_DST=${EWAOL_GUEST_VM_DATA}/${GUEST_VM_HOSTNAME}/${EWAOL_GUEST_VM_KERNEL_IMAGETYPE}

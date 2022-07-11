@@ -1,0 +1,123 @@
+From 85c92a8e94e8d5261da3ba3f2f4504771a036df9 Mon Sep 17 00:00:00 2001
+From: Rahul Singh <rahul.singh@arm.com>
+Date: Thu, 19 May 2022 14:51:34 +0100
+Subject: [PATCH 74/78] xen/arm: acpi: Map a ITS guest devid to host devid
+
+When PCI device is assigned to guest, guest devid is the virtual devid
+not the physical devid that is required to configure the ITS.
+
+Translate virtual SBDF to the physical one, also map the rid to MSI id
+to configure the physical ITS.
+
+Signed-off-by: Rahul Singh <rahul.singh@arm.com>
+Change-Id: Ibc71dbf89c8a6da66bae907ddfeecc4eeea62cab
+
+Change-Id: I3c561700fea9c1f6d14ff5c81b8ff7ee465fcde2
+---
+ xen/arch/arm/acpi_iort.c        | 23 +++++++++++++++++++++++
+ xen/arch/arm/vgic-v3-its.c      |  8 +++++++-
+ xen/include/asm-arm/acpi_iort.h | 26 ++++++++++++++++++++++++++
+ 3 files changed, 56 insertions(+), 1 deletion(-)
+
+diff --git a/xen/arch/arm/acpi_iort.c b/xen/arch/arm/acpi_iort.c
+index 20b11fc026..49d814961e 100644
+--- a/xen/arch/arm/acpi_iort.c
++++ b/xen/arch/arm/acpi_iort.c
+@@ -299,3 +299,26 @@ int iort_iommu_xlate(struct device *dev, struct acpi_iort_node *node,
+ 
+     return arm_smmu_iort_xlate(dev, streamid, smmu_dev);
+ }
++
++uint32_t iort_msi_map_id(uint16_t seg, uint32_t input_id)
++{
++    struct acpi_iort_node *node = NULL;
++    struct acpi_iort_root_complex *root_complex;
++    int i;
++    uint32_t dev_id;
++
++    for ( i = 0 ; i < iort_pci_root_nodes_num ; i += 1 )
++    {
++        node = iort_pci_root_nodes[i];
++        root_complex = (struct acpi_iort_root_complex *)node->node_data;
++        /* IORT nodes only carry segment information, not bus. */
++        if ( root_complex->pci_segment_number == seg )
++            break;
++    }
++
++    node = iort_node_map_id(node, input_id, &dev_id, IORT_MSI_TYPE);
++    if (!node)
++        return input_id;
++
++    return dev_id;
++}
+diff --git a/xen/arch/arm/vgic-v3-its.c b/xen/arch/arm/vgic-v3-its.c
+index fd3aef544e..ead32b1662 100644
+--- a/xen/arch/arm/vgic-v3-its.c
++++ b/xen/arch/arm/vgic-v3-its.c
+@@ -47,6 +47,8 @@
+ #include <asm/vgic-emul.h>
+ #include <asm/vreg.h>
+ 
++#include <asm/acpi_iort.h>
++
+ /*
+  * Data structure to describe a virtual ITS.
+  * If both the vcmd_lock and the its_lock are required, the vcmd_lock must
+@@ -324,8 +326,12 @@ static uint32_t its_get_host_devid(struct domain *d, uint32_t guest_devid)
+             /* Replace virtual SBDF with the physical one. */
+             if ( pdev->vpci->guest_sbdf.sbdf == sbdf.sbdf )
+             {
+-                host_devid = dt_msi_map_id(pdev->sbdf.sbdf);
++                if ( acpi_disabled )
++                    host_devid = dt_msi_map_id(pdev->sbdf.sbdf);
++                else
++                    host_devid = iort_msi_map_id(pdev->seg, pdev->sbdf.bdf);
+             }
++
+         }
+         pcidevs_unlock();
+     }
+diff --git a/xen/include/asm-arm/acpi_iort.h b/xen/include/asm-arm/acpi_iort.h
+index ce71fd9f7a..3e718b54ef 100644
+--- a/xen/include/asm-arm/acpi_iort.h
++++ b/xen/include/asm-arm/acpi_iort.h
+@@ -2,6 +2,8 @@
+ #include <acpi/actbl2.h>
+ #include <xen/iommu.h>
+ 
++#ifdef CONFIG_ACPI
++
+ /* Taken from Linux, might not be useful. */
+ #define IORT_TYPE_MASK(type) (1 << (type))
+ #define IORT_MSI_TYPE (1 << ACPI_IORT_NODE_ITS_GROUP)
+@@ -23,3 +25,27 @@ int iort_iommu_xlate(struct device *dev, struct acpi_iort_node *node,
+                             u32 streamid);
+ struct acpi_iort_node *iort_node_map_id(struct acpi_iort_node *node, u32 id_in,
+                                         u32 *id_out, u8 type_mask);
++uint32_t iort_msi_map_id(uint16_t seg, uint32_t input_id);
++
++#else
++#define IORT_IOMMU_TYPE 0
++
++static inline int iort_iommu_xlate(struct device *dev, struct acpi_iort_node *node,
++                            u32 streamid)
++{
++    printk(XENLOG_ERR "ACPI is not enabled, this should not happen.\n");
++    ASSERT_UNREACHABLE();
++	return -EINVAL;
++}
++static inline struct acpi_iort_node *iort_node_map_id(struct acpi_iort_node *node, u32 id_in,
++                                        u32 *id_out, u8 type_mask)
++{
++    printk(XENLOG_ERR "ACPI is not enabled, this should not happen.\n");
++    ASSERT_UNREACHABLE();
++	return NULL;
++}
++static inline uint32_t iort_msi_map_id(uint16_t seg, uint32_t input_id)
++{
++    return input_id;
++}
++#endif
+-- 
+2.25.1
+

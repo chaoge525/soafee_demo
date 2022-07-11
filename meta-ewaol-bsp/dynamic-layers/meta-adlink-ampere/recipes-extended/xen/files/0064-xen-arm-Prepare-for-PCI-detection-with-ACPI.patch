@@ -1,0 +1,111 @@
+From a5bce57b8edac58f189c851ce9e3fdf96056d1e0 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?T=C3=A9o=20Couprie=20Diaz?= <teo.coupriediaz@arm.com>
+Date: Tue, 12 Apr 2022 11:47:18 +0100
+Subject: [PATCH 64/78] xen/arm: Prepare for PCI detection with ACPI
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+This exposes PCI configurations from MCFG to other files and runs
+ACPI table parsing before PCI host bridge detection is attempted.
+
+This makes xen/arch/arm/acpi_mmcfg.c almost identical to the
+x86 version.
+
+Signed-off-by: Téo Couprie Diaz <teo.coupriediaz@arm.com>
+Change-Id: I9813d2c8b91daeb4c1ace4ce1457157fbca2c873
+---
+ xen/arch/arm/acpi_mmcfg.c | 33 ++++++++++++++++++---------------
+ xen/include/asm-arm/pci.h |  4 ++++
+ 2 files changed, 22 insertions(+), 15 deletions(-)
+
+diff --git a/xen/arch/arm/acpi_mmcfg.c b/xen/arch/arm/acpi_mmcfg.c
+index 975646a9a4..1a950c06de 100644
+--- a/xen/arch/arm/acpi_mmcfg.c
++++ b/xen/arch/arm/acpi_mmcfg.c
+@@ -5,12 +5,14 @@
+ 
+ #include "acpi_mmcfg.h"
+ 
++/* The physical address of the MMCONFIG aperture.  Set from ACPI tables. */
++struct acpi_mcfg_allocation *pci_mmcfg_config;
++int pci_mmcfg_config_num;
++
+ int __init acpi_parse_mcfg(struct acpi_table_header *header)
+ {
+     struct acpi_table_mcfg *mcfg;
+-    struct acpi_mcfg_allocation *pci_config;
+     unsigned long i;
+-    int pci_conf_count;
+ 
+     if ( !header )
+     {
+@@ -21,36 +23,37 @@ int __init acpi_parse_mcfg(struct acpi_table_header *header)
+     mcfg = (struct acpi_table_mcfg *)header;
+ 
+     /* how many config structures do we have */
+-    pci_conf_count = 0;
++    pci_mmcfg_config_num = 0;
+     i = header->length - sizeof(struct acpi_table_mcfg);
+     while ( i >= sizeof(struct acpi_mcfg_allocation) ) {
+-        ++pci_conf_count;
++        ++pci_mmcfg_config_num;
+         i -= sizeof(struct acpi_mcfg_allocation);
+     };
+-    if ( pci_conf_count == 0 ) {
++    if ( pci_mmcfg_config_num == 0 ) {
+         printk(KERN_ERR "MMCONFIG has no entries\n");
+         return -ENODEV;
+     }
+ 
+-    pci_config = xmalloc_array(struct acpi_mcfg_allocation,
+-                                     pci_conf_count);
+-    if ( !pci_config ) {
++    pci_mmcfg_config = xmalloc_array(struct acpi_mcfg_allocation,
++                                     pci_mmcfg_config_num);
++    if ( !pci_mmcfg_config ) {
+         printk(KERN_WARNING "No memory for MCFG config tables\n");
++        pci_mmcfg_config_num = 0;
+         return -ENOMEM;
+     }
+ 
+-    memcpy(pci_config, &mcfg[1],
+-           pci_conf_count * sizeof(*pci_config));
++    memcpy(pci_mmcfg_config, &mcfg[1],
++           pci_mmcfg_config_num * sizeof(*pci_mmcfg_config));
+ 
+-    for (i = 0; i < pci_conf_count; ++i) {
++    for (i = 0; i < pci_mmcfg_config_num; ++i) {
+         printk(KERN_INFO "PCI Segment : \n");
+         printk(KERN_INFO "\tAddress : 0x%018"PRIX64"\n",
+-               pci_config[i].address);
+-        printk(KERN_INFO "\tSegment : %d\n", pci_config[i].pci_segment);
++               pci_mmcfg_config[i].address);
++        printk(KERN_INFO "\tSegment : %d\n", pci_mmcfg_config[i].pci_segment);
+         printk(KERN_INFO "\tStart bus number : %d\n",
+-               pci_config[i].start_bus_number);
++               pci_mmcfg_config[i].start_bus_number);
+         printk(KERN_INFO "\tEnd bus number : %d\n",
+-               pci_config[i].end_bus_number);
++               pci_mmcfg_config[i].end_bus_number);
+     }
+ 
+     return 0;
+diff --git a/xen/include/asm-arm/pci.h b/xen/include/asm-arm/pci.h
+index 834dbe1836..aa3688dd55 100644
+--- a/xen/include/asm-arm/pci.h
++++ b/xen/include/asm-arm/pci.h
+@@ -24,6 +24,10 @@
+ extern bool pci_passthrough_enabled;
+ extern bool pci_scan_enabled;
+ 
++/* MMCFG external variable defines */
++extern int pci_mmcfg_config_num;
++extern struct acpi_mcfg_allocation *pci_mmcfg_config;
++
+ /* Arch pci dev struct */
+ struct arch_pci_dev {
+     struct device dev;
+-- 
+2.25.1
+

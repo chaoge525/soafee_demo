@@ -1,0 +1,209 @@
+From 86d0572062f92973a51099ab831933021b8da6f6 Mon Sep 17 00:00:00 2001
+From: Oleksandr Tyshchenko <oleksandr_tyshchenko@epam.com>
+Date: Thu, 17 Dec 2020 16:00:48 +0200
+Subject: [PATCH 23/78] xen/arm: Move is_protected flag to struct device
+
+This flag will be re-used for PCI devices by the subsequent
+patches.
+
+Signed-off-by: Oleksandr Tyshchenko <oleksandr_tyshchenko@epam.com>
+---
+ xen/arch/arm/domain_build.c              |  4 ++--
+ xen/common/device_tree.c                 |  2 +-
+ xen/drivers/passthrough/arm/ipmmu-vmsa.c |  4 ++--
+ xen/drivers/passthrough/arm/smmu.c       |  2 +-
+ xen/drivers/passthrough/device_tree.c    | 15 +++++++++------
+ xen/include/asm-arm/device.h             | 13 +++++++++++++
+ xen/include/xen/device_tree.h            | 12 ------------
+ 7 files changed, 28 insertions(+), 24 deletions(-)
+
+diff --git a/xen/arch/arm/domain_build.c b/xen/arch/arm/domain_build.c
+index 6931c022a2..070c611dc3 100644
+--- a/xen/arch/arm/domain_build.c
++++ b/xen/arch/arm/domain_build.c
+@@ -1925,7 +1925,7 @@ static int __init handle_device(struct domain *d, struct dt_device_node *dev,
+             return res;
+         }
+ 
+-        if ( dt_device_is_protected(dev) )
++        if ( device_is_protected(dt_to_dev(dev)) )
+         {
+             dt_dprintk("%s setup iommu\n", dt_node_full_name(dev));
+             res = iommu_assign_dt_device(d, dev);
+@@ -2399,7 +2399,7 @@ static int __init handle_passthrough_prop(struct kernel_info *kinfo,
+         return res;
+ 
+     /* If xen_force, we allow assignment of devices without IOMMU protection. */
+-    if ( xen_force && !dt_device_is_protected(node) )
++    if ( xen_force && !device_is_protected(dt_to_dev(node)) )
+         return 0;
+ 
+     return iommu_assign_dt_device(kinfo->d, node);
+diff --git a/xen/common/device_tree.c b/xen/common/device_tree.c
+index 4aae281e89..88ab41bf9a 100644
+--- a/xen/common/device_tree.c
++++ b/xen/common/device_tree.c
+@@ -1874,7 +1874,7 @@ static unsigned long __init unflatten_dt_node(const void *fdt,
+         /* By default dom0 owns the device */
+         np->used_by = 0;
+         /* By default the device is not protected */
+-        np->is_protected = false;
++        np->dev.is_protected = false;
+         INIT_LIST_HEAD(&np->domain_list);
+ 
+         if ( new_format )
+diff --git a/xen/drivers/passthrough/arm/ipmmu-vmsa.c b/xen/drivers/passthrough/arm/ipmmu-vmsa.c
+index 1255b0d4fe..314de6e0ac 100644
+--- a/xen/drivers/passthrough/arm/ipmmu-vmsa.c
++++ b/xen/drivers/passthrough/arm/ipmmu-vmsa.c
+@@ -1222,14 +1222,14 @@ static int ipmmu_add_device(u8 devfn, struct device *dev)
+     if ( !to_ipmmu(dev) )
+         return -ENODEV;
+ 
+-    if ( dt_device_is_protected(dev_to_dt(dev)) )
++    if ( device_is_protected(dev) )
+     {
+         dev_err(dev, "Already added to IPMMU\n");
+         return -EEXIST;
+     }
+ 
+     /* Let Xen know that the master device is protected by an IOMMU. */
+-    dt_device_set_protected(dev_to_dt(dev));
++    device_set_protected(dev);
+ 
+     dev_info(dev, "Added master device (IPMMU %s micro-TLBs %u)\n",
+              dev_name(fwspec->iommu_dev), fwspec->num_ids);
+diff --git a/xen/drivers/passthrough/arm/smmu.c b/xen/drivers/passthrough/arm/smmu.c
+index c9dfc4caa0..01d7ed4cb8 100644
+--- a/xen/drivers/passthrough/arm/smmu.c
++++ b/xen/drivers/passthrough/arm/smmu.c
+@@ -838,7 +838,7 @@ static int arm_smmu_dt_add_device_legacy(struct arm_smmu_device *smmu,
+ 	master->of_node = dev_node;
+ 
+ 	/* Xen: Let Xen know that the device is protected by an SMMU */
+-	dt_device_set_protected(dev_node);
++	device_set_protected(dev);
+ 
+ 	for (i = 0; i < fwspec->num_ids; ++i) {
+ 		if (!(smmu->features & ARM_SMMU_FEAT_STREAM_MATCH) &&
+diff --git a/xen/drivers/passthrough/device_tree.c b/xen/drivers/passthrough/device_tree.c
+index 98f2aa0dad..e25e1c614a 100644
+--- a/xen/drivers/passthrough/device_tree.c
++++ b/xen/drivers/passthrough/device_tree.c
+@@ -34,7 +34,7 @@ int iommu_assign_dt_device(struct domain *d, struct dt_device_node *dev)
+     if ( !is_iommu_enabled(d) )
+         return -EINVAL;
+ 
+-    if ( !dt_device_is_protected(dev) )
++    if ( !device_is_protected(dt_to_dev(dev)) )
+         return -EINVAL;
+ 
+     spin_lock(&dtdevs_lock);
+@@ -65,7 +65,7 @@ int iommu_deassign_dt_device(struct domain *d, struct dt_device_node *dev)
+     if ( !is_iommu_enabled(d) )
+         return -EINVAL;
+ 
+-    if ( !dt_device_is_protected(dev) )
++    if ( !device_is_protected(dt_to_dev(dev)) )
+         return -EINVAL;
+ 
+     spin_lock(&dtdevs_lock);
+@@ -87,7 +87,7 @@ static bool_t iommu_dt_device_is_assigned(const struct dt_device_node *dev)
+ {
+     bool_t assigned = 0;
+ 
+-    if ( !dt_device_is_protected(dev) )
++    if ( !device_is_protected(dt_to_dev(dev)) )
+         return 0;
+ 
+     spin_lock(&dtdevs_lock);
+@@ -141,12 +141,15 @@ int iommu_add_dt_device(struct dt_device_node *np)
+         return -EINVAL;
+ 
+     /*
+-     * The device may already have been registered. As there is no harm in
+-     * it just return success early.
++     * This is needed in case a device has both the iommus property and
++     * also apperars in the mmu-masters list.
+      */
+-    if ( dev_iommu_fwspec_get(dev) )
++    if ( device_is_protected(dev) )
+         return 0;
+ 
++    if ( dev_iommu_fwspec_get(dev) )
++        return -EEXIST;
++
+     /*
+      * According to the Documentation/devicetree/bindings/iommu/iommu.txt
+      * from Linux.
+diff --git a/xen/include/asm-arm/device.h b/xen/include/asm-arm/device.h
+index b5d451e087..086dde13eb 100644
+--- a/xen/include/asm-arm/device.h
++++ b/xen/include/asm-arm/device.h
+@@ -1,6 +1,8 @@
+ #ifndef __ASM_ARM_DEVICE_H
+ #define __ASM_ARM_DEVICE_H
+ 
++#include <xen/types.h>
++
+ enum device_type
+ {
+     DEV_DT,
+@@ -20,6 +22,7 @@ struct device
+ #endif
+     struct dev_archdata archdata;
+     struct iommu_fwspec *iommu_fwspec; /* per-device IOMMU instance data */
++    bool is_protected; /* Shows that device is protected by IOMMU */
+ };
+ 
+ typedef struct device device_t;
+@@ -94,6 +97,16 @@ int device_init(struct dt_device_node *dev, enum device_class class,
+  */
+ enum device_class device_get_class(const struct dt_device_node *dev);
+ 
++static inline void device_set_protected(struct device *device)
++{
++    device->is_protected = true;
++}
++
++static inline bool device_is_protected(const struct device *device)
++{
++    return device->is_protected;
++}
++
+ #define DT_DEVICE_START(_name, _namestr, _class)                    \
+ static const struct device_desc __dev_desc_##_name __used           \
+ __section(".dev.info") = {                                          \
+diff --git a/xen/include/xen/device_tree.h b/xen/include/xen/device_tree.h
+index fd6cd00b43..de11f995fc 100644
+--- a/xen/include/xen/device_tree.h
++++ b/xen/include/xen/device_tree.h
+@@ -90,8 +90,6 @@ struct dt_device_node {
+     struct dt_device_node *next; /* TODO: Remove it. Only use to know the last children */
+     struct dt_device_node *allnext;
+ 
+-    /* IOMMU specific fields */
+-    bool is_protected;
+     /*
+      * The main purpose of this list is to link the structure in the list
+      * of devices assigned to domain.
+@@ -301,16 +299,6 @@ static inline domid_t dt_device_used_by(const struct dt_device_node *device)
+     return device->used_by;
+ }
+ 
+-static inline void dt_device_set_protected(struct dt_device_node *device)
+-{
+-    device->is_protected = true;
+-}
+-
+-static inline bool dt_device_is_protected(const struct dt_device_node *device)
+-{
+-    return device->is_protected;
+-}
+-
+ static inline bool_t dt_property_name_is_equal(const struct dt_property *pp,
+                                                const char *name)
+ {
+-- 
+2.25.1
+

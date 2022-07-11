@@ -1,0 +1,87 @@
+From 4780e57114642343b2d203b2a2f420ee4d628301 Mon Sep 17 00:00:00 2001
+From: Oleksandr Tyshchenko <oleksandr_tyshchenko@epam.com>
+Date: Thu, 17 Dec 2020 16:31:40 +0200
+Subject: [PATCH 24/78] iommu/arm: Add dt_iommu_xlate()
+
+Move code for processing DT IOMMU specifier to a separate helper.
+This helper will be re-used for adding PCI devices by the subsequent
+patches as we will need exact the same actions for processing
+DT PCI-IOMMU specifier.
+
+While at it introduce NO_IOMMU to avoid magic "1".
+
+Signed-off-by: Oleksandr Tyshchenko <oleksandr_tyshchenko@epam.com>
+---
+ xen/drivers/passthrough/device_tree.c | 42 +++++++++++++++++----------
+ 1 file changed, 27 insertions(+), 15 deletions(-)
+
+diff --git a/xen/drivers/passthrough/device_tree.c b/xen/drivers/passthrough/device_tree.c
+index e25e1c614a..9bda1716a7 100644
+--- a/xen/drivers/passthrough/device_tree.c
++++ b/xen/drivers/passthrough/device_tree.c
+@@ -127,15 +127,39 @@ int iommu_release_dt_devices(struct domain *d)
+     return 0;
+ }
+ 
++/* This correlation must not be altered */
++#define NO_IOMMU    1
++
++static int dt_iommu_xlate(struct device *dev,
++                          struct dt_phandle_args *iommu_spec)
++{
++    const struct iommu_ops *ops = iommu_get_ops();
++    int rc;
++
++    if ( !dt_device_is_available(iommu_spec->np) )
++        return NO_IOMMU;
++
++    rc = iommu_fwspec_init(dev, &iommu_spec->np->dev);
++    if ( rc )
++        return rc;
++
++    /*
++     * Provide DT IOMMU specifier which describes the IOMMU master
++     * interfaces of that device (device IDs, etc) to the driver.
++     * The driver is responsible to decide how to interpret them.
++     */
++    return ops->dt_xlate(dev, iommu_spec);
++}
++
+ int iommu_add_dt_device(struct dt_device_node *np)
+ {
+     const struct iommu_ops *ops = iommu_get_ops();
+     struct dt_phandle_args iommu_spec;
+     struct device *dev = dt_to_dev(np);
+-    int rc = 1, index = 0;
++    int rc = NO_IOMMU, index = 0;
+ 
+     if ( !iommu_enabled )
+-        return 1;
++        return NO_IOMMU;
+ 
+     if ( !ops )
+         return -EINVAL;
+@@ -164,19 +188,7 @@ int iommu_add_dt_device(struct dt_device_node *np)
+         if ( !ops->add_device || !ops->dt_xlate )
+             return -EINVAL;
+ 
+-        if ( !dt_device_is_available(iommu_spec.np) )
+-            break;
+-
+-        rc = iommu_fwspec_init(dev, &iommu_spec.np->dev);
+-        if ( rc )
+-            break;
+-
+-        /*
+-         * Provide DT IOMMU specifier which describes the IOMMU master
+-         * interfaces of that device (device IDs, etc) to the driver.
+-         * The driver is responsible to decide how to interpret them.
+-         */
+-        rc = ops->dt_xlate(dev, &iommu_spec);
++        rc = dt_iommu_xlate(dev, &iommu_spec);
+         if ( rc )
+             break;
+ 
+-- 
+2.25.1
+

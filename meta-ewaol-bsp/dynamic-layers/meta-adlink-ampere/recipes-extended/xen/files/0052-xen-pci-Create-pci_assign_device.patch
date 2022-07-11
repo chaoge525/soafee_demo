@@ -1,0 +1,54 @@
+From a014c7a035e98578534c5974cdd90ba4a0dd4e61 Mon Sep 17 00:00:00 2001
+From: Luca Fancellu <luca.fancellu@arm.com>
+Date: Thu, 18 Nov 2021 11:38:25 +0000
+Subject: [PATCH 52/78] xen/pci: Create pci_assign_device
+
+Create the public function pci_assign_device(...) to assign devices
+to guests. The function is a wrapper of assign_device and it also
+performs the lock/unlock operations.
+
+Issue-Id: SCM-1012
+Signed-off-by: Luca Fancellu <luca.fancellu@arm.com>
+Change-Id: I767990ec99ebba6f051f39aec3da8d8c6ececeaf
+---
+ xen/drivers/passthrough/pci.c | 11 +++++++++++
+ xen/include/xen/pci.h         |  1 +
+ 2 files changed, 12 insertions(+)
+
+diff --git a/xen/drivers/passthrough/pci.c b/xen/drivers/passthrough/pci.c
+index 69512c311b..8d71b1365b 100644
+--- a/xen/drivers/passthrough/pci.c
++++ b/xen/drivers/passthrough/pci.c
+@@ -1561,6 +1561,17 @@ void __init assign_hwdom_pci_devices(void)
+     pcidevs_unlock();
+ }
+ 
++int pci_assign_device(struct domain *d, u16 seg, u8 bus, u8 devfn, u32 flag)
++{
++    int ret;
++
++    pcidevs_lock();
++    ret = assign_device(d, seg, bus, devfn, flag);
++    pcidevs_unlock();
++
++    return ret;
++}
++
+ static int iommu_get_device_group(
+     struct domain *d, u16 seg, u8 bus, u8 devfn,
+     XEN_GUEST_HANDLE_64(uint32) buf, int max_sdevs)
+diff --git a/xen/include/xen/pci.h b/xen/include/xen/pci.h
+index 0b0cb7a468..15cdb7869c 100644
+--- a/xen/include/xen/pci.h
++++ b/xen/include/xen/pci.h
+@@ -175,6 +175,7 @@ int pci_add_segment(u16 seg);
+ const unsigned long *pci_get_ro_map(u16 seg);
+ int pci_add_device(struct domain *d, u16 seg, u8 bus, u8 devfn,
+                    const struct pci_dev_info *, nodeid_t node);
++int pci_assign_device(struct domain *d, u16 seg, u8 bus, u8 devfn, u32 flag);
+ int pci_remove_device(u16 seg, u8 bus, u8 devfn);
+ int pci_ro_device(int seg, int bus, int devfn);
+ int pci_hide_device(unsigned int seg, unsigned int bus, unsigned int devfn);
+-- 
+2.25.1
+

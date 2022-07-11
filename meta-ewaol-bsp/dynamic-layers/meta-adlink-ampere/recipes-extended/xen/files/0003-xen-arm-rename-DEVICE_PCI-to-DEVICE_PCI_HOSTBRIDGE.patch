@@ -1,0 +1,78 @@
+From abf04d75d0060091d88b875834953a8a2636b436 Mon Sep 17 00:00:00 2001
+From: Oleksandr Andrushchenko <oleksandr_andrushchenko@epam.com>
+Date: Wed, 24 Nov 2021 09:59:36 +0200
+Subject: [PATCH 03/78] xen/arm: rename DEVICE_PCI to DEVICE_PCI_HOSTBRIDGE
+
+To better reflect the nature of the device type and not to make any
+confusion rename DEVICE_PCI to DEVICE_PCI_HOSTBRIDGE which it
+really is.
+
+Suggested-by: Julien Grall <julien@xen.org>
+Signed-off-by: Oleksandr Andrushchenko <oleksandr_andrushchenko@epam.com>
+Reviewed-by: Julien Grall <jgrall@amazon.com>
+Reviewed-by: Henry Wang <Henry.Wang@arm.com>
+Reviewed-by: Jiamei xie <jiamei.xie@arm.com>
+Reviewed-by: Rahul Singh <rahul.singh@arm.com>
+Tested-by: Rahul Singh <rahul.singh@arm.com>
+---
+ xen/arch/arm/pci/pci-host-generic.c | 2 +-
+ xen/arch/arm/pci/pci-host-zynqmp.c  | 2 +-
+ xen/arch/arm/pci/pci.c              | 2 +-
+ xen/include/asm-arm/device.h        | 2 +-
+ 4 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/xen/arch/arm/pci/pci-host-generic.c b/xen/arch/arm/pci/pci-host-generic.c
+index 33457fbe96..46de6e43cc 100644
+--- a/xen/arch/arm/pci/pci-host-generic.c
++++ b/xen/arch/arm/pci/pci-host-generic.c
+@@ -32,7 +32,7 @@ static int __init pci_host_generic_probe(struct dt_device_node *dev,
+     return pci_host_common_probe(dev, &pci_generic_ecam_ops);
+ }
+ 
+-DT_DEVICE_START(pci_gen, "PCI HOST GENERIC", DEVICE_PCI)
++DT_DEVICE_START(pci_gen, "PCI HOST GENERIC", DEVICE_PCI_HOSTBRIDGE)
+ .dt_match = gen_pci_dt_match,
+ .init = pci_host_generic_probe,
+ DT_DEVICE_END
+diff --git a/xen/arch/arm/pci/pci-host-zynqmp.c b/xen/arch/arm/pci/pci-host-zynqmp.c
+index 61a9807d3d..516982bca8 100644
+--- a/xen/arch/arm/pci/pci-host-zynqmp.c
++++ b/xen/arch/arm/pci/pci-host-zynqmp.c
+@@ -49,7 +49,7 @@ static int __init pci_host_generic_probe(struct dt_device_node *dev,
+     return pci_host_common_probe(dev, &nwl_pcie_ops);
+ }
+ 
+-DT_DEVICE_START(pci_gen, "PCI HOST ZYNQMP", DEVICE_PCI)
++DT_DEVICE_START(pci_gen, "PCI HOST ZYNQMP", DEVICE_PCI_HOSTBRIDGE)
+ .dt_match = nwl_pcie_dt_match,
+ .init = pci_host_generic_probe,
+ DT_DEVICE_END
+diff --git a/xen/arch/arm/pci/pci.c b/xen/arch/arm/pci/pci.c
+index 082c14e127..78b97beaef 100644
+--- a/xen/arch/arm/pci/pci.c
++++ b/xen/arch/arm/pci/pci.c
+@@ -46,7 +46,7 @@ static int __init dt_pci_init(void)
+ 
+     dt_for_each_device_node(dt_host, np)
+     {
+-        rc = device_init(np, DEVICE_PCI, NULL);
++        rc = device_init(np, DEVICE_PCI_HOSTBRIDGE, NULL);
+         /*
+          * Ignore the following error codes:
+          *   - EBADF: Indicate the current device is not a pci device.
+diff --git a/xen/include/asm-arm/device.h b/xen/include/asm-arm/device.h
+index 7bf0405603..b5d451e087 100644
+--- a/xen/include/asm-arm/device.h
++++ b/xen/include/asm-arm/device.h
+@@ -34,7 +34,7 @@ enum device_class
+     DEVICE_SERIAL,
+     DEVICE_IOMMU,
+     DEVICE_GIC,
+-    DEVICE_PCI,
++    DEVICE_PCI_HOSTBRIDGE,
+     /* Use for error */
+     DEVICE_UNKNOWN,
+ };
+-- 
+2.25.1
+

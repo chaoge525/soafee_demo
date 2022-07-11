@@ -1,0 +1,56 @@
+From dc967fe408b7f5987cc195ce20f8a785b26910d5 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?T=C3=A9o=20Couprie=20Diaz?= <teo.coupriediaz@arm.com>
+Date: Wed, 4 May 2022 17:22:20 +0100
+Subject: [PATCH 70/78] xen/arm: Add acpi_xlate member to iommu_ops
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Signed-off-by: Téo Couprie Diaz <teo.coupriediaz@arm.com>
+Change-Id: I208dd577ed9a44d7660acaee70cc1eef4e4d1e8e
+---
+ xen/drivers/passthrough/arm/smmu-v3.c | 5 ++++-
+ xen/include/xen/iommu.h               | 4 ++++
+ 2 files changed, 8 insertions(+), 1 deletion(-)
+
+diff --git a/xen/drivers/passthrough/arm/smmu-v3.c b/xen/drivers/passthrough/arm/smmu-v3.c
+index 187c89580e..3523685023 100644
+--- a/xen/drivers/passthrough/arm/smmu-v3.c
++++ b/xen/drivers/passthrough/arm/smmu-v3.c
+@@ -84,7 +84,7 @@
+ #include <xen/sched.h>
+ #include <xen/sizes.h>
+ #include <xen/vmap.h>
+-#include <asm/atomic.h>
++#include <asm/acpi_iort.h>
+ #include <asm/device.h>
+ #include <asm/io.h>
+ #include <asm/iommu_fwspec.h>
+@@ -3557,6 +3557,9 @@ static const struct iommu_ops arm_smmu_iommu_ops = {
+ #ifdef CONFIG_HAS_PCI
+ 	.remove_device	= arm_smmu_remove_device,
+ #endif
++#ifdef CONFIG_ACPI
++	.acpi_xlate     = iort_iommu_xlate,
++#endif
+ };
+ 
+ static __init int arm_smmu_dt_init(struct dt_device_node *dev,
+diff --git a/xen/include/xen/iommu.h b/xen/include/xen/iommu.h
+index 8fa819329d..e057dd2a63 100644
+--- a/xen/include/xen/iommu.h
++++ b/xen/include/xen/iommu.h
+@@ -294,6 +294,10 @@ struct iommu_ops {
+      */
+     int (*dt_xlate)(device_t *dev, const struct dt_phandle_args *args);
+ #endif
++#if defined(CONFIG_ACPI) && defined(CONFIG_ARM_64)
++	int (*acpi_xlate)(struct device *dev, struct acpi_iort_node *node,
++                      u32 streamid);
++#endif
+ };
+ 
+ #include <asm/iommu.h>
+-- 
+2.25.1
+
