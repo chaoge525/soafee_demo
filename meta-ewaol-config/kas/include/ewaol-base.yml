@@ -28,7 +28,9 @@ repos:
       meta-ewaol-distro:
 
   meta-cassini:
-    path: meta-cassini
+    url: https://gitlab.arm.com/cassini/meta-cassini
+    path: layers/meta-cassini
+    refspec: kirkstone-dev
     layers:
       meta-cassini-distro:
 

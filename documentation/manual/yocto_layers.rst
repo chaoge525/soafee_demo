@@ -65,7 +65,7 @@ EWAOL depends on the following layer dependency sources:
     branch: |meta-virtualization branch|
     revision: |meta-virtualization revision|
 
-    URL: https://git.gitlab.arm.com/ewaol/meta-ewaol
+    URL: https://gitlab.arm.com/cassini/meta-cassini
     layer: meta-cassini-distro
     branch: |meta-cassini branch|
     revision: |meta-cassini revision|

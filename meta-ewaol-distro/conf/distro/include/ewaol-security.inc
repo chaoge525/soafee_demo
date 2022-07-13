@@ -9,10 +9,4 @@ EWAOL_OVERRIDES:append = ":ewaol-security"
 
 DISTRO_FEATURES:append = " cassini-security"
 
-# With `cassini-security` distro feature, we do not this here because
-# `CASSINI_SECURITY_UMASK` is defined in
-# `meta-cassini/meta-cassini-distro/conf/distro/include/cassini-security.inc`.
-# However, meta-ewaol-tests layer is still using `EWAOL_SECURITY_UMASK` which is
-# not set. Therefore, temporarily set `EWAOL_SECURITY_UMASK` here, remove it when
-# meta-ewaol-tests extends meta-cassini-tests.
-EWAOL_SECURITY_UMASK = "0027"
+EWAOL_SECURITY_UMASK = "${@ d.getVar('CASSINI_SECURITY_UMASK')}"
