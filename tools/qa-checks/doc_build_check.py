@@ -36,29 +36,26 @@ class DocBuildCheck(abstract_check.AbstractCheck):
             abstract_check.CheckSetting(
                 "documentation_dir",
                 default=None,
-                message=("Path to directory containing"
-                         " documentation source. A relative"
-                         " path will be considered relative"
-                         " to project_root.")
+                message=("Path to directory containing documentation source. A"
+                         "relative file path will be considered relative to"
+                         " 'project_root'.")
             ),
             abstract_check.CheckSetting(
                 "output_dir",
                 default="",
-                message=("Path to directory where generated"
-                         " documentation will be placed. A relative"
-                         " path will be considered relative to"
-                         " project_root. If the directory does not"
-                         " exist, it will be created. If set to ''"
-                         " then a temporary directory will be used"
-                         " and deleted after the build.")
+                message=("Path to directory where generated documentation will"
+                         " be placed. If the directory does not exist, it will"
+                         " be created. If set to '', then a temporary"
+                         " directory will be used and deleted after the build."
+                         " A relative file path will be considered relative to"
+                         " 'project_root'.")
             ),
             abstract_check.CheckSetting(
                 "requirements",
                 default=None,
-                message=("Path to pip requirements file for"
-                         " building the documentation. A relative"
-                         " path will be considered relative to"
-                         " project_root.")
+                message=("Path to pip requirements file for building the"
+                         " documentation. A relative file path will be"
+                         " considered relative to 'project_root'.")
             )
         ]
 

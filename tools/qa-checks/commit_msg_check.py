@@ -51,7 +51,9 @@ class CommitMsgCheck(abstract_check.AbstractCheck):
                 "paths",
                 is_list=True,
                 default=["ROOT"],
-                message="File paths to target Git repositories."
+                message=("File paths to target Git repositories. Relative file"
+                         " paths will be considered relative to"
+                         " 'project_root'.")
             ),
             abstract_check.CheckSetting(
                 "title_length",
@@ -155,7 +157,7 @@ class CommitMsgCheck(abstract_check.AbstractCheck):
                 continue
 
             if not os.path.isabs(path):
-                path = os.path.abspath(path)
+                path = os.path.join(self.project_root, path)
 
             for commit in commits:
 

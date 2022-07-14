@@ -267,9 +267,10 @@ def parse_options():
     parser.add_argument("--project_root",
                         required=False,
                         default=default_root,
-                        help=("Define the project root path, from which all"
-                              " provided relative paths will be considered"
-                              f" (Default: {default_root})"))
+                        help=("Define the root path of the target project,"
+                              " used as the base path for any check argument"
+                              " given as a relative file-path (Default:"
+                              f" {default_root})"))
 
     parser.add_argument("--log", default="info",
                         choices=LOG_LEVELS.keys(),

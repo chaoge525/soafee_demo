@@ -41,37 +41,34 @@ class YamlCheck(abstract_check.AbstractCheck):
                 is_list=True,
                 default=["ROOT"],
                 message=("File paths to check, or directories to recurse."
-                         " Relative paths will be considered relative to"
-                         " the root directory.")
+                         " Relative file paths will be considered relative to"
+                         " 'project_root'.")
             ),
             abstract_check.CheckSetting(
                 "include_patterns",
                 is_list=True,
                 is_pattern=True,
                 default=["*.yml", "*.yaml"],
-                message=("Patterns where if none are matched"
-                         " with the file/directory name, the"
-                         " check will not be applied to it.")
+                message=("Patterns where if none are matched with the"
+                         " file/directory name, the check will not be applied"
+                         " to it.")
             ),
             abstract_check.CheckSetting(
                 "exclude_patterns",
                 is_list=True,
                 is_pattern=True,
                 default=["GITIGNORE_CONTENTS", "*.git"],
-                message=("Patterns where if any is matched"
-                         " with the file/directory name, the"
-                         " check will not be applied to it or"
-                         " continue into its subpaths.")
+                message=("Patterns where if any is matched with the"
+                         " file/directory name, the check will not be applied"
+                         " to it or continue into its subpaths.")
             ),
             abstract_check.CheckSetting(
                 "yamllint_args",
                 default="",
-                message=("Custom arguments to pass through to"
-                         " the yamllint command. On"
-                         " run-checks.py command line, set"
-                         " this parameter using '=' to avoid"
-                         " interpretation as arguments for"
-                         " run-checks.py.")
+                message=("Custom arguments to pass through to the yamllint"
+                         " command. On the run-checks.py command line, set"
+                         " this parameter using '=' to avoid interpretation as"
+                         " arguments for run-checks.py.")
             )
         ]
 
