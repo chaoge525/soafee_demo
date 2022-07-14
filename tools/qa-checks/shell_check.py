@@ -43,27 +43,26 @@ class ShellCheck(abstract_check.AbstractCheck):
                 is_list=True,
                 default=["ROOT"],
                 message=("File paths to check, or directories to recurse."
-                         " Relative paths will be considered relative to"
-                         " the root directory.")
+                         " Relative file paths will be considered relative to"
+                         " 'project_root'.")
             ),
             abstract_check.CheckSetting(
                 "exclude_patterns",
                 is_list=True,
                 is_pattern=True,
                 default=["GITIGNORE_CONTENTS", "*.git"],
-                message=("Patterns where if any is matched"
-                         " with the file/directory name, the"
-                         " check will not be applied to it or"
-                         " continue into its subpaths.")
+                message=("Patterns where if any is matched with the"
+                         " file/directory name, the check will not be applied"
+                         " to it or continue into its subpaths.")
             ),
             abstract_check.CheckSetting(
                 "file_types",
                 is_list=True,
                 default=["shell script", "bash script"],
                 message=("String list where only files with non-MIME"
-                         " files-types (as output by the `file`"
-                         " utility) that contain at least one as a"
-                         " substring will be checked.")
+                         " files-types (as output by the `file` utility) that"
+                         " contain at least one as a substring will be"
+                         " checked.")
             )
         ]
 

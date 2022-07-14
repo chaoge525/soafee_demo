@@ -68,18 +68,17 @@ class HeaderCheck(abstract_check.AbstractCheck):
                 is_list=True,
                 default=["ROOT"],
                 message=("File paths to check, or directories to recurse."
-                         " Relative paths will be considered relative to"
-                         " the project's root directory.")
+                         " Relative file paths will be considered relative to"
+                         " 'project_root'.")
             ),
             abstract_check.CheckSetting(
                 "exclude_patterns",
                 is_list=True,
                 is_pattern=True,
                 default=["GITIGNORE_CONTENTS", "*.git", "*.gitignore"],
-                message=("Patterns where if any is matched"
-                         " with the file/directory name, the"
-                         " check will not be applied to it or"
-                         " continue into its subpaths.")
+                message=("Patterns where if any is matched with the"
+                         " file/directory name, the check will not be applied"
+                         " to it or continue into its subpaths.")
             )
         ]
 

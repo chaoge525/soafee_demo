@@ -51,25 +51,24 @@ class SpellCheck(abstract_check.AbstractCheck):
                 is_list=True,
                 default=["ROOT"],
                 message=("File paths to check, or directories to recurse."
-                         " Relative paths will be considered relative to"
-                         " the root directory.")
+                         " Relative file paths will be considered relative to"
+                         " 'project_root'.")
             ),
             abstract_check.CheckSetting(
                 "exclude_patterns",
                 is_list=True,
                 is_pattern=True,
                 default=["GITIGNORE_CONTENTS", "*.git"],
-                message=("Path to a custom dictionary file that"
-                         " provides additional valid words when"
-                         " validating the spelling of files within"
-                         " the project.")
+                message=("Patterns where if any is matched with the"
+                         " file/directory name, the check will not be applied"
+                         " to it or continue into its subpaths.")
             ),
             abstract_check.CheckSetting(
                 "dict_path",
-                message=("Path to a custom dictionary file that"
-                         " provides additional valid words when"
-                         " validating the spelling of files within"
-                         " the project.")
+                message=("Path to a custom dictionary file that provides"
+                         " additional valid words when validating the spelling"
+                         " of files within the project. A relative file path"
+                         " will be considered relative to 'project_root'.")
             )
         ]
 

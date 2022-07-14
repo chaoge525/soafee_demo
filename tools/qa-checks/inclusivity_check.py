@@ -49,24 +49,26 @@ class InclusivityCheck(abstract_check.AbstractCheck):
                 is_list=True,
                 default=["ROOT"],
                 message=("File paths to check, or directories to recurse."
-                         " Relative paths will be considered relative to"
-                         " the root directory.")
+                         " Relative file paths will be considered relative to"
+                         " 'project_root'.")
             ),
             abstract_check.CheckSetting(
                 "exclude_patterns",
                 is_list=True,
                 is_pattern=True,
                 default=["GITIGNORE_CONTENTS", "*.git"],
-                message=("Patterns where if any is matched"
-                         " with the file/directory name, the"
-                         " check will not be applied to it or"
-                         " continue into its subpaths.")
+                message=("Patterns where if any is matched with the"
+                         " file/directory name, the check will not be applied"
+                         " to it or continue into its subpaths.")
             ),
             abstract_check.CheckSetting(
                 "non_inclusive_language_file",
-                default="tools/qa-checks/non-inclusive-language.txt",
+                default=(f"{os.path.dirname(__file__)}"
+                         "/non-inclusive-language.txt"),
                 message=("Path to a file containing non inclusive terminology"
-                         " for the check to find.")
+                         " that the check will search for. A relative file"
+                         " path will be considered relative to"
+                         " 'project_root'.")
             )
         ]
 
