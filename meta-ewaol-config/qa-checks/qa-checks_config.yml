@@ -69,6 +69,9 @@ modules:
             - "meta-ewaol-distro"
             - "meta-ewaol-tests"
             - "meta-ewaol-bsp"
+        machines:
+            - "qemuarm64"
+            - "n1sdp"
 
     python:
         file_types:
