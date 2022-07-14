@@ -716,76 +716,47 @@ def get_configs(default_config, args):
 
 # Deploy generated artifacts like build configs and logs.
 def deploy_artifacts(build_dir, build_artifacts_dir):
+    # For each file that matches one of the glob patterns,
+    # return the full path and the path relative to basepath
+    def find_files(basepath, patterns):
+        for pattern in patterns:
+            full_pattern = os.path.join(basepath, pattern)
+            for filename in glob.iglob(full_pattern, recursive=True):
+                arcname = os.path.relpath(filename, basepath)
+                yield filename, arcname
+
+    # Build a tar file from the given iterator
+    def build_tar(outfile, files):
+        with tarfile.open(outfile, "w:gz") as tar:
+            for filename, arcname in files:
+                tar.add(filename, arcname)
 
     # Collect config
-    build_conf_dir = os.path.join(build_dir, "conf")
+    tar_conf_filename = os.path.join(build_artifacts_dir, "conf.tgz")
+    build_tar(tar_conf_filename, find_files(build_dir, ['conf']))
+    print("Deployed build configuration artifacts into "
+          f"{tar_conf_filename}")
 
-    if os.path.exists(build_conf_dir):
-        tar_conf_filename = os.path.join(build_artifacts_dir, "conf.tgz")
-        with tarfile.open(tar_conf_filename, "w:gz") as conf_tar:
-            conf_tar.add(build_conf_dir,
-                         arcname=os.path.basename(build_conf_dir))
-
-        print("Deployed build configuration artifacts into "
-              f"{tar_conf_filename}")
-    else:
-        print("No build configuration files to archive")
-
+    # Collect logs
     tar_logs_filename = os.path.join(build_artifacts_dir, "logs.tgz")
+    log_patterns = [
+        'bitbake-cookerdaemon.log',
+        'tmp*/log/cooker/console-latest.log',
+        'tmp*/work/**/temp/log.*',
+        'tmp*/work/**/pseudo.log',
+        'tmp*/work/**/testimage',
+    ]
+    build_tar(tar_logs_filename, find_files(build_dir, log_patterns))
+    print(f"Deployed build logs into {tar_logs_filename}")
+
+    # Collect images
+    def find_image_files():
+        for deploydir, _ in find_files(build_dir, ['tmp*/deploy']):
+            # images.tgz only contains the "images" subdirectories
+            yield from find_files(deploydir, ['images'])
     tar_image_filename = os.path.join(build_artifacts_dir, "images.tgz")
-    with tarfile.open(tar_logs_filename, "w:gz") as log_tar,\
-            tarfile.open(tar_image_filename, "w:gz") as image_tar:
-
-        # Collect logs
-        cooker_log = os.path.join(build_dir, "bitbake-cookerdaemon.log")
-        if os.path.exists(cooker_log):
-            arcname = os.path.join("logs/tmp", os.path.basename(cooker_log))
-            log_tar.add(cooker_log, arcname=arcname)
-
-        for tmp_dir in glob.glob(f"{build_dir}/tmp*"):
-            console_dir = os.path.join(tmp_dir, "log/cooker")
-            for path, dirs, files in os.walk(console_dir):
-                if "console-latest.log" in files:
-
-                    log_link = os.path.join(path, "console-latest.log")
-                    log = os.path.join(path, os.readlink(log_link))
-
-                    arcname = os.path.relpath(log_link, console_dir)
-                    arcname = os.path.join(os.path.basename(tmp_dir), arcname)
-                    arcname = os.path.join("logs", arcname)
-                    log_tar.add(log, arcname=arcname)
-
-            work_dir = os.path.join(tmp_dir, "work")
-            for path, dirs, files in os.walk(work_dir):
-
-                if "temp" in dirs:
-                    log_dir = os.path.join(path, "temp")
-                    arcname = os.path.relpath(path, work_dir)
-                    arcname = os.path.join(os.path.basename(tmp_dir), arcname)
-                    arcname = os.path.join("logs", arcname)
-                    log_tar.add(log_dir, arcname=arcname)
-
-                if "pseudo.log" in files:
-                    pseudo_log = os.path.join(path, "pseudo.log")
-                    arcname = os.path.relpath(pseudo_log, work_dir)
-                    arcname = os.path.join(os.path.basename(tmp_dir), arcname)
-                    arcname = os.path.join("logs", arcname)
-                    log_tar.add(pseudo_log, arcname=arcname)
-
-            print(f"Deployed build logs from {tmp_dir} into "
-                  f"{tar_logs_filename}")
-
-            # Collect images
-            base_image_dir = os.path.join(tmp_dir, "deploy/images")
-            if os.path.exists(base_image_dir):
-
-                image_tar.add(base_image_dir,
-                              arcname=os.path.basename(base_image_dir))
-
-                print(f"Deployed images from {tmp_dir} into "
-                      f"{tar_image_filename}")
-            else:
-                print("No image directory found, did not archive images")
+    build_tar(tar_image_filename, find_image_files())
+    print(f"Deployed images into {tar_image_filename}")
 
 
 # Convert string of paths with specified separator to a list of path objects
