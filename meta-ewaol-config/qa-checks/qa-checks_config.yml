@@ -59,6 +59,7 @@ modules:
             - "*.gitignore"
             - "*.pyc"
             - "*.png"
+            - "*.patch"
 
     layer:
         kas_configs:
