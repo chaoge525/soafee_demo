@@ -10,9 +10,20 @@
 # Current configuration assumes network connection via ethernet interface based
 # on 'igb' driver - 'enP4p4s0'.
 
-I40E_NETWORK:ewaol = "79-i40e.network"
+OVERRIDES:append = "${EWAOL_OVERRIDES}"
 
-do_install:append:ewaol() {
+I40E_NETWORK_OVERRIDE:ewaol = "true"
+I40E_NETWORK_OVERRIDE:ewaol-virtualization = "${@bb.utils.contains('BB_CURRENT_MC', \
+                                                'ewaol-guest-vm', \
+                                                'false', 'true', d)}"
+
+OVERRIDES:append:ewaol = "${@bb.utils.contains('I40E_NETWORK_OVERRIDE', \
+                           'true', \
+                           ':i40e-network-override', '', d)}"
+
+I40E_NETWORK:i40e-network-override = "79-i40e.network"
+
+do_install:append:i40e-network-override() {
         if ${@bb.utils.contains('PACKAGECONFIG', 'dhcp-ethernet', 'true', 'false', d)}; then
                 install -D -m0644 ${WORKDIR}/wired.network \
                     ${D}${sysconfdir}/systemd/network/${I40E_NETWORK}
@@ -27,4 +38,4 @@ do_install:append:ewaol() {
         fi
 }
 
-FILES:${PN}:append:ewaol = " ${sysconfdir}/systemd/"
+FILES:${PN}:append:i40e-network-override = " ${sysconfdir}/systemd/"
