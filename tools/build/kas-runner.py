@@ -37,26 +37,116 @@ def run_external_effect(func_call, message, print_kwargs={}):
         return func_call()
 
 
-class ContainerEngine:
+class RunSystem():
+
+    def __init__(self, project_root, kas_arguments):
+
+        self.project_root = project_root
+        self.kas_arguments = kas_arguments
+
+        self.key_paths = {}
+        self.key_paths_access = {}
+        self.env_vars = {}
+        self.kas_files = []
+
+    def add_path(self, key, path, access="rw", env_var=None):
+        if isinstance(path, str):
+            path = pathlib.Path(path)
+        if not isinstance(path, pathlib.Path):
+            print(f"ERROR: path {path} is not a valid string or pathlib.Path")
+            exit(1)
+
+        path = self.project_root / path
+
+        self.key_paths[key] = path
+        self.key_paths_access[key] = access
+
+        if env_var is not None:
+            self.add_env(env_var, f"{{{key}}}")
+
+    def get_path(key):
+        return self.key_paths[key]
+
+    def add_env(self, env_name, env_value):
+
+        self.env_vars[env_name] = str(env_value)
+
+    def set_kas_files(self, kas_files):
+        self.kas_files = kas_files
+
+    def get_kas_files_string(self):
+        return paths_to_string(self.kas_files)
+
+    def get_env_string(self):
+        return " ".join((f'{key}="{value.format_map(self.key_paths)}"'
+                         for key, value in self.env_vars.items()))
+
+    def build_command(self):
+
+        env_string = self.get_env_string()
+        kas_files_string = self.get_kas_files_string()
+
+        return f"{env_string} kas {self.kas_arguments} {kas_files_string}"
+
+    def _run(self, command):
+        """ Internal run function that produces side effects so should be
+            called using run_external_effect. """
+
+        # Start the build container
+        proc = subprocess.Popen(command,
+                                stdout=subprocess.PIPE,
+                                stderr=subprocess.STDOUT,
+                                shell=True)
+
+        for next_line in proc.stdout:
+            print(next_line.decode(), end='')
+
+        proc.wait()
+
+        if proc.returncode is None or proc.returncode > 0:
+            print((f"Error: command: \n{command}\n"
+                   f"Failed with return code {proc.returncode}"), file=sys.tee)
+            return 1
+
+        return 0
+
+    def run(self):
+        """ Run command as a subprocess """
+
+        command = self.build_command()
+
+        retcode = run_external_effect(lambda: self._run(command),
+                                      f"{command}",
+                                      dict(file=sys.tee))
+        if retcode is None:
+            retcode = 0
+        return retcode
+
+
+class ContainerEngine(RunSystem):
     """ Simple class used to configure and run kas under a container """
 
-    def __init__(self, image, image_version):
+    def __init__(self, project_root, kas_arguments, image, image_version):
+
+        super().__init__(project_root, kas_arguments)
+
         self.CONTAINER_NAME = f"kas_build.{int(time.time())}"
-        self.args = [f"--rm --name {self.CONTAINER_NAME}"]
+        self.engine_args = [f"--rm --name {self.CONTAINER_NAME}"]
         self.container_image = image
         self.container_image_version = image_version
 
     def add_arg(self, arg):
         """ Add a container engine run argument """
         print(f"Adding arg: {arg}")
-        self.args.append(arg)
+        self.engine_args.append(arg)
 
-    def add_env(self, key, value):
+    def add_env_arg(self, key, value):
         """ Add a container engine run environment argument """
         arg = f'--env {key}="{value}"'
         self.add_arg(arg)
 
-    def add_volume(self, path_host, path_container, perms="rw", env_var=None):
+    def add_volume_arg(self, path_host, path_container, perms="rw",
+                       env_var=None):
         """ Add a container engine run volume argument.
         When 'env_var' is used, also add an environment argument with 'env_var'
         being the key and 'path_container' the value """
@@ -69,13 +159,27 @@ class ContainerEngine:
         if env_var:
             self.add_env(env_var, path_container)
 
-    def run(self, kas_config, kas_command):
-        """ Invoke the container engine with all arguments previously added to
-            the object. """
+    def build_command(self):
+        key_paths_container = dict(
+            ((key, f"/{key}") for key in self.key_paths))
 
-        command = (f"docker run {' '.join(self.args)}"
-                   f" {self.container_image}:{self.container_image_version}"
-                   f" {kas_command} {kas_config}")
+        for key, host_path in self.key_paths.items():
+            container_path = key_paths_container[key]
+            access = self.key_paths_access[key]
+            self.add_volume_arg(host_path, container_path, access)
+
+        for env_key, value in self.env_vars.items():
+            self.add_env_arg(env_key, value.format_map(key_paths_container))
+
+        kas_files_string = self.get_kas_files_string()
+
+        return (f"docker run {' '.join(self.engine_args)}"
+                f" {self.container_image}:{self.container_image_version}"
+                f" {self.kas_arguments} {kas_files_string}")
+
+    def _run(self, command):
+        """ Subset of the run function that produces side effects so should
+            be called using run_external_effect. """
 
         def handle_interrupt(signum, frame):
             """ If this script is aborted while we have started a detached
@@ -107,41 +211,15 @@ class ContainerEngine:
 
             exit(1)
 
-        def _run(command):
-            """ Subset of the run function that produces side effects so should
-                be called using run_external_effect. """
+        signal.signal(signal.SIGINT, handle_interrupt)
+        signal.signal(signal.SIGTERM, handle_interrupt)
 
-            signal.signal(signal.SIGINT, handle_interrupt)
-            signal.signal(signal.SIGTERM, handle_interrupt)
+        retcode = super()._run(command)
 
-            # Start the build container
-            proc = subprocess.Popen(command,
-                                    stdout=subprocess.PIPE,
-                                    stderr=subprocess.STDOUT,
-                                    shell=True)
+        # Deregister the signal handler as the subprocess is complete
+        signal.signal(signal.SIGINT, signal.default_int_handler)
+        signal.signal(signal.SIGTERM, signal.SIG_DFL)
 
-            for next_line in proc.stdout:
-                print(next_line.decode(), end='')
-
-            proc.wait()
-
-            # Deregister the signal handler as the subprocess is complete
-            signal.signal(signal.SIGINT, signal.default_int_handler)
-            signal.signal(signal.SIGTERM, signal.SIG_DFL)
-
-            if proc.returncode is None or proc.returncode > 0:
-                print((f"Error: container command: \n{command}\n"
-                       f"Failed with return code {proc.returncode}"),
-                      file=sys.tee)
-                return 1
-
-            return 0
-
-        retcode = run_external_effect(lambda: _run(command),
-                                      f"{command}",
-                                      dict(file=sys.tee))
-        if retcode is None:
-            retcode = 0
         return retcode
 
 
@@ -937,14 +1015,6 @@ def main():
             # write both stdout and tee to only terminal
             sys.tee = TeeLogger(LogOpt.TO_TERM)
 
-        kas_file_common_dir = get_kas_file_common_dir(config.kasfile,
-                                                      config.project_root)
-
-        config_volume_mount = "/common_configs"
-        kas_paths_inside = get_kas_container_paths(
-            config.kasfile, kas_file_common_dir,
-            pathlib.Path(config_volume_mount))
-
         # Print the argument
         if args["print"]:
             config_dict = config.setting_values()
@@ -966,131 +1036,92 @@ def main():
         mk_newdir(config.out_dir)
         mk_newdir(config.build_dir)
 
-        if not config.containerize:
+        if config.containerize:
+            run_system = ContainerEngine(config.project_root,
+                                         config.kas_arguments,
+                                         config.container_image,
+                                         config.container_image_version)
 
-            run_system = RunSystem(config.kas_arguments)
-
-            # Mount and set up workdir
-            run_system.add_env("KAS_WORK_DIR", config.project_root)
-
-            # Add kas files
-            run_system.set_kas_files(config.kasfile)
-
-            # Mount and set up build directory
-            run_system.add_env("KAS_BUILD_DIR", config.build_dir)
-
-            # Configure local caches
-            mk_newdir(config.sstate_dir)
-            run_system.add_env("SSTATE_DIR", config.sstate_dir)
-
-            mk_newdir(config.dl_dir)
-            run_system.add_env("DL_DIR", config.dl_dir)
-
-            # Configure cache mirrors
-            if config.sstate_mirror:
-                if config.sstate_mirror.startswith("http"):
-                    # Formatted now so not set by run_system.add_env
-                    SSTATE_MIRRORS = (f"file://.* {config.sstate_mirror}/PATH;"
-                                      "downloadfilename=PATH")
-                else:
-                    mk_newdir(config.sstate_mirror)
-                    # Not formatted now so set by run_system.add_env
-                    SSTATE_MIRRORS = ("file://.* file://{sstate_mirrors}/PATH;"
-                                      "downloadfilename=PATH")
-
-                run_system.add_env("SSTATE_MIRRORS", SSTATE_MIRRORS)
-
-            if config.downloads_mirror:
-                if config.downloads_mirror.startswith("http"):
-                    SOURCE_MIRROR_URL = config.downloads_mirror
-                else:
-                    mk_newdir(config.downloads_mirror)
-                    SOURCE_MIRROR_URL = "file://{source_mirror_url}"
-
-                run_system.add_env("SOURCE_MIRROR_URL", SOURCE_MIRROR_URL)
-                run_system.add_env('INHERIT', "own-mirrors")
-                run_system.add_env('BB_GENERATE_MIRROR_TARBALLS', "1")
-
-            if config.number_threads:
-                run_system.add_env('BB_NUMBER_THREADS', config.number_threads)
-
-            # Execute the command
-            exit_code |= run_system.run()
-
-        elif config.containerize:
-
-            engine = ContainerEngine(config.container_image,
-                                     config.container_image_version)
+            kas_file_common_dir = get_kas_file_common_dir(config.kasfile,
+                                                          config.project_root)
+            # Translate kas files to container
+            config_volume_key = "common_configs"
+            kas_paths_inside = get_kas_container_paths(
+                config.kasfile, kas_file_common_dir,
+                pathlib.Path("/", config_volume_key))
+            run_system.add_path(config_volume_key, kas_file_common_dir,
+                                access="ro")
+            run_system.set_kas_files(kas_paths_inside)
 
             # Pass user and group ID to container engine env
-            engine.add_env("USER_ID", os.getuid())
-            engine.add_env("GROUP_ID", os.getgid())
-
-            # Mount and set up workdir
-            work_dir_name = "/work/kas_work_dir"
-            engine.add_volume(config.project_root, work_dir_name)
-            engine.add_arg(f"--workdir={work_dir_name}")
-            engine.add_env("KAS_WORK_DIR", work_dir_name)
-
-            # Mount config directory
-            engine.add_volume(kas_file_common_dir, config_volume_mount, "ro")
-
-            # Mount and set up build directory
-            kas_build_dir_name = "/work/kas_build_dir"
-            engine.add_volume(config.build_dir,
-                              kas_build_dir_name)
-            engine.add_env("KAS_BUILD_DIR", kas_build_dir_name)
-
-            # Configure local caches
-            engine.add_volume(config.sstate_dir,
-                              "/sstate_dir",
-                              env_var="SSTATE_DIR")
-            mk_newdir(config.sstate_dir)
-
-            engine.add_volume(config.dl_dir, "/dl_dir", env_var="DL_DIR")
-            mk_newdir(config.dl_dir)
+            run_system.add_env("USER_ID", os.getuid())
+            run_system.add_env("GROUP_ID", os.getgid())
 
             # Set network mode
-            network_mode = config.network_mode
-            engine.add_arg(f"--network={network_mode}")
-
-            # Configure cache mirrors
-            if config.sstate_mirror:
-                if config.sstate_mirror.startswith("http"):
-                    SSTATE_MIRRORS = (f"file://.* {config.sstate_mirror}/PATH;"
-                                      "downloadfilename=PATH")
-                else:
-                    path = "/sstate_mirrors"
-                    mk_newdir(config.sstate_mirror)
-                    engine.add_volume(config.sstate_mirror, path, "ro")
-                    SSTATE_MIRRORS = (f"file://.* file://{path}/PATH;"
-                                      "downloadfilename=PATH")
-
-                engine.add_env("SSTATE_MIRRORS", SSTATE_MIRRORS)
-
-            if config.downloads_mirror:
-                if config.downloads_mirror.startswith("http"):
-                    SOURCE_MIRROR_URL = config.downloads_mirror
-                else:
-                    path = "/source_mirror_url"
-                    mk_newdir(config.downloads_mirror)
-                    engine.add_volume(config.downloads_mirror, path, "ro")
-                    SOURCE_MIRROR_URL = f"file://{path}"
-
-                engine.add_env("SOURCE_MIRROR_URL", SOURCE_MIRROR_URL)
-                engine.add_env('INHERIT', "own-mirrors")
-                engine.add_env('BB_GENERATE_MIRROR_TARBALLS', "1")
+            run_system.add_arg(f"--network={config.network_mode}")
 
             if config.engine_arguments:
-                engine.add_arg(config.engine_arguments)
+                run_system.add_arg(config.engine_arguments)
 
-            if config.number_threads:
-                engine.add_env('BB_NUMBER_THREADS', config.number_threads)
+        if not config.containerize:
+            run_system = RunSystem(config.project_root, config.kas_arguments)
+            run_system.set_kas_files(config.kasfile)
 
-            kas_files_string = paths_to_string(kas_paths_inside)
+        # Mount and set up workdir
+        run_system.add_path("work/kas_work_dir",
+                            config.project_root,
+                            env_var="KAS_WORK_DIR")
 
-            # Execute the command
-            exit_code |= engine.run(kas_files_string, config.kas_arguments)
+        if config.containerize:
+            run_system.add_arg(f"--workdir=/work/kas_work_dir")
+
+        # Mount and set up build directory
+        run_system.add_path("work/kas_build_dir",
+                            config.build_dir,
+                            env_var="KAS_BUILD_DIR")
+
+        # Configure local caches
+        mk_newdir(config.sstate_dir)
+        run_system.add_path("sstate_dir", config.sstate_dir,
+                            env_var="SSTATE_DIR")
+
+        mk_newdir(config.dl_dir)
+        run_system.add_path("dl_dir", config.dl_dir, env_var="DL_DIR")
+
+        # Configure cache mirrors
+        if config.sstate_mirror:
+            if config.sstate_mirror.startswith("http"):
+                # Formatted now so not set by run_system.add_env
+                SSTATE_MIRRORS = (f"file://.* {config.sstate_mirror}/PATH;"
+                                  "downloadfilename=PATH")
+            else:
+                mk_newdir(config.sstate_mirror)
+                run_system.add_path("sstate_mirrors", config.sstate_mirror,
+                                    access="ro")
+                # Not formatted now so set by run_system.add_env
+                SSTATE_MIRRORS = ("file://.* file://{sstate_mirrors}/PATH;"
+                                  "downloadfilename=PATH")
+
+            run_system.add_env("SSTATE_MIRRORS", SSTATE_MIRRORS)
+
+        if config.downloads_mirror:
+            if config.downloads_mirror.startswith("http"):
+                SOURCE_MIRROR_URL = config.downloads_mirror
+            else:
+                mk_newdir(config.downloads_mirror)
+                run_system.add_path("source_mirror_url",
+                                    config.downloads_mirror, access="ro")
+                SOURCE_MIRROR_URL = "file://{source_mirror_url}"
+
+            run_system.add_env("SOURCE_MIRROR_URL", SOURCE_MIRROR_URL)
+            run_system.add_env('INHERIT', "own-mirrors")
+            run_system.add_env('BB_GENERATE_MIRROR_TARBALLS', "1")
+
+        if config.number_threads:
+            run_system.add_env('BB_NUMBER_THREADS', config.number_threads)
+
+        # Execute the command
+        exit_code |= run_system.run()
 
         # Grab build artifacts and store in artifacts_dir/buildname
         if config.deploy_artifacts:
