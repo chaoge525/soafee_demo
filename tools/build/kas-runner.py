@@ -493,6 +493,14 @@ def get_settings_details():
                   " (default: {default}).")),
 
         RunnerSetting(
+            "containerize",
+            metavar="BOOL",
+            default=True,
+            resolve_function=resolve_bool,
+            help=("Run the kas command within a docker container (default:"
+                  " {default}).")),
+
+        RunnerSetting(
             "deploy_artifacts",
             metavar="BOOL",
             default=False,
@@ -958,78 +966,131 @@ def main():
         mk_newdir(config.out_dir)
         mk_newdir(config.build_dir)
 
-        engine = ContainerEngine(config.container_image,
-                                 config.container_image_version)
+        if not config.containerize:
 
-        # Pass user and group ID to container engine env
-        engine.add_env("USER_ID", os.getuid())
-        engine.add_env("GROUP_ID", os.getgid())
+            run_system = RunSystem(config.kas_arguments)
 
-        # Mount and set up workdir
-        work_dir_name = "/work/kas_work_dir"
-        engine.add_volume(config.project_root, work_dir_name)
-        engine.add_arg(f"--workdir={work_dir_name}")
-        engine.add_env("KAS_WORK_DIR", work_dir_name)
+            # Mount and set up workdir
+            run_system.add_env("KAS_WORK_DIR", config.project_root)
 
-        # Mount config directory
-        engine.add_volume(kas_file_common_dir, config_volume_mount, "ro")
+            # Add kas files
+            run_system.set_kas_files(config.kasfile)
 
-        # Mount and set up build directory
-        kas_build_dir_name = "/work/kas_build_dir"
-        engine.add_volume(config.build_dir,
-                          kas_build_dir_name)
-        engine.add_env("KAS_BUILD_DIR", kas_build_dir_name)
+            # Mount and set up build directory
+            run_system.add_env("KAS_BUILD_DIR", config.build_dir)
 
-        # Configure local caches
-        engine.add_volume(config.sstate_dir,
-                          "/sstate_dir",
-                          env_var="SSTATE_DIR")
-        mk_newdir(config.sstate_dir)
+            # Configure local caches
+            mk_newdir(config.sstate_dir)
+            run_system.add_env("SSTATE_DIR", config.sstate_dir)
 
-        engine.add_volume(config.dl_dir, "/dl_dir", env_var="DL_DIR")
-        mk_newdir(config.dl_dir)
+            mk_newdir(config.dl_dir)
+            run_system.add_env("DL_DIR", config.dl_dir)
 
-        # Set network mode
-        network_mode = config.network_mode
-        engine.add_arg(f"--network={network_mode}")
+            # Configure cache mirrors
+            if config.sstate_mirror:
+                if config.sstate_mirror.startswith("http"):
+                    # Formatted now so not set by run_system.add_env
+                    SSTATE_MIRRORS = (f"file://.* {config.sstate_mirror}/PATH;"
+                                      "downloadfilename=PATH")
+                else:
+                    mk_newdir(config.sstate_mirror)
+                    # Not formatted now so set by run_system.add_env
+                    SSTATE_MIRRORS = ("file://.* file://{sstate_mirrors}/PATH;"
+                                      "downloadfilename=PATH")
 
-        # Configure cache mirrors
-        if config.sstate_mirror:
-            if config.sstate_mirror.startswith("http"):
-                SSTATE_MIRRORS = (f"file://.* {config.sstate_mirror}/PATH;"
-                                  "downloadfilename=PATH")
-            else:
-                path = "/sstate_mirrors"
-                mk_newdir(config.sstate_mirror)
-                engine.add_volume(config.sstate_mirror, path, "ro")
-                SSTATE_MIRRORS = (f"file://.* file://{path}/PATH;"
-                                  "downloadfilename=PATH")
+                run_system.add_env("SSTATE_MIRRORS", SSTATE_MIRRORS)
 
-            engine.add_env("SSTATE_MIRRORS", SSTATE_MIRRORS)
+            if config.downloads_mirror:
+                if config.downloads_mirror.startswith("http"):
+                    SOURCE_MIRROR_URL = config.downloads_mirror
+                else:
+                    mk_newdir(config.downloads_mirror)
+                    SOURCE_MIRROR_URL = "file://{source_mirror_url}"
 
-        if config.downloads_mirror:
-            if config.downloads_mirror.startswith("http"):
-                SOURCE_MIRROR_URL = config.downloads_mirror
-            else:
-                path = "/source_mirror_url"
-                mk_newdir(config.downloads_mirror)
-                engine.add_volume(config.downloads_mirror, path, "ro")
-                SOURCE_MIRROR_URL = f"file://{path}"
+                run_system.add_env("SOURCE_MIRROR_URL", SOURCE_MIRROR_URL)
+                run_system.add_env('INHERIT', "own-mirrors")
+                run_system.add_env('BB_GENERATE_MIRROR_TARBALLS', "1")
 
-            engine.add_env("SOURCE_MIRROR_URL", SOURCE_MIRROR_URL)
-            engine.add_env('INHERIT', "own-mirrors")
-            engine.add_env('BB_GENERATE_MIRROR_TARBALLS', "1")
+            if config.number_threads:
+                run_system.add_env('BB_NUMBER_THREADS', config.number_threads)
 
-        if config.engine_arguments:
-            engine.add_arg(config.engine_arguments)
+            # Execute the command
+            exit_code |= run_system.run()
 
-        if config.number_threads:
-            engine.add_env('BB_NUMBER_THREADS', config.number_threads)
+        elif config.containerize:
 
-        kas_files_string = paths_to_string(kas_paths_inside)
+            engine = ContainerEngine(config.container_image,
+                                     config.container_image_version)
 
-        # Execute the command
-        exit_code |= engine.run(kas_files_string, config.kas_arguments)
+            # Pass user and group ID to container engine env
+            engine.add_env("USER_ID", os.getuid())
+            engine.add_env("GROUP_ID", os.getgid())
+
+            # Mount and set up workdir
+            work_dir_name = "/work/kas_work_dir"
+            engine.add_volume(config.project_root, work_dir_name)
+            engine.add_arg(f"--workdir={work_dir_name}")
+            engine.add_env("KAS_WORK_DIR", work_dir_name)
+
+            # Mount config directory
+            engine.add_volume(kas_file_common_dir, config_volume_mount, "ro")
+
+            # Mount and set up build directory
+            kas_build_dir_name = "/work/kas_build_dir"
+            engine.add_volume(config.build_dir,
+                              kas_build_dir_name)
+            engine.add_env("KAS_BUILD_DIR", kas_build_dir_name)
+
+            # Configure local caches
+            engine.add_volume(config.sstate_dir,
+                              "/sstate_dir",
+                              env_var="SSTATE_DIR")
+            mk_newdir(config.sstate_dir)
+
+            engine.add_volume(config.dl_dir, "/dl_dir", env_var="DL_DIR")
+            mk_newdir(config.dl_dir)
+
+            # Set network mode
+            network_mode = config.network_mode
+            engine.add_arg(f"--network={network_mode}")
+
+            # Configure cache mirrors
+            if config.sstate_mirror:
+                if config.sstate_mirror.startswith("http"):
+                    SSTATE_MIRRORS = (f"file://.* {config.sstate_mirror}/PATH;"
+                                      "downloadfilename=PATH")
+                else:
+                    path = "/sstate_mirrors"
+                    mk_newdir(config.sstate_mirror)
+                    engine.add_volume(config.sstate_mirror, path, "ro")
+                    SSTATE_MIRRORS = (f"file://.* file://{path}/PATH;"
+                                      "downloadfilename=PATH")
+
+                engine.add_env("SSTATE_MIRRORS", SSTATE_MIRRORS)
+
+            if config.downloads_mirror:
+                if config.downloads_mirror.startswith("http"):
+                    SOURCE_MIRROR_URL = config.downloads_mirror
+                else:
+                    path = "/source_mirror_url"
+                    mk_newdir(config.downloads_mirror)
+                    engine.add_volume(config.downloads_mirror, path, "ro")
+                    SOURCE_MIRROR_URL = f"file://{path}"
+
+                engine.add_env("SOURCE_MIRROR_URL", SOURCE_MIRROR_URL)
+                engine.add_env('INHERIT', "own-mirrors")
+                engine.add_env('BB_GENERATE_MIRROR_TARBALLS', "1")
+
+            if config.engine_arguments:
+                engine.add_arg(config.engine_arguments)
+
+            if config.number_threads:
+                engine.add_env('BB_NUMBER_THREADS', config.number_threads)
+
+            kas_files_string = paths_to_string(kas_paths_inside)
+
+            # Execute the command
+            exit_code |= engine.run(kas_files_string, config.kas_arguments)
 
         # Grab build artifacts and store in artifacts_dir/buildname
         if config.deploy_artifacts:
