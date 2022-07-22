@@ -58,9 +58,8 @@ class LayerCheck(abstract_check.AbstractCheck):
             abstract_check.CheckSetting(
                 "machines",
                 is_list=True,
-                default=["qemuarm64"],
-                message=("Names of each MACHINE that should be used for the "
-                         " layer check.")
+                message=("Optional names of MACHINEs that should be used for"
+                         " the layer check.")
             )
         ]
 
@@ -174,7 +173,6 @@ class LayerCheck(abstract_check.AbstractCheck):
 
             dependencies = "--dependency " + " ".join(dep_bblayers)
             test_layers_str = " ".join(test_bblayers)
-            machines = " ".join(self.machines)
 
             # The yocto-check-layer-wrapper script will create a temporary
             # directory in the parent directory of BUILDDIR
@@ -182,8 +180,10 @@ class LayerCheck(abstract_check.AbstractCheck):
             shell_cmd = ("mkdir -p /work/build/layer_check &&"
                          " BUILDDIR=/work/build/layer_check BB_NO_NETWORK=1"
                          f" yocto-check-layer-wrapper {test_layers_str}"
-                         f" {dependencies} --no-auto-dependency"
-                         f" --machines {machines}")
+                         f" {dependencies} --no-auto-dependency")
+
+            if self.machines:
+                shell_cmd += f" --machines {' '.join(self.machines)}"
 
             kas_cmd = f"shell --command \\\"{shell_cmd}\\\""
 
