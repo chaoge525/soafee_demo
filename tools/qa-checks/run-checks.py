@@ -811,7 +811,9 @@ def main():
     checkers = build_check_modules(opts)
 
     if not checkers:
-        logger.info("Found no requested checks to run.")
+        logger.info("Found no requested checks to run. Please select checks to"
+                    " run from the following list:"
+                    f" {{{','.join(CHECK_NAMES)}}}.")
         exit(0)
 
     # Validate checkers conform to API
