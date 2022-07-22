@@ -86,7 +86,8 @@ LOG_LEVELS = {
     "debug": logging.DEBUG
 }
 
-DEFAULT_CONFIG_FILE = "meta-ewaol-config/qa-checks/qa-checks_config.yml"
+# First argument should evaluate to the project name (basename of project_root)
+DEFAULT_CONFIG_FILENAME = "qa-checks_config.yml"
 
 
 def convert_gitstyle_pattern_to_regex(pattern):
@@ -222,9 +223,10 @@ def parse_options():
 
     parser.add_argument("--config",
                         help=("YAML file that holds configuration defaults for"
-                              " the checkers (default: <PROJECT_ROOT>/"
-                              f"{DEFAULT_CONFIG_FILE})"
-                              ))
+                              " the checkers. If not provided, the project"
+                              " root directory will be searched to find the"
+                              " default config file name:"
+                              f" {DEFAULT_CONFIG_FILENAME}"))
 
     parser.add_argument("--no_config",
                         action="store_true",
@@ -361,15 +363,16 @@ def parse_config(config_path):
                     config_dict[full_key] = value
 
     except FileNotFoundError:
-        logger.error(f"Config file '{config_filename}' was not found.")
+        logger.error(f"Config file '{config_path}' was not found.")
         exit(1)
+
     except ImportError:
         logger.error(("Could not import the Python yaml module. Either install"
                       " 'pyyaml' via pip on the host system to load"
                       " the YAML configuration file, or pass --no_config."))
         exit(1)
     except KeyError:
-        logger.error(f"Invalid config {config_filename}")
+        logger.error(f"Invalid config {config_path}")
         exit(1)
 
     return config_dict
@@ -558,6 +561,40 @@ def resolve_check_params(opts, config):
             opts.checks.remove(check_name)
 
 
+def find_file(search_path, filename):
+    """ Search for filename within search_path and return the resulting file
+        path relative to search_path.
+    """
+
+    filepath = None
+
+    git_tracked = f"git -C {search_path} ls-files *{filename}"
+    git_untracked = (f"git -C {search_path} ls-files --others"
+                     " --exclude-standard *{filename}")
+    git_cmd = f"{git_tracked} && {git_untracked} | head -n1"
+
+    process = subprocess.Popen(git_cmd,
+                               stdout=subprocess.PIPE,
+                               stderr=subprocess.DEVNULL,
+                               shell=True)
+    stdout, _ = process.communicate()
+    stdout = stdout.decode().strip()
+
+    if process.returncode != 0:
+        # search_path is not a git repository
+        # Fallback to using find instead
+
+        find_cmd = f"find {search_path} -name {filename} -print -quit"
+        process = subprocess.Popen(find_cmd,
+                                   stdout=subprocess.PIPE,
+                                   stderr=subprocess.DEVNULL,
+                                   shell=True)
+        stdout, _ = process.communicate()
+        stdout = stdout.decode().strip()
+
+    return stdout
+
+
 def resolve_settings(opts):
     """ Perform validation and operations relating to the options supplied. """
 
@@ -577,13 +614,25 @@ def resolve_settings(opts):
     KEYWORD_MAP["ROOT"] = opts.project_root
 
     # Resolve 'config'
-    if opts.config is None:
-        opts.config = os.path.join(opts.project_root, DEFAULT_CONFIG_FILE)
-
     if opts.no_config:
         config = {}
-    else:
+
+    elif opts.config:
         config = parse_config(opts.config)
+
+    else:
+        # We haven't said we don't want to load a config file
+        # But we haven't provided a config file to load
+        # So see if we can find one
+        opts.config = find_file(opts.project_root,
+                                DEFAULT_CONFIG_FILENAME)
+
+        if opts.config:
+            config = parse_config(opts.config)
+        else:
+            logger.info((f"A config file '{DEFAULT_CONFIG_FILENAME}' could not"
+                         " be found. Continuing without a config file"))
+            config = {}
 
     # Resolve 'default_check_excludes'
     value = []
