@@ -741,7 +741,7 @@ def deploy_artifacts(build_dir, build_artifacts_dir):
     tar_logs_filename = os.path.join(build_artifacts_dir, "logs.tgz")
     log_patterns = [
         'bitbake-cookerdaemon.log',
-        'tmp*/log/cooker/console-latest.log',
+        'tmp*/log/cooker',
         'tmp*/work/**/temp/log.*',
         'tmp*/work/**/pseudo.log',
         'tmp*/work/**/testimage',
