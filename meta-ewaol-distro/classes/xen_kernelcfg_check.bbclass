@@ -7,7 +7,7 @@ inherit kernelcfg_check
 # Current checksum, should be updated to track latest xen requirements
 # https://git.yoctoproject.org/cgit/cgit.cgi/yocto-kernel-cache/tree/features/xen/xen.cfg
 XEN_CONFIG_FILE ?= "xen.cfg"
-XEN_CONFIG_FILE_MD5 ?= "9dd5450b99fc05551999bf119208acf8"
+XEN_CONFIG_FILE_MD5 ?= "3f6bb365f98587369f867daef6d0dac4"
 
 # List of XEN configs not valid or not wanted for aarch64 machines
 XEN_CONFIG_IGNORE_LIST ?= "\
