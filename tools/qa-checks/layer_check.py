@@ -60,6 +60,13 @@ class LayerCheck(abstract_check.AbstractCheck):
                 is_list=True,
                 message=("Optional names of MACHINEs that should be used for"
                          " the layer check.")
+            ),
+            abstract_check.CheckSetting(
+                "network_mode",
+                required=False,
+                message=("The docker container network mode to pass to the"
+                         " kas-runner.py script. If not set, the default value"
+                         " set by the kas-runner.py script will be used.")
             )
         ]
 
@@ -80,8 +87,13 @@ class LayerCheck(abstract_check.AbstractCheck):
             resulting Yocto layers (according to the BBLAYERS variable). """
 
         kas_cmd = "shell --command \\\"bitbake-getvar BBLAYERS\\\""
+        if self.network_mode:
+            network_arg = f" --network_mode=\"{self.network_mode}\""
+        else:
+            network_arg = ""
+
         cmd = (f"{self.script} --project_root=\"{self.project_root}\""
-               f" --kas_arguments \"{kas_cmd}\" {kas_config}")
+               f"{network_arg} --kas_arguments \"{kas_cmd}\" {kas_config}")
 
         process = subprocess.Popen(cmd,
                                    stdout=subprocess.PIPE,
@@ -187,8 +199,13 @@ class LayerCheck(abstract_check.AbstractCheck):
 
             kas_cmd = f"shell --command \\\"{shell_cmd}\\\""
 
+            if self.network_mode:
+                network_arg = f" --network_mode=\"{self.network_mode}\""
+            else:
+                network_arg = ""
+
             cmd = (f"{self.script} --project_root=\"{self.project_root}\""
-                   f" --kas_arguments \"{kas_cmd}\" {kas_config}")
+                   f"{network_arg} --kas_arguments \"{kas_cmd}\" {kas_config}")
 
             self.logger.debug(f"Running layer check via: {cmd}")
 
