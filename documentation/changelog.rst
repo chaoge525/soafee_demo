@@ -36,6 +36,7 @@ Tools:
   * Made various other improvements to the QA checks to increase usability and
     maintainability
   * Bumped dependency versions for the documentation build tool
+  * Updated kas minimal required version to ``3.1``
 
 Limitations
 ===========
