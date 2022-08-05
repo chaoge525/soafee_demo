@@ -12,7 +12,7 @@ get_random_pod_name_from_application() {
 
 confirm_image_of_application_pods() {
     pod_index="$((RANDOM % TEST_GUEST_VM_COUNT))"
-    wait_for_success 60 10 test_application_pod_image "${1}" "${2}" \
+    wait_for_success 180 10 test_application_pod_image "${1}" "${2}" \
         "${pod_index}"
 }
 
@@ -46,7 +46,7 @@ wait_for_deployment_to_be_running() {
         excluded_pods="${2}"
         expected_pod_count=$(wc -w <<< "${excluded_pods}")
 
-        _run wait_for_success 60 10 check_running_pod_count_with_exclusions \
+        _run wait_for_success 180 10 check_running_pod_count_with_exclusions \
            "${1}" "${expected_pod_count}" "${excluded_pods}"
         if [ "${status}" -ne 0 ]; then
             echo -n "Timeout reached before ${expected_pod_count} new"
