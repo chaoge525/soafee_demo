@@ -30,7 +30,7 @@ yocto_release = "master"
 yocto_doc_version = "dev/"
 yocto_linux_version = "5.15"
 xen_version = "4.16"
-kas_version = "3.0.2"
+kas_version = "3.1"
 ewaol_version = "main"
 
 n1sdp_link = "https://developer.arm.com/documentation/101489/0000"
