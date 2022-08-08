@@ -435,11 +435,20 @@ Adding Extra Rootfs Space
 The size of the root filesystem can be extended via the
 ``EWAOL_ROOTFS_EXTRA_SPACE`` BitBake variable, which defaults to ``2000000``
 Kilobytes. The value of this variable is appended to the
-``IMAGE_ROOTFS_EXTRA_SPACE`` BitBake variable. For an EWAOL virtualization
-distribution image, the root filesystems of both the Control VM and the Guest
-VM(s) are extended via this variable, in addition to any other parameters which
-affect those filesystems as described in
+``IMAGE_ROOTFS_EXTRA_SPACE`` BitBake variable.
+
+For an EWAOL virtualization distribution image, additional variables are
+provided which apply to the different root filesystems as described in
 :ref:`Virtualization Architecture Customization <manual_build_system_virtualization_customization>`.
+By default, the Control VM's rootfs size is increased at build-time to support
+the sum of all Guest VM rootfs sizes. The customizable
+``EWAOL_CONTROL_VM_ROOTFS_EXTRA_SPACE`` variable therefore corresponds just to
+the space allocated for the Control VM rootfs, in addition to the size necessary
+to support the Guest VM(s). Increasing ``EWAOL_ROOTFS_EXTRA_SPACE`` when
+building an EWAOL virtualization distribution image increases
+both the Guest VM(s) and Control VM rootfs size, which means that increasing
+this variable will result in the Control VM rootfs size expanding by more than
+the set value.
 
 Filesystem Compilation Tuning
 -----------------------------

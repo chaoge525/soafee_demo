@@ -76,6 +76,7 @@ ewaol-baremetal
 ewaol-baremetal-image
 ewaol-baremetal-sdk-image
 ewaol-base.yml
+ewaol_control_vm_rootfs_extra_space
 ewaol-devel
 ewaol-distro
 ewaol-guest-vm1

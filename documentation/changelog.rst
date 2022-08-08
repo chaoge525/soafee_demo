@@ -21,6 +21,12 @@ New Features
 Changed
 =======
 
+Distro:
+
+  * Updated rootfs size management for EWAOL virtualization distribution images,
+    to add build-time functionality that automatically configures the size of
+    the Control VM rootfs sufficient to support all Guest VM root filesystems
+
 Tests:
 
   * Upgraded the run-time integration tests to include validation of all EWAOL

@@ -103,7 +103,7 @@ other_definitions = {
       EWAOL_GUEST_VM1_MEMORY_SIZE: "6144"                # Memory size for Guest VM1 (MB)
       EWAOL_GUEST_VM1_ROOTFS_EXTRA_SPACE: ""             # Extra storage space for Guest VM1 (KB)
       EWAOL_CONTROL_VM_MEMORY_SIZE: "2048"               # Memory size for Control VM (MB)
-      EWAOL_CONTROL_VM_ROOTFS_EXTRA_SPACE: "1000000"     # Extra storage space for Control VM (KB)
+      EWAOL_CONTROL_VM_ROOTFS_EXTRA_SPACE: "0"           # Extra storage space for Control VM (KB), added as additional space above the storage necessary to support all Guest VMs root filesystems
       """,
   "inclusivity-exception": "\ ",
 }
