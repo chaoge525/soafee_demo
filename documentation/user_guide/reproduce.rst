@@ -297,9 +297,9 @@ eight CPUs for its Guest VM, run:
     EWAOL_GUEST_VM1_NUMBER_OF_CPUS=8 kas build --update meta-ewaol-config/kas/virtualization.yml:meta-ewaol-config/kas/n1sdp.yml
 
 An additional non-default environment variable is available for each Guest VM,
-which can be used to assign the Guest VM exclusive use of a PCI device. Using
-this environment variable requires that the Xen PCI passthrough capability is
-enabled. Details for enabling this capability is provided at
+which can be used to assign the Guest VM exclusive use of a single PCI device.
+Using this environment variable requires that the Xen PCI passthrough capability
+is enabled. Details for enabling this capability is provided at
 :ref:`manual_build_system_pci_passthrough`. This will provide a corresponding
 environment variable for each Guest VM, such as the following variable and its
 default value for the first Guest VM:

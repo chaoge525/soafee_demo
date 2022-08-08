@@ -237,8 +237,8 @@ Configuring Guest VM PCI Device Passthrough
 
 An EWAOL virtualization distribution image running on the AVA Developer Platform
 is capable of supporting Xen PCI passthrough, allowing Guest VMs to be assigned
-exclusive use of a PCI device. This capability is not enabled by default, and
-requires the following Build Modifier Config:
+exclusive use of a single PCI device. This capability is not enabled by default,
+and requires the following Build Modifier Config:
 
   * **Build Modifier Config**:
     ``meta-ewaol-config/kas/xen_pci_passthrough.yml``.
@@ -250,11 +250,11 @@ requires the following Build Modifier Config:
   Xen PCI device passthrough is currently only supported on the AVA Developer
   Platform.
 
-With the capability enabled, it is then possible to assign a PCI device to a
-Guest VM by configuring an additional environment variable, provided for the
-corresponding Guest VM. This environment variable and its default value when the
-Build Modifier Config is provided to enable Xen PCI passthrough support is as
-follows:
+With the capability enabled, it is then possible to assign a single PCI device
+to a Guest VM by configuring an additional environment variable, provided for
+the corresponding Guest VM. This environment variable and its default value when
+the Build Modifier Config is provided to enable Xen PCI passthrough support is
+as follows:
 
   .. code-block:: yaml
 
@@ -267,6 +267,12 @@ similarly (if they have been defined).
 By default, the Build Modifier Config assigns the first PCI ethernet network
 device (which has device ID ``0000:01:00.0``) for exclusive use by the first
 Guest VM.
+
+.. warning::
+  The PCI device IDs configured for PCI passthrough are not validated as part of
+  the EWAOL build system, and it is therefore the responsibility of the user to
+  ensure that the device IDs are valid, and that multiple Guest VMs have not
+  been assigned exclusive use of the same PCI device.
 
 Other EWAOL Features
 ====================
