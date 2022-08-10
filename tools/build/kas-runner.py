@@ -232,67 +232,6 @@ class RunnerSetting():
         return self.resolve_function(config, value)
 
 
-# Class containing all the details to make a boolean flag setting with negation
-#
-# * Using BoolRunnerSetting instead of RunnerSetting automatically sets up the
-#   command line argument --{setting_name} to set not {default} and adds a
-#   second command line argument --no_{setting_name} to set {default}.
-# * Optional n_short_name allows a new short name for the negated command.
-# * Optional n_help adds a seperate help message for the negated option
-# * The default resolve function validates the setting is a boolean.
-class BoolRunnerSetting(RunnerSetting):
-
-    def validate_bool(config, value):
-        if isinstance(value, bool):
-            return value
-        else:
-            print(f"ERROR: Expected boolean but was '{value}'")
-            raise RunnerResolveError()
-
-    def __init__(self, setting_name, short_name=None, n_short_name=None,
-                 default=False, help="", n_help="",
-                 resolve_function=validate_bool, **kwargs):
-
-        # Add required kwargs for a boolean flag if not already defined
-        if "action" not in kwargs:
-            kwargs["action"] = "store_const"
-        if "const" not in kwargs:
-            kwargs["const"] = not default
-
-        super().__init__(setting_name, short_name=short_name, default=default,
-                         help=help, resolve_function=resolve_function,
-                         **kwargs)
-
-        self.n_short_name = n_short_name
-        self.n_help = self.format_help(n_help)
-
-    def add_to_args(self, argparser):
-
-        # Create a mutually exclusive group so both arguments cannot be passed
-        # at once.
-        group = argparser.add_mutually_exclusive_group()
-
-        # Add normal argument to the group instead of the argparser
-        super().add_to_args(group)
-
-        # Create and add negated argument to the group
-        arg_args = []
-
-        if self.n_short_name is not None:
-            arg_args.append(f"{self.n_short_name}")
-
-        arg_args.append(f"--no_{self.setting_name}")
-
-        arg_kwargs = self.arg_kwargs
-        arg_kwargs["help"] = self.n_help
-        arg_kwargs["dest"] = self.setting_name
-        # Store default for the negated flag
-        if "const" in arg_kwargs:
-            arg_kwargs["const"] = self.default
-
-        group.add_argument(*arg_args, **arg_kwargs)
-
-
 # Class to contain the value of each setting.
 #
 # The value of settings are stored on this object as variables and can be
@@ -424,6 +363,17 @@ def get_settings_details():
 
         return kas_paths
 
+    def resolve_bool(config, value):
+        if isinstance(value, bool):
+            return value
+        elif value is not None:
+            if str(value).lower() in ["true", "1", "yes"] or value == 1:
+                return True
+            if str(value).lower() in ["false", "0", "no"] or value == 0:
+                return False
+        print(f"ERROR: Expected boolean but was '{value}'")
+        raise RunnerResolveError()
+
     settings_details = [
         # Positional Settings
         RunnerSetting(
@@ -474,14 +424,13 @@ def get_settings_details():
             help=("Path to read-only downloads mirror on local machine or the"
                   " URL of a server to be used as a downloads mirror.")),
 
-        BoolRunnerSetting(
+        RunnerSetting(
             "deploy_artifacts",
             short_name="-d",
-            n_short_name="-D",
             default=False,
-            help=("Generate artifacts for CI, and store in artifacts dir"
-                  " (Off by default)"),
-            n_help=("Disable --{setting_name} if enabled in configs")),
+            resolve_function=resolve_bool,
+            help=("Archive and compress build artifacts, and deploy to"
+                  " 'artifacts_dir' (default: {default}).")),
 
         RunnerSetting(
             "artifacts_dir",
