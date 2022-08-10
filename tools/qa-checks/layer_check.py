@@ -189,8 +189,9 @@ class LayerCheck(abstract_check.AbstractCheck):
             # The yocto-check-layer-wrapper script will create a temporary
             # directory in the parent directory of BUILDDIR
             # So set BUILDDIR to a subidrectory of build/
-            shell_cmd = ("mkdir -p /work/build/layer_check &&"
-                         " BUILDDIR=/work/build/layer_check BB_NO_NETWORK=1"
+            shell_cmd = ("mkdir -p /work/kas_work_dir/build/layer_check &&"
+                         " BUILDDIR=/work/kas_work_dir/build/layer_check"
+                         " BB_NO_NETWORK=1"
                          f" yocto-check-layer-wrapper {test_layers_str}"
                          f" {dependencies} --no-auto-dependency")
 
