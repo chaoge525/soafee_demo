@@ -983,7 +983,7 @@ def main():
         engine.add_env("GROUP_ID", os.getgid())
 
         # Mount and set up workdir
-        work_dir_name = "/work"
+        work_dir_name = "/work/kas_work_dir"
         engine.add_volume(config.project_root, work_dir_name)
         engine.add_arg(f"--workdir={work_dir_name}")
         engine.add_env("KAS_WORK_DIR", work_dir_name)
@@ -992,7 +992,7 @@ def main():
         engine.add_volume(kas_file_common_dir, config_volume_mount, "ro")
 
         # Mount and set up build directory
-        kas_build_dir_name = "/kas_build_dir"
+        kas_build_dir_name = "/work/kas_build_dir"
         engine.add_volume(config.build_dir,
                           kas_build_dir_name)
         engine.add_env("KAS_BUILD_DIR", kas_build_dir_name)
