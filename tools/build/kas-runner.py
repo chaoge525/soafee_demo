@@ -40,10 +40,9 @@ def run_external_effect(func_call, message, print_kwargs={}):
 class ContainerEngine:
     """ Simple class used to configure and run kas under a container """
 
-    def __init__(self, engine, image, image_version):
+    def __init__(self, image, image_version):
         self.CONTAINER_NAME = f"kas_build.{int(time.time())}"
         self.args = [f"--rm --name {self.CONTAINER_NAME}"]
-        self.container_engine = engine
         self.container_image = image
         self.container_image_version = image_version
 
@@ -74,7 +73,7 @@ class ContainerEngine:
         """ Invoke the container engine with all arguments previously added to
             the object. """
 
-        command = (f"{self.container_engine} run {' '.join(self.args)}"
+        command = (f"docker run {' '.join(self.args)}"
                    f" {self.container_image}:{self.container_image_version}"
                    f" {kas_command} {kas_config}")
 
@@ -91,7 +90,7 @@ class ContainerEngine:
                   file=sys.tee)
 
             # Stop the container
-            stop_cmd = [self.container_engine, "stop", self.CONTAINER_NAME]
+            stop_cmd = ["docker", "stop", self.CONTAINER_NAME]
             stop_proc = subprocess.Popen(stop_cmd,
                                          stdout=subprocess.PIPE,
                                          stderr=subprocess.PIPE,
@@ -380,104 +379,25 @@ def get_settings_details():
             "kasfile",
             positional=True,
             nargs='?',
-            metavar='config.yml',
+            metavar='CONFIG_1:CONFIG_2:...',
             default=None,
             resolve_function=resolve_kas_file_paths,
-            help=("The path to the yaml files containing the config for"
-                  " the kas build. Can provide multiple space-separated build"
-                  " configs, where each config can be a colon (:) separated"
-                  " list of .yml files to merge.")),
+            help=("Colon (:) separated set of kas config YAML file paths which"
+                  " define the build configuration.")),
 
         # Flag Argument Settings
         RunnerSetting(
-            "out_dir",
-            short_name="-o",
-            default="{project_root}/build",
-            resolve_function=resolve_config_reference_to_path,
-            help="Path to build directory (default: {default})."),
-
-        RunnerSetting(
-            "sstate_dir",
-            short_name="-sd",
-            default="{out_dir}/yocto-cache/sstate",
-            resolve_function=resolve_config_reference_to_path,
-            help=("Path to local sstate cache for this build (default:"
-                  " {default}).")),
-
-        RunnerSetting(
-            "dl_dir",
-            short_name="-dd",
-            default="{out_dir}/yocto-cache/downloads",
-            resolve_function=resolve_config_reference_to_path,
-            help=("Path to local downloads cache for this build (default:"
-                  " {default}).")),
-
-        RunnerSetting(
-            "sstate_mirror",
-            short_name="-sm",
-            help=("Path to read-only sstate mirror on local machine or the URL"
-                  " of a server to be used as a sstate mirror.")),
-
-        RunnerSetting(
-            "downloads_mirror",
-            short_name="-dm",
-            help=("Path to read-only downloads mirror on local machine or the"
-                  " URL of a server to be used as a downloads mirror.")),
-
-        RunnerSetting(
-            "deploy_artifacts",
-            short_name="-d",
-            default=False,
-            resolve_function=resolve_bool,
-            help=("Archive and compress build artifacts, and deploy to"
-                  " 'artifacts_dir' (default: {default}).")),
-
-        RunnerSetting(
-            "artifacts_dir",
-            short_name="-a",
-            default="{out_dir}/artifacts",
-            resolve_function=resolve_config_reference_to_path,
-            help=("Specify the directory to store the build logs, config and"
-                  " images after the build if --deploy_artifacts is enabled"
-                  " (default: {default}).")),
-
-        RunnerSetting(
-            "network_mode",
-            short_name="-n",
-            default="bridge",
-            help=("Set the network mode of the container (default:"
-                  " {default}).")),
-
-        RunnerSetting(
-            "container_engine",
-            short_name="-e",
-            default="docker",
-            help="Set the container engine (default: {default})."),
-
-        RunnerSetting(
-            "container_image",
-            short_name="-i",
-            default="ghcr.io/siemens/kas/kas",
-            help="Set the container image (default: {default})."),
-
-        RunnerSetting(
-            "engine_arguments",
-            short_name="-ea",
-            help=("Optional string of arguments for running the container,"
-                  " e.g. --{setting_name} '--volume /host/dir:/container/dir"
-                  " --env VAR=value'.")),
-
-        RunnerSetting(
-            "container_image_version",
-            short_name="-v",
-            default="3.1",
-            help=("Set the container image version (default: {default})."
-                  " Note: version {default} is the only version that"
-                  " kas-runner.py is currently validated with.")),
+            "project_root",
+            short_name="-r",
+            metavar="PATH",
+            default=pathlib.Path.cwd().resolve(),
+            resolve_function=resolve_to_path,
+            help="Project root path (default: {default})."),
 
         RunnerSetting(
             "number_threads",
             short_name="-j",
+            metavar="N",
             default=f"{os.cpu_count()}",
             help=("Sets number of threads used by bitbake, by exporting"
                   " environment variable BB_NUMBER_THREADS = J. Usually it is"
@@ -485,24 +405,109 @@ def get_settings_details():
                   " is set in a kas config file used for the build.")),
 
         RunnerSetting(
+            "out_dir",
+            short_name="-o",
+            metavar="PATH",
+            default="{project_root}/build",
+            resolve_function=resolve_config_reference_to_path,
+            help="Path to build directory (default: {default})."),
+
+        RunnerSetting(
+            "artifacts_dir",
+            short_name="-a",
+            metavar="PATH",
+            default="{out_dir}/artifacts",
+            resolve_function=resolve_config_reference_to_path,
+            help=("Specify the directory to store the build logs, config and"
+                  " images after the build if --deploy_artifacts is enabled"
+                  " (default: {default}).")),
+
+        RunnerSetting(
             "kas_arguments",
             short_name="-k",
+            metavar="STR",
             default="build",
             help=("Arguments to be passed to kas executable within the"
                   " container (default: {default}).")),
 
         RunnerSetting(
+            "sstate_dir",
+            metavar="PATH",
+            default="{out_dir}/yocto-cache/sstate",
+            resolve_function=resolve_config_reference_to_path,
+            help=("Path to local sstate cache for this build (default:"
+                  " {default}).")),
+
+        RunnerSetting(
+            "dl_dir",
+            metavar="PATH",
+            default="{out_dir}/yocto-cache/downloads",
+            resolve_function=resolve_config_reference_to_path,
+            help=("Path to local downloads cache for this build (default:"
+                  " {default}).")),
+
+        RunnerSetting(
+            "sstate_mirror",
+            metavar="MIRROR",
+            help=("Path to read-only sstate mirror on local machine or the URL"
+                  " of a server to be used as a sstate mirror.")),
+
+        RunnerSetting(
+            "downloads_mirror",
+            metavar="MIRROR",
+            help=("Path to read-only downloads mirror on local machine or the"
+                  " URL of a server to be used as a downloads mirror.")),
+
+        RunnerSetting(
+            "network_mode",
+            metavar="MODE",
+            default="bridge",
+            help=("Set the network mode of the container (default:"
+                  " {default}).")),
+
+        RunnerSetting(
+            "engine_arguments",
+            metavar="STR",
+            help=("Optional string of arguments for running the container,"
+                  " e.g. --{setting_name} '--volume /host/dir:/container/dir"
+                  " --env VAR=value'.")),
+
+        RunnerSetting(
+            "container_image",
+            metavar="IMAGE",
+            default="ghcr.io/siemens/kas/kas",
+            help="Set the container image (default: {default})."),
+
+        RunnerSetting(
+            "container_image_version",
+            metavar="VERSION",
+            default="3.1",
+            help=("Set the container image version (default: {default})."
+                  " Note: version {default} is the only version that"
+                  " kas-runner.py is currently validated with.")),
+
+        RunnerSetting(
             "log_file",
-            short_name="-log",
+            metavar="FILE",
             help=("Write output to the given log file as well as to stdout"
                   " (default: {default}).")),
 
         RunnerSetting(
-            "project_root",
-            short_name="-r",
-            default=pathlib.Path.cwd().resolve(),
-            resolve_function=resolve_to_path,
-            help="Project root path (default: {default})."),
+            "deploy_artifacts",
+            metavar="BOOL",
+            default=False,
+            resolve_function=resolve_bool,
+            help=("Archive and compress build artifacts, and deploy to"
+                  " 'artifacts_dir' (default: {default}).")),
+
+        RunnerSetting(
+            "dry_run",
+            metavar="BOOL",
+            default=False,
+            resolve_function=resolve_bool,
+            help=("Print all the variables, arguments and run commands but"
+                  " don't execute anything with external effects (default:"
+                  " {default})")),
 
         # Internal Settings
         RunnerSetting(
@@ -521,29 +526,58 @@ def get_settings_details():
     return settings_details
 
 
+# Extend the RawDescriptionHelpFormatter to also format metavar so that the
+# placeholder argument value is given once, even for arguments with a short and
+# long name.
+#
+# For example, the help message:
+#     -c CONFIG_FILE, --config CONFIG_FILE
+# Instead becomes a more simple, easier to read version:
+#     -c, --config CONFIG_FILE
+class MetavarAndHelpFormatter(argparse.RawDescriptionHelpFormatter):
+
+    # Modified implementation from the argparse module source
+    def _format_action_invocation(self, action):
+        if not action.option_strings:
+            default = self._get_default_metavar_for_positional(action)
+            metavar, = self._metavar_formatter(action, default)(1)
+            return metavar
+
+        else:
+            parts = []
+
+            if action.nargs == 0:
+                parts.extend(action.option_strings)
+
+            else:
+                default = self._get_default_metavar_for_optional(action)
+                args_string = self._format_args(action, default)
+
+                # First add the args
+                parts.extend(action.option_strings)
+
+                # Then append the placeholder value to the last arg string
+                parts[-1] += f" {args_string}"
+
+            return ', '.join(parts)
+
+
 def get_command_line_args(settings_details):
 
-    desc = (f"{os.path.basename(__file__)} is used for building yocto based "
-            "projects, using the kas container image to handle build "
-            "dependencies.")
-    usage = ("A kas config yaml file must be provided, and any optional "
-             "arguments.")
-    example = (f"Example:\n$ {os.path.basename(__file__)} "
+    desc = (f"{os.path.basename(__file__)} is a wrapper script to support"
+            " containerized and convenient execution of the 'kas' build tool"
+            " for preparing and building Yocto-based projects.")
+    example = (f"Example:\n$ ./{os.path.basename(__file__)} "
                "path/to/kas-config1.yml:path/to/kas-config2.yml\nTo pull the "
-               "required layers and build an image using the 2 provided "
-               "configs.")
+               "layer dependencies and build an image according to the 2 "
+               "provided kas config files.")
 
     # Parse Arguments and assign to args object
     parser = argparse.ArgumentParser(
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        description=f"{desc}\n{usage}\n{example}\n\n")
+        formatter_class=MetavarAndHelpFormatter,
+        description=f"{desc}\n{example}\n\n")
 
     # Command line only arguments
-    parser.add_argument(
-        "-c",
-        "--config",
-        help="Load script parameters from file (default: %(default)s).")
-
     parser.add_argument(
         "-l",
         "--list_configs",
@@ -553,18 +587,19 @@ def get_command_line_args(settings_details):
               " '--config' parameter."))
 
     parser.add_argument(
+        "-c",
+        "--config",
+        metavar="FILE",
+        help="Load script parameters from file (default: %(default)s).")
+
+    parser.add_argument(
         "-p",
         "--print",
         dest="print",
-        help=("Print a parameter of the config being built. For this argument"
-              " to work, a config must be selected"))
-
-    parser.add_argument(
-        "--dry_run",
-        action="store_true",
-        dest="dry_run",
-        help=("Print all the variables, arguments and run commands but don't"
-              "execute anything with external effects."))
+        metavar="PARAM",
+        help=("Once the tool's configuration process has been completed, print"
+              " the resulting value of the target parameter. Execution will"
+              " stop once the value has been printed."))
 
     # Add arguments for runner settings
     for runner_setting in settings_details:
@@ -923,8 +958,7 @@ def main():
         mk_newdir(config.out_dir)
         mk_newdir(config.build_dir)
 
-        engine = ContainerEngine(config.container_engine,
-                                 config.container_image,
+        engine = ContainerEngine(config.container_image,
                                  config.container_image_version)
 
         # Pass user and group ID to container engine env
