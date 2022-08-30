@@ -11,10 +11,14 @@ adlink_ava_backpanel.png
 adlink_ava_top.png
 adlink's
 aem
+appending
 appends
+architecture's
+architectures
 arm-machines.yml
 armv8-a
 armv8a-crc
+automates
 ava_edk2_boot_manager_boot_screenshot.png
 ava_edk2_boot_usb_boot_screenshot.png
 ava_edk2_escape_boot_screenshot.png
@@ -45,6 +49,8 @@ cmd
 codeline
 codeline_management
 comhpc-docs
+conditionally
+config
 configs
 configurable
 configures
@@ -53,15 +59,21 @@ containerization
 containerized
 containers_kernelcfg_check.bbclass
 contributing_documentation_build_validation
+contribution's
+customizable
 customization
 customizations
+customizes
 datetime
 db9
 dbg
+dependencies
 deprecated
 devicetree
 diego.sueiro
+distributions
 distro_features
+doc-build.py
 docker's
 do_fetch
 dom0
@@ -132,6 +144,7 @@ implementations
 inclusivity-exception
 independently-configurable
 index.html
+init
 initializes
 initramfs
 introduction_use_cases_overview
@@ -146,6 +159,7 @@ k3s_test_guest_vm_basename
 k3s_test_log_dir
 kb
 kernel_features
+kickstart
 kirkstone
 kubectl
 kubernetes
@@ -155,12 +169,15 @@ libpcre2
 licensees
 license.rst
 linter
+linux
+linux-based
 localhost
 loopback
 lts
 m
 machine_features
 maintainability
+maintainers
 manual_build_system_target_platforms
 manual_yocto_layers_layer_dependency_overview
 maxdepth
@@ -176,6 +193,8 @@ meta-openembedded
 meta-virtualization
 minicom
 modifiable
+modifier
+modifiers
 multiconfig
 n1
 n1sdp
@@ -190,6 +209,7 @@ nvme
 oci
 optionally
 ostree
+overviews
 parallelized
 passthrough
 pc
@@ -199,6 +219,8 @@ png
 podman
 ppa
 ppas
+prefixed
+prefixes
 ptest
 pycodestyle
 pyspellchecker
@@ -210,6 +232,7 @@ readme.md
 refactor
 refactored
 refspec
+regressions
 repository's
 restructuredtext
 return_code
@@ -225,6 +248,7 @@ runtime
 runtime-integration-tests
 sc2086
 sc2288
+scalable
 schedulable
 sdk
 sdl
@@ -240,6 +264,7 @@ spdx
 spdx-license-identifier
 ssh
 sstate-cache
+standalone
 stderr
 stdout
 sub-sections
