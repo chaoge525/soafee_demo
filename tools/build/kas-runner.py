@@ -7,7 +7,6 @@
 import argparse
 import copy
 import enum
-import glob
 import os
 import pathlib
 import platform
@@ -115,8 +114,14 @@ class RunSystem():
 
         command = self.build_command()
 
+        if sys.tee.log_file:
+            message = (f"\nRunning kas command:\n{command}\n\nRedirected"
+                       f" command output to {sys.tee.log_file.name}\n")
+        else:
+            message = (f"\nRunning kas command:\n{command}\n")
+
         retcode = run_external_effect(lambda: self._run(command),
-                                      f"{command}",
+                                      message,
                                       dict(file=sys.tee))
         if retcode is None:
             retcode = 0
@@ -789,11 +794,11 @@ def deploy_artifacts(build_dir, build_artifacts_dir):
     # For each file that matches one of the glob patterns,
     # return the full path and the path relative to basepath
     def find_files(basepath, patterns):
+        base_folder = pathlib.Path(basepath).absolute()
         for pattern in patterns:
-            full_pattern = os.path.join(basepath, pattern)
-            for filename in glob.iglob(full_pattern, recursive=True):
-                arcname = os.path.relpath(filename, basepath)
-                yield filename, arcname
+            for filename in base_folder.glob(pattern):
+                relative_path = filename.relative_to(base_folder)
+                yield filename, str(relative_path)
 
     # Build a tar file from the given iterator
     def build_tar(outfile, files):
@@ -803,9 +808,9 @@ def deploy_artifacts(build_dir, build_artifacts_dir):
 
     # Collect config
     tar_conf_filename = os.path.join(build_artifacts_dir, "conf.tgz")
+    print("Deploying build configuration artifacts into "
+          f"{tar_conf_filename}", file=sys.tee)
     build_tar(tar_conf_filename, find_files(build_dir, ['conf']))
-    print("Deployed build configuration artifacts into "
-          f"{tar_conf_filename}")
 
     # Collect logs
     tar_logs_filename = os.path.join(build_artifacts_dir, "logs.tgz")
@@ -816,8 +821,8 @@ def deploy_artifacts(build_dir, build_artifacts_dir):
         'tmp*/work/**/pseudo.log',
         'tmp*/work/**/testimage',
     ]
+    print(f"Deploying build logs into {tar_logs_filename}", file=sys.tee)
     build_tar(tar_logs_filename, find_files(build_dir, log_patterns))
-    print(f"Deployed build logs into {tar_logs_filename}")
 
     # Collect images
     def find_image_files():
@@ -825,8 +830,8 @@ def deploy_artifacts(build_dir, build_artifacts_dir):
             # images.tgz only contains the "images" subdirectories
             yield from find_files(deploydir, ['images'])
     tar_image_filename = os.path.join(build_artifacts_dir, "images.tgz")
+    print(f"Deploying images into {tar_image_filename}", file=sys.tee)
     build_tar(tar_image_filename, find_image_files())
-    print(f"Deployed images into {tar_image_filename}")
 
 
 # Convert string of paths with specified separator to a list of path objects
@@ -1120,7 +1125,6 @@ def main():
         if config.number_threads:
             run_system.add_env('BB_NUMBER_THREADS', config.number_threads)
 
-        # Execute the command
         exit_code |= run_system.run()
 
         # Grab build artifacts and store in artifacts_dir/buildname
@@ -1134,7 +1138,8 @@ def main():
             run_external_effect(
                 lambda:
                     deploy_artifacts(config.build_dir, build_artifacts_dir),
-                f"Deploying artifacts for {paths_to_string(config.kasfile)}")
+                f"Deploying artifacts for {paths_to_string(config.kasfile)}",
+                dict(file=sys.tee))
 
         print(f"Finished build task: {paths_to_string(config.kasfile)}\n",
               file=sys.tee)
