@@ -517,6 +517,17 @@ def get_settings_details():
         print(f"ERROR: Expected boolean but was '{value}'")
         raise RunnerResolveError()
 
+    def resolve_engine_arguments_default(config, value):
+        """ For convenience, if the user has specified "shell" in the
+            kas_arguments to be run in a container, make the container run as
+            an interactive terminal process by appending "-it" to the
+            engine_arguments """
+
+        if config.containerize and config.kas_arguments.strip() == "shell":
+            value = f"{value if value else ''} -it"
+
+        return value
+
     settings_details = [
         # Positional Settings
         RunnerSetting(
@@ -571,8 +582,10 @@ def get_settings_details():
             short_name="-k",
             metavar="STR",
             default="build",
-            help=("Arguments to be passed to kas executable within the"
-                  " container (default: {default}).")),
+            help=("Arguments to be passed to kas executable (default:"
+                  " {default}). If set to 'shell' and the command is to be run"
+                  " in a container, the container will automatically be set to"
+                  " interactive mode (by passing '-it')")),
 
         RunnerSetting(
             "sstate_dir",
@@ -612,6 +625,7 @@ def get_settings_details():
         RunnerSetting(
             "engine_arguments",
             metavar="STR",
+            resolve_function=resolve_engine_arguments_default,
             help=("Optional string of arguments for running the container,"
                   " e.g. --{setting_name} '--volume /host/dir:/container/dir"
                   " --env VAR=value'.")),
