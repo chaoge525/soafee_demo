@@ -10,6 +10,9 @@ import enum
 import os
 import pathlib
 import platform
+import pty
+import re
+import shlex
 import signal
 import subprocess
 import sys
@@ -67,7 +70,6 @@ class RunSystem():
         return self.key_paths[key]
 
     def add_env(self, env_name, env_value):
-
         self.env_vars[env_name] = str(env_value)
 
     def set_kas_files(self, kas_files):
@@ -82,16 +84,58 @@ class RunSystem():
 
     def build_command(self):
 
-        env_string = self.get_env_string()
+        for key, value in self.env_vars.items():
+            os.environ[key] = value.format_map(self.key_paths)
+
+        terminal_size = os.get_terminal_size()
+        os.environ["LINES"] = str(terminal_size.lines)
+        os.environ["COLUMNS"] = str(terminal_size.columns)
+
         kas_files_string = self.get_kas_files_string()
 
-        return f"{env_string} kas {self.kas_arguments} {kas_files_string}"
+        return f"kas {self.kas_arguments} {kas_files_string}"
 
-    def _run(self, command):
-        """ Internal run function that produces side effects so should be
-            called using run_external_effect. """
+    def _run_interactive_pty(self, command):
 
-        # Start the build container
+        color_patterns = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
+
+        def capture_output(file_descriptor):
+            data = os.read(file_descriptor, 1024)
+
+            if sys.tee.log_file:
+
+                # Clean up the output, as the output from the kas command (e.g.
+                # running the container) may be encoded differently than the
+                # kas-runner output, and writing both to file results in
+                # garbled text.
+                output = data.replace(b"\x0d\x0a", b"\x0a")  # CRCRLF
+                output = output.replace(b"\x08\x0a", b"\x0a")  # Backspace + NL
+                output = output.replace(b"\x1b\x0a", b"\x0a")  # Escape + NL
+                output = output.replace(b"\x0d", b"\x0a")  # Carriage Return
+
+                # Remove ANSI color codes from file (but keep them in terminal)
+                output_str = output.decode()
+                output_str = color_patterns.sub("", output_str)
+                sys.tee.log_file.write(output_str)
+                sys.tee.log_file.flush()
+
+                # Return NULL character as empty output is considered EOF
+                return b"\x00"
+            else:
+                return data
+
+        returncode = pty.spawn(shlex.split(command), capture_output)
+
+        if returncode > 0:
+            print((f"Error: command: \n{command}\n"
+                   f"Failed with return code {returncode}"), file=sys.tee)
+            return 1
+
+        return 0
+
+    def _run_subprocess(self, command):
+
+        # Run the kas command as a subprocess
         proc = subprocess.Popen(command,
                                 stdout=subprocess.PIPE,
                                 stderr=subprocess.STDOUT,
@@ -108,6 +152,17 @@ class RunSystem():
             return 1
 
         return 0
+
+    def _run(self, command):
+        """ Internal run function that produces side effects so should be
+            called using run_external_effect. """
+
+        interactive = True if self.kas_arguments == "shell" else False
+
+        if interactive:
+            return self._run_interactive_pty(command)
+        else:
+            return self._run_subprocess(command)
 
     def run(self):
         """ Run command as a subprocess """
@@ -186,6 +241,8 @@ class ContainerEngine(RunSystem):
         """ Subset of the run function that produces side effects so should
             be called using run_external_effect. """
 
+        interrupted = False
+
         def handle_interrupt(signum, frame):
             """ If this script is aborted while we have started a detached
                 container subprocess, we should stop it before exiting """
@@ -214,12 +271,16 @@ class ContainerEngine(RunSystem):
                 print(("Error: failed to stop the build container via:\n."
                        " ".join(stop_cmd)), file=sys.tee)
 
-            exit(1)
+            nonlocal interrupted
+            interrupted = True
 
         signal.signal(signal.SIGINT, handle_interrupt)
         signal.signal(signal.SIGTERM, handle_interrupt)
 
         retcode = super()._run(command)
+
+        if interrupted:
+            exit(retcode)
 
         # Deregister the signal handler as the subprocess is complete
         signal.signal(signal.SIGINT, signal.default_int_handler)
@@ -1068,7 +1129,7 @@ def main():
             if config.engine_arguments:
                 run_system.add_arg(config.engine_arguments)
 
-        if not config.containerize:
+        else:  # Non-containerized run
             run_system = RunSystem(config.project_root, config.kas_arguments)
             run_system.set_kas_files(config.kasfile)
 
