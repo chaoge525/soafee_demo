@@ -102,7 +102,8 @@ class RunSystem():
         def capture_output(file_descriptor):
             data = os.read(file_descriptor, 1024)
 
-            if sys.tee.log_file:
+            log_opt = sys.stdout.log_opt
+            if log_opt == LogOpt.TO_BOTH or log_opt == LogOpt.TO_FILE:
 
                 # Clean up the output, as the output from the kas command (e.g.
                 # running the container) may be encoded differently than the
@@ -119,8 +120,13 @@ class RunSystem():
                 sys.tee.log_file.write(output_str)
                 sys.tee.log_file.flush()
 
-                # Return NULL character as empty output is considered EOF
-                return b"\x00"
+                if log_opt == LogOpt.TO_FILE:
+                    # Return NULL character as empty output is considered EOF
+                    return b"\x00"
+                else:
+                    # Also return data for output to terminal
+                    return data
+
             else:
                 return data
 
@@ -435,6 +441,8 @@ class RunnerSettings():
             try:
                 value = getattr(self, name)
                 value = setting.resolve(self, value)
+                if type(value) is str and value.strip() == "":
+                    value = None
                 setattr(self, name, value)
             except RunnerResolveError as e:
                 print(f"ERROR: Cannot resolve '{name}': {value}")
@@ -781,12 +789,9 @@ def merge_configs(base_config, override_config):
     return merged_config
 
 
-# Remove any arguments that are equivalent to False but not booleans as these
-# are likely to be default arguments (such as None or empty list).
+# Return only the arguments that have been set (i.e. which are not None)
 def filter_empty_args(args):
-    return dict_filter(
-        lambda key, value: bool(value) is True or isinstance(value, bool),
-        args)
+    return dict_filter(lambda key, value: value is not None, args)
 
 
 # Get the configuration(s) to run this script with, as a combination
@@ -842,8 +847,8 @@ def get_configs(default_config, args):
     else:
         runner_configs.append(default_config)
 
-    # Overwrite values in all prior configs with command-line arguments
-    # Ignore any None or empty-list arguments from the command-line parser
+    # Overwrite values in all prior configs with any supplied command-line
+    # arguments
     # Ignore any args that are not settings.
     supplied_args = filter_empty_args(args)
     setting_args = default_config.filter_settings(supplied_args)
@@ -1004,7 +1009,7 @@ def print_environment():
     print(env_str)
 
 
-# Print the supplied args as ready by the argparser (with empty args filtered)
+# Print the supplied args as read by the argparser
 def print_args(args):
     supplied_args = filter_empty_args(args)
 
@@ -1080,6 +1085,12 @@ def main():
 
         print_config(config)
 
+        # By default, write both stdout and tee to only terminal
+        # These objects must be constructed in this order (as TeeLogger reads
+        # from sys.stdout)
+        sys.tee = TeeLogger(LogOpt.TO_TERM)
+        sys.stdout = TeeLogger(LogOpt.TO_TERM)
+
         if config.log_file:
             mk_newdir(os.path.dirname(os.path.realpath(config.log_file)))
             log_file = open(config.log_file, "w")
@@ -1087,13 +1098,16 @@ def main():
             # By default, if we have a log file then only write to it
             # But provide a logger to write to both terminal
             # and the log file for important messages
-            sys.tee = TeeLogger(LogOpt.TO_BOTH, log_file)
-            sys.stdout = TeeLogger(LogOpt.TO_FILE, log_file)
+            sys.stdout.log_opt = LogOpt.TO_FILE
+            sys.tee.log_opt = LogOpt.TO_BOTH
+            sys.stdout.log_file = log_file
+            sys.tee.log_file = log_file
 
-        else:
-            # If we have no log file,
-            # write both stdout and tee to only terminal
-            sys.tee = TeeLogger(LogOpt.TO_TERM)
+            if config.kas_arguments.strip() == "shell":
+                # Although log_file has been given, there is no point running
+                # an interactive kas shell with its input/output being hidden
+                # from the terminal, so override the behavior to log to both
+                sys.stdout.log_opt = LogOpt.TO_BOTH
 
         # Print the argument
         if args["print"]:
