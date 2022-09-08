@@ -536,6 +536,41 @@ def get_settings_details():
 
         return value
 
+    def resolve_build_dir_name(config, value):
+        """ As build_dir_name is only used to define build_dir, it is
+            incompatible with a user-supplied build_dir value.
+            This setting must be evaluated before build_dir is, otherwise we
+            will think the build_dir default was user-supplied """
+
+        if value is None or value == "":
+            # build_dir_name not supplied
+            if config.build_dir is not None and config.build_dir != "":
+                # User has supplied a build_dir, so use its basename
+                return os.path.basename(config.build_dir)
+            else:
+                # Default to a concatenation of the kas config files
+                return "_".join(kpath.stem for kpath in config.kasfile)
+
+        if config.build_dir is not None:
+            print(("ERROR: As the 'build_dir_name' argument is only used to"
+                   " define the 'build_dir' directory, please supply only one"
+                   " of these arguments."))
+            raise RunnerResolveError()
+
+        return value
+
+    def resolve_build_dir(config, value):
+        """ This function provides a default build_dir as a function of out_dir
+            and build_dir_name. Default defined here as opposed to being
+            defined in the argparse RunnerSetting so that logic can be
+            performed depending on whether or not a value has been supplied
+            (checking for None) in resolve_build_dir_name """
+
+        if value is None or value == "":
+            return config.out_dir / config.build_dir_name
+
+        return value
+
     settings_details = [
         # Positional Settings
         RunnerSetting(
@@ -594,6 +629,24 @@ def get_settings_details():
                   " {default}). If set to 'shell' and the command is to be run"
                   " in a container, the container will automatically be set to"
                   " interactive mode (by passing '-it')")),
+
+        RunnerSetting(
+            "build_dir_name",
+            metavar="STR",
+            resolve_function=resolve_build_dir_name,
+            help=("Name of the directory within the 'out_dir' that should"
+                  " serve as the bitbake build directory. Incompatible with"
+                  " the 'build_dir' argument. Default: a concatenation of the"
+                  " basename of each kas config file, joined by underscores"
+                  " ('_').")),
+
+        RunnerSetting(
+            "build_dir",
+            metavar="PATH",
+            resolve_function=resolve_build_dir,
+            help=("Path to the directory that should serve as the Bitbake"
+                  " build directory. Incompatible with the 'build_dir_name'"
+                  " argument. Default: {{'out_dir'/'build_dir_name'}}")),
 
         RunnerSetting(
             "sstate_dir",
@@ -682,19 +735,6 @@ def get_settings_details():
             help=("Print all the variables, arguments and run commands but"
                   " don't execute anything with external effects (default:"
                   " {default})")),
-
-        # Internal Settings
-        RunnerSetting(
-            "build_dir_name",
-            internal=True,
-            resolve_function=lambda config, _:
-                "_".join(kpath.stem for kpath in config.kasfile)),
-
-        RunnerSetting(
-            "build_dir",
-            internal=True,
-            resolve_function=lambda config, _:
-                config.out_dir / config.build_dir_name),
     ]
 
     return settings_details
@@ -1036,12 +1076,15 @@ def print_config(config):
 
     external_description = format_dict(external_values,
                                        "\t\t{key}{padding}: {value}\n")
-    internal_description = format_dict(internal_values,
-                                       "\t\t{key}{padding}: {value}\n")
+
+    internal_description = ""
+    if len(internal_values) > 0:
+        internal_description += "\tInternal Variables:\n"
+        internal_description += format_dict(internal_values,
+                                            "\t\t{key}{padding}: {value}\n")
 
     config_str = ("Config containing:\n\tExternal Parameters:\n"
-                  f"{external_description}\tInternal Variables:\n"
-                  f"{internal_description}")
+                  f"{external_description}{internal_description}")
 
     print(config_str)
 
