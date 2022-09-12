@@ -163,12 +163,11 @@ class RunSystem():
         """ Internal run function that produces side effects so should be
             called using run_external_effect. """
 
-        interactive = True if self.kas_arguments == "shell" else False
-
-        if interactive:
-            return self._run_interactive_pty(command)
-        else:
+        if ("shell" in self.kas_arguments and
+                any(x in self.kas_arguments for x in ["-c", "--command"])):
             return self._run_subprocess(command)
+        else:
+            return self._run_interactive_pty(command)
 
     def run(self):
         """ Run command as a subprocess """
@@ -529,10 +528,14 @@ def get_settings_details():
         """ For convenience, if the user has specified "shell" in the
             kas_arguments to be run in a container, make the container run as
             an interactive terminal process by appending "-it" to the
-            engine_arguments """
+            engine_arguments only if -c or --command are not passed"""
 
-        if config.containerize and config.kas_arguments.strip() == "shell":
-            value = f"{value if value else ''} -it"
+        if config.containerize:
+
+            if ("shell" in config.kas_arguments and
+                    not any(x in config.kas_arguments
+                            for x in ["-c", "--command"])):
+                value = f"{value if value else ''} -it"
 
         return value
 
@@ -626,9 +629,10 @@ def get_settings_details():
             metavar="STR",
             default="build",
             help=("Arguments to be passed to kas executable (default:"
-                  " {default}). If set to 'shell' and the command is to be run"
-                  " in a container, the container will automatically be set to"
-                  " interactive mode (by passing '-it')")),
+                  " {default}). If set to 'shell' and is to be run in a"
+                  " container, the container will automatically be set to"
+                  " interactive mode (by passing '-it') if -c or --command is"
+                  " not passed")),
 
         RunnerSetting(
             "build_dir_name",
@@ -1146,7 +1150,9 @@ def main():
             sys.stdout.log_file = log_file
             sys.tee.log_file = log_file
 
-            if config.kas_arguments.strip() == "shell":
+            if ("shell" in config.kas_arguments and
+                    not any(x in config.kas_arguments
+                            for x in ["-c", "--command"])):
                 # Although log_file has been given, there is no point running
                 # an interactive kas shell with its input/output being hidden
                 # from the terminal, so override the behavior to log to both
