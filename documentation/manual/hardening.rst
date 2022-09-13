@@ -8,7 +8,8 @@ Security Hardening
 ##################
 
 EWAOL distribution images can be hardened to reduce potential sources or attack
-vectors of security vulnerabilities. EWAOL security hardening modifies the
+vectors of security vulnerabilities, by enabling the security features
+implemented by Project Cassini. This security hardening modifies the
 distribution to:
 
   * Force password update for each user account after first logging in.

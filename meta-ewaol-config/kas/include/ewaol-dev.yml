@@ -7,9 +7,15 @@ header:
   version: 11
 
 repos:
+  meta-adlink-ampere:
+    refspec: main
+
   meta-arm:
     # inclusivity-exception
     refspec: master
+
+  meta-cassini:
+    refspec: main
 
   meta-openembedded:
     # inclusivity-exception

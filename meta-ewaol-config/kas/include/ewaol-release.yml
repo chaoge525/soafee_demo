@@ -16,6 +16,8 @@ repos:
 
   meta-arm:
 
+  meta-cassini:
+
   meta-openembedded:
 
   meta-virtualization:

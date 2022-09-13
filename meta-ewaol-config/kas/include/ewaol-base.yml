@@ -16,7 +16,7 @@ defaults:
 repos:
 
   # Since in ewaol-release.yml we pin meta-adlink-ampere repo, we exclude its
-  # layer in here and eneable it in ava.yml when used for the build. This way
+  # layer in here and enable it in ava.yml when used for the build. This way
   # we avoid external bsp layers to checkout and use this layer
   meta-adlink-ampere:
     refspec: main
@@ -35,6 +35,13 @@ repos:
   meta-ewaol:
     layers:
       meta-ewaol-distro:
+
+  meta-cassini:
+    url: https://gitlab.arm.com/cassini/meta-cassini
+    path: layers/meta-cassini
+    refspec: main
+    layers:
+      meta-cassini-distro:
 
   meta-openembedded:
     url: https://git.openembedded.org/meta-openembedded
