@@ -25,8 +25,8 @@ Baremetal Architecture
 |
 
 An EWAOL baremetal distribution image (``ewaol-baremetal-image``) is enabled if
-``ewaol-baremetal`` is included in ``DISTRO_FEATURES``. The image includes the
-following image features by default:
+``ewaol-baremetal`` is included in ``DISTRO_FEATURES``. The image inherits
+the following image features from ``meta-cassini-distro``, by default:
 
   * Container engine and runtime with Docker and runc-opencontainers
   * Container workload orchestration with the K3s Kubernetes distribution
@@ -57,8 +57,10 @@ enabled if ``ewaol-virtualization`` is included in ``DISTRO_FEATURES``. The
 image includes the following image features by default:
 
   * Hardware virtualization support with the Xen type-1 hypervisor
-  * Container engine and runtime with Docker and runc-opencontainers
-  * Container workload orchestration with the K3s Kubernetes distribution
+  * The following image features are inherited from ``meta-cassini-distro``:
+
+    * Container engine and runtime with Docker and runc-opencontainers
+    * Container workload orchestration with the K3s Kubernetes distribution
 
 On an EWAOL virtualization distribution image, the software stack includes the
 Xen type-1 hypervisor and provides a Control VM (Dom0) and a single bundled

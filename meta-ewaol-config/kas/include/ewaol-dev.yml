@@ -7,8 +7,14 @@ header:
   version: 11
 
 repos:
+  meta-adlink-ampere:
+    refspec: kirkstone
+
   meta-arm:
     refspec: kirkstone
+
+  meta-cassini:
+    refspec: kirkstone-dev
 
   meta-openembedded:
     refspec: kirkstone

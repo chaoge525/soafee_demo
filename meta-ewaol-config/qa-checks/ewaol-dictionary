@@ -38,6 +38,9 @@ build_system
 build-time
 c
 c13
+cassini
+cassini.conf
+cassini-sdk.inc
 ce_test_clean_env
 ce_test_guest_vm_basename
 ce_test_image
@@ -184,6 +187,8 @@ maxdepth
 mb
 meta-adlink-ampere
 meta-arm-bsp
+meta-cassini
+meta-cassini-distro
 meta-ewaol
 meta-ewaol-bsp
 meta-ewaol-config
@@ -315,6 +320,7 @@ wget
 wic
 with-libcap[-ng
 workloads
+www.arm.com
 www.ipi.wiki
 x86_64-linux
 xen

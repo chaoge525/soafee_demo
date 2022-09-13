@@ -16,8 +16,10 @@ on the target, such as:
   * Tracing
   * Runtime package management
 
-The precise list of packages and image features provided as part of the EWAOL
-SDK can be found in ``meta-ewaol-distro/conf/distro/include/ewaol-sdk.inc``.
+The ``ewaol-sdk`` distro feature inherits ``cassini-sdk`` distro feature from
+Cassini distro. The precise list of packages and image features provided as
+part of the EWAOL SDK can be found in
+``layers/meta-cassini/meta-cassini-distro/conf/distro/include/cassini-sdk.inc``.
 
 The Yocto project provides guidance for some of these common development tasks,
 for example |kernel module compilation|_, |profiling and tracing|_, and

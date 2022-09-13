@@ -31,10 +31,12 @@ yocto_linux_version = "5.15"
 xen_version = "4.16"
 kas_version = "3.1"
 ewaol_version = "v1.0"
+cassini_version = "v0.9.0"
 
 n1sdp_link = "https://developer.arm.com/documentation/101489/0000"
 
 general_links = {
+  "link:Project Cassini": "https://www.arm.com/solutions/infrastructure/edge-computing/project-cassini",
   "link:Yocto Project Documentation": f"https://docs.yoctoproject.org/{yocto_doc_version}",
   "link:Yocto Release Process": "https://docs.yoctoproject.org/ref-manual/release-process.html",
   "link:kernel module compilation": f"https://docs.yoctoproject.org/{yocto_doc_version}kernel-dev/common.html#building-out-of-tree-modules-on-the-target",
@@ -87,14 +89,17 @@ layer_definitions = {
   "meta-openembedded branch": f"{yocto_release}",
   "meta-virtualization branch": f"{yocto_release}",
   "meta-arm branch": f"{yocto_release}",
+  "meta-cassini branch": f"{yocto_release}",
   "poky revision": "HEAD",
   "meta-virtualization revision": "HEAD",
   "meta-openembedded revision": "HEAD",
   "meta-arm revision": "HEAD",
+  "meta-cassini revision": cassini_version,
   "layer dependency statement": f"The layer revisions are related to the EWAOL ``{yocto_release}-dev`` branch.",
 }
 
 other_definitions = {
+  "meta-cassini documentation": f"https://cassini.docs.arm.com/en/{cassini_version}/introduction.html",
   "kas version": f"{kas_version}",
   "virtualization customization yaml":
       """

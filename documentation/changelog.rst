@@ -17,6 +17,8 @@ New Features
 * Added support for building and running EWAOL on the AVA Developer Platform
 * Added capability for Xen PCI device passthrough, currently supported for Guest
   VMs running on the AVA Developer Platform
+* Added inherited features from EWAOL's extension of the Cassini distribution,
+  which forms a new Yocto layer dependency
 
 Changed
 =======
@@ -26,6 +28,8 @@ Distro:
   * Updated rootfs size management for EWAOL virtualization distribution images,
     to add build-time functionality that automatically configures the size of
     the Control VM rootfs sufficient to support all Guest VM root filesystems
+  * Refactored the EWAOL distribution as an extension of the Cassini
+    distribution provided by Project Cassini.
 
 Tests:
 

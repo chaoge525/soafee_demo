@@ -13,7 +13,10 @@ functional safety. For more details on SOAFEE, please see <http://soafee.io>.
 
 The Edge Workload Abstraction and Orchestration Layer (EWAOL) project provides
 users with a standards based framework using containers for the deployment and
-orchestration of applications on edge platforms.
+orchestration of applications on edge platforms. The EWAOL software stack is
+provided as a custom Linux distribution via the Yocto Project, and extends core
+functionality provided by the Cassini Project (see
+<https://www.arm.com/solutions/infrastructure/edge-computing/project-cassini>).
 
 ## EWAOL Documentation
 
