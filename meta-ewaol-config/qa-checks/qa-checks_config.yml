@@ -50,6 +50,8 @@ modules:
             - "*.css"
             - "*.scc"
             - "*.patch"
+        original_works_licenses:
+            - "MIT"
 
     inclusivity:
         exclude_patterns:
