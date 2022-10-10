@@ -12,7 +12,8 @@ XEN_PCI_PASSTHROUGH_REQUIRE:xen-pci-passthrough = "xen-pci-passthrough.inc"
 
 require ${XEN_PCI_PASSTHROUGH_REQUIRE}
 
-inherit ewaol_guest_vm_config
+# Only inherit ewaol_guest_vm_config if building EWAOL Guest VM(s)
+inherit ${@ oe.utils.vartrue('BUILD_EWAOL_GUEST_VM', 'ewaol_guest_vm_config', '', d)}
 
 do_deploy:prepend:xen-pci-passthrough (){
 
