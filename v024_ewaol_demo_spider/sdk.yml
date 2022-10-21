@@ -1,0 +1,14 @@
+# Copyright (c) 2021, Arm Limited.
+#
+# SPDX-License-Identifier: MIT
+
+header:
+  version: 10
+
+target:
+  - ewaol-image-podman-sdk
+  - ewaol-image-docker-sdk
+
+local_conf_header:
+  ewaol-sdk: |
+    DISTRO_FEATURES_append = " ewaol-sdk"

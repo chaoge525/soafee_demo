@@ -1,0 +1,41 @@
+From f71b4a5e0b53a5f15605bfd9c1443aa92da22e41 Mon Sep 17 00:00:00 2001
+From: QICHAO XU <qichao.xu.xm@renesas.com>
+Date: Thu, 20 Oct 2022 17:19:21 +0900
+Subject: [PATCH] support hardknott, add k3s docker cfg, fix iptables
+
+---
+ meta-rcar-gateway/conf/layer.conf                            | 2 +-
+ meta-rcar-gateway/recipes-kernel/linux/linux-renesas_5.10.bb | 4 ++++
+ 2 files changed, 5 insertions(+), 1 deletion(-)
+
+diff --git a/meta-rcar-gateway/conf/layer.conf b/meta-rcar-gateway/conf/layer.conf
+index 853aabee..6ea33e8d 100644
+--- a/meta-rcar-gateway/conf/layer.conf
++++ b/meta-rcar-gateway/conf/layer.conf
+@@ -7,7 +7,7 @@ BBFILES += "${LAYERDIR}/recipes-*/*/*.bb \
+ BBFILE_COLLECTIONS += "rcar-gateway"
+ BBFILE_PATTERN_rcar-gateway = "^${LAYERDIR}/"
+ BBFILE_PRIORITY_rcar-gateway = "6"
+-LAYERSERIES_COMPAT_rcar-gateway = "dunfell"
++LAYERSERIES_COMPAT_rcar-gateway = "dunfell hardknott"
+ 
+ LAYERDEPENDS_rcar-gateway = "core yocto yoctobsp openembedded-layer meta-python"
+ 
+diff --git a/meta-rcar-gateway/recipes-kernel/linux/linux-renesas_5.10.bb b/meta-rcar-gateway/recipes-kernel/linux/linux-renesas_5.10.bb
+index 24e5a318..433925e8 100644
+--- a/meta-rcar-gateway/recipes-kernel/linux/linux-renesas_5.10.bb
++++ b/meta-rcar-gateway/recipes-kernel/linux/linux-renesas_5.10.bb
+@@ -12,6 +12,10 @@ BRANCH = "v5.10.41/rcar-5.1.3.rc9"
+ SRCREV = "c2911d9ce60b47902ab83ce8901475d3907b4966"
+ 
+ SRC_URI = "${RENESAS_BSP_URL};nocheckout=1;branch=${BRANCH}"
++SRC_URI_append = "\
++        file://docker.cfg \
++        file://kubernetes.cfg \
++"
+ 
+ LINUX_VERSION ?= "5.10.41"
+ PV = "${LINUX_VERSION}+git${SRCPV}"
+-- 
+2.37.0
+

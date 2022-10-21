@@ -1,0 +1,24 @@
+From 126d4d8223cdee56ab5e410a61f4b903165aadd6 Mon Sep 17 00:00:00 2001
+From: QICHAO XU <qichao.xu.xm@renesas.com>
+Date: Fri, 21 Oct 2022 13:24:20 +0900
+Subject: [PATCH] Remove invalid patch 037
+
+---
+ meta/recipes-devtools/gcc/gcc-10.2.inc | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/meta/recipes-devtools/gcc/gcc-10.2.inc b/meta/recipes-devtools/gcc/gcc-10.2.inc
+index c0cd8b31d5..06223cf123 100644
+--- a/meta/recipes-devtools/gcc/gcc-10.2.inc
++++ b/meta/recipes-devtools/gcc/gcc-10.2.inc
+@@ -64,7 +64,6 @@ SRC_URI = "\
+            file://0034-libgcc_s-Use-alias-for-__cpu_indicator_init-instead-.patch \
+            file://0035-gentypes-genmodes-Do-not-use-__LINE__-for-maintainin.patch \
+            file://0036-mingw32-Enable-operation_not_supported.patch \
+-           file://0037-libatomic-Do-not-enforce-march-on-aarch64.patch \
+            file://0001-aarch64-New-Straight-Line-Speculation-SLS-mitigation.patch \
+            file://0002-aarch64-Introduce-SLS-mitigation-for-RET-and-BR-inst.patch \
+            file://0003-aarch64-Mitigate-SLS-for-BLR-instruction.patch \
+-- 
+2.37.0
+
