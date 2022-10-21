@@ -1,0 +1,143 @@
+# Copyright (c) 2021, Renesas Limited.
+#
+# SPDX-License-Identifier: MIT
+
+header:
+  version: 10
+#  includes:
+#     - repo: meta-ewaol
+#       file: meta-ewaol-config/kas/ewaol-base.yml
+#     - repo: meta-ewaol
+#       file: meta-ewaol-config/kas/tests.yml
+#artifacts:
+#  - rm -rf build && sync
+#  - mkdir build && cd build
+#  paths:
+#  - build/tmp/deploy/images/
+
+repos:
+
+  # Since in ewaol-release.yml we pin meta-renesas repo, we exclude its layers in here.
+#  meta-ewaol:
+#   url: https://git.gitlab.arm.com/ewaol/meta-ewaol.git
+#   refspec: hardknott
+#   path: build/layers/meta-ewaol
+#   layers:
+#     meta-ewaol-distro:
+#     meta-ewaol-tests:
+#     meta-ewaol-config:
+
+  meta-renesas:
+    url: https://github.com/renesas-rcar/meta-renesas.git
+    refspec: 63880039af784d4719c07854796ca2c965dc93b5
+    # This commit id is S4 Alpha 3 release id.
+    path: build/layers/meta-renesas
+    layers:
+      meta-rcar-gateway:
+    patches:
+      Compatible:
+        repo: meta-renesas
+        path: ../../../0001-add-compatible-with-hardknott-k3s-docker-cfg-fix-ipt.patch
+#      Docker:
+#        repo: meta-renesas
+#        path: ../../../0002-Add-docker-for-BSP.patch
+
+  meta-openembedded:
+    url: https://git.openembedded.org/meta-openembedded
+    refspec: f44e1a2b575826e88b8cb2725e54a7c5d29cf94a
+    path: build/layers/meta-openembedded
+    layers:
+      meta-oe:
+      meta-filesystems:
+      meta-networking:
+      meta-python:
+      meta-perl:
+
+  meta-security:
+    url: https://git.yoctoproject.org/git/meta-security
+    refspec: 16c68aae0fdfc20c7ce5cf4da0a9fff8bdd75769
+    path: build/layers/meta-security
+
+  meta-ewaol:
+    url: https://git.gitlab.arm.com/ewaol/meta-ewaol.git
+    refspec: hardknott
+    path: build/layers/meta-ewaol
+    layers:
+      meta-ewaol-distro:
+      meta-ewaol-tests:
+
+  meta-virtualization:
+    url: https://git.yoctoproject.org/git/meta-virtualization
+    refspec: 7f719ef40896b6c78893add8485fda995b00d51d
+    path: build/layers/meta-virtualization
+
+  poky:
+    url: https://git.yoctoproject.org/git/poky
+    refspec: 269265c00091fa65f93de6cad32bf24f1e7f72a3
+    path: build/layers/poky
+    layers:
+      meta:
+      meta-poky:
+      meta-yocto-bsp:
+    patches:
+      Compatible:
+#	 patch-1:
+        repo: poky
+        path: ../../../0001-Remove-invalid-patch-037.patch
+#	 patch-2:
+#	repo: poky
+#        path: ../../../0001-fix-kbuild-host-name-and-user-name.patch
+
+local_conf_header:
+  002 Package Management configuration: |
+    PACKAGE_CLASSES ?= "package_rpm"
+
+  003 Extra image configuration defaults: |
+    EXTRA_IMAGE_FEATURES ?= "debug-tweaks"
+
+  004 Additional image features: |
+    USER_CLASSES ?= "buildstats image-mklibs image-prelink"
+
+  005 Interactive shell configuration: |
+    PATCHRESOLVE = "noop"
+
+  006 Disk Space Monitoring during the build: |
+    BB_DISKMON_DIRS = "\
+      STOPTASKS,${TMPDIR},1G,100K \
+      STOPTASKS,${DL_DIR},1G,100K \
+      STOPTASKS,${SSTATE_DIR},1G,100K \
+      STOPTASKS,/tmp,100M,100K \
+      ABORT,${TMPDIR},100M,1K \
+      ABORT,${DL_DIR},100M,1K \
+      ABORT,${SSTATE_DIR},100M,1K \
+      ABORT,/tmp,10M,1K"
+
+  007 Qemu configuration: |
+    PACKAGECONFIG_append_pn-qemu-system-native = " sdl"
+
+  008 CONF_VERSION: |
+    CONF_VERSION = "1"
+
+  009 Add systemd configuration: |
+    DISTRO_FEATURES_append = " systemd"
+    VIRTUAL-RUNTIME_init_manager = "systemd"
+
+  010 meta-ewaol: |
+    DISTRO_FEATURES_append = " ewaol-devel ewaol-test seccomp"
+
+distro: ewaol
+
+env:
+    SSTATE_MIRRORS: ""
+    SOURCE_MIRROR_URL: ""
+    INHERIT: ""
+    BB_GENERATE_MIRROR_TARBALLS: ""
+    BB_NUMBER_THREADS: "${@os.cpu_count()}"
+
+target:
+  - ewaol-image-docker
+  - ewaol-image-podman
+  - core-image-minimal
+
+machine: spider
+
